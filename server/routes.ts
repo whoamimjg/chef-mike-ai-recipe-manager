@@ -174,30 +174,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           const structuredData = JSON.parse(jsonLdMatch[1]);
           if (structuredData['@type'] === 'Recipe' || structuredData.name) {
+            // Parse ingredients more intelligently
+            const ingredients = Array.isArray(structuredData.recipeIngredient) 
+              ? structuredData.recipeIngredient.map((ing: string) => {
+                  // Try to parse amount, unit, and item from ingredient string
+                  const match = ing.match(/^(\d+(?:\/\d+)?(?:\.\d+)?)\s*(\w+)?\s+(.+)$/);
+                  if (match) {
+                    return {
+                      amount: match[1],
+                      unit: match[2] || '',
+                      item: match[3],
+                      notes: ''
+                    };
+                  }
+                  return { unit: '', amount: '', item: ing, notes: '' };
+                })
+              : [{ unit: '', amount: '', item: 'See original recipe', notes: '' }];
+
+            // Parse instructions more intelligently
+            const instructions = Array.isArray(structuredData.recipeInstructions)
+              ? structuredData.recipeInstructions.map((inst: any) => {
+                  if (typeof inst === 'string') return inst;
+                  if (inst.text) return inst.text;
+                  if (inst.name) return inst.name;
+                  return 'See original recipe';
+                })
+              : ['See original recipe for instructions'];
+
+            // Parse nutrition info if available
+            let nutritionInfo = null;
+            if (structuredData.nutrition) {
+              nutritionInfo = {
+                calories: structuredData.nutrition.calories || null,
+                protein: structuredData.nutrition.proteinContent || null,
+                carbs: structuredData.nutrition.carbohydrateContent || null,
+                fat: structuredData.nutrition.fatContent || null
+              };
+            }
+
+            // Extract image URL
+            let imageUrl = '';
+            if (structuredData.image) {
+              if (Array.isArray(structuredData.image)) {
+                imageUrl = structuredData.image[0];
+              } else if (typeof structuredData.image === 'string') {
+                imageUrl = structuredData.image;
+              } else if (structuredData.image.url) {
+                imageUrl = structuredData.image.url;
+              }
+            }
+
             recipeData = {
               title: structuredData.name || title,
               description: structuredData.description || '',
-              ingredients: Array.isArray(structuredData.recipeIngredient) 
-                ? structuredData.recipeIngredient.map((ing: string) => ({
-                    unit: '',
-                    amount: '',
-                    item: ing,
-                    notes: ''
-                  }))
-                : [{ unit: '', amount: '', item: 'See original recipe', notes: '' }],
-              instructions: Array.isArray(structuredData.recipeInstructions)
-                ? structuredData.recipeInstructions.map((inst: any) => 
-                    typeof inst === 'string' ? inst : inst.text || inst.name || 'See original recipe'
-                  )
-                : ['See original recipe for instructions'],
+              ingredients,
+              instructions,
               prepTime: structuredData.prepTime ? parseInt(structuredData.prepTime.replace(/\D/g, '')) || null : null,
               cookTime: structuredData.cookTime ? parseInt(structuredData.cookTime.replace(/\D/g, '')) || null : null,
-              servings: structuredData.recipeYield ? parseInt(structuredData.recipeYield) || null : null,
-              imageUrl: structuredData.image || '',
+              servings: structuredData.recipeYield ? parseInt(structuredData.recipeYield.toString()) || null : null,
+              imageUrl,
               cuisine: structuredData.recipeCuisine || '',
               mealType: '',
-              tags: [],
-              nutritionInfo: null,
+              tags: structuredData.keywords ? (Array.isArray(structuredData.keywords) ? structuredData.keywords : [structuredData.keywords]) : [],
+              nutritionInfo,
               sourceUrl: url
             };
           }

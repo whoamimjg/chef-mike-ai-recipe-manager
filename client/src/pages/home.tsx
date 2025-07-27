@@ -43,7 +43,11 @@ import {
   FileText,
   Import,
   Eye,
-  ImageIcon
+  ImageIcon,
+  Play,
+  ChevronLeft,
+  ChevronRight,
+  CheckCircle
 } from "lucide-react";
 import type { Recipe, MealPlan, ShoppingList, UserPreferences, UserInventory } from "@shared/schema";
 
@@ -73,6 +77,8 @@ export default function Home() {
   const [importProgress, setImportProgress] = useState('');
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [isRecipeModalOpen, setIsRecipeModalOpen] = useState(false);
+  const [isCookingModeOpen, setIsCookingModeOpen] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -441,6 +447,34 @@ export default function Home() {
   const handleViewRecipe = (recipe: Recipe) => {
     setSelectedRecipe(recipe);
     setIsRecipeModalOpen(true);
+  };
+
+  const handleEditRecipe = (recipe: Recipe) => {
+    // Populate form with recipe data for editing
+    setRecipeIngredients(recipe.ingredients || [{ unit: '', amount: '', item: '', notes: '' }]);
+    setRecipeInstructions(recipe.instructions || ['']);
+    setSelectedCuisine(recipe.cuisine || '');
+    setSelectedMealType(recipe.mealType || '');
+    setImageUrl(recipe.imageUrl || '');
+    setIsAddRecipeOpen(true);
+  };
+
+  const handleStartCookingMode = (recipe: Recipe) => {
+    setSelectedRecipe(recipe);
+    setCurrentStep(0);
+    setIsCookingModeOpen(true);
+  };
+
+  const nextStep = () => {
+    if (selectedRecipe && currentStep < selectedRecipe.instructions.length - 1) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const prevStep = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
   };
 
   const handleDeleteRecipe = (recipeId: number) => {
@@ -1184,6 +1218,17 @@ export default function Home() {
                           <Button 
                             onClick={() => {
                               setIsRecipeModalOpen(false);
+                              handleStartCookingMode(selectedRecipe);
+                            }}
+                            className="flex items-center gap-2"
+                          >
+                            <Play className="h-4 w-4" />
+                            Start Cooking
+                          </Button>
+                          <Button 
+                            variant="outline"
+                            onClick={() => {
+                              setIsRecipeModalOpen(false);
                               handleEditRecipe(selectedRecipe);
                             }}
                             className="flex items-center gap-2"
@@ -1196,6 +1241,134 @@ export default function Home() {
                             onClick={() => setIsRecipeModalOpen(false)}
                           >
                             Close
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </DialogContent>
+                </Dialog>
+
+                {/* Cooking Mode Modal */}
+                <Dialog open={isCookingModeOpen} onOpenChange={setIsCookingModeOpen}>
+                  <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+                        <Play className="h-6 w-6" />
+                        Cooking Mode: {selectedRecipe?.title}
+                      </DialogTitle>
+                    </DialogHeader>
+                    
+                    {selectedRecipe && (
+                      <div className="space-y-6">
+                        {/* Progress Bar */}
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${((currentStep + 1) / selectedRecipe.instructions.length) * 100}%` }}
+                          ></div>
+                        </div>
+
+                        {/* Step Counter */}
+                        <div className="text-center">
+                          <span className="text-lg font-medium">
+                            Step {currentStep + 1} of {selectedRecipe.instructions.length}
+                          </span>
+                        </div>
+
+                        {/* Current Step */}
+                        <Card className="p-6 border-2 border-blue-200 bg-blue-50">
+                          <div className="flex items-start gap-4">
+                            <span className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-lg font-bold">
+                              {currentStep + 1}
+                            </span>
+                            <div className="flex-1">
+                              <p className="text-lg text-gray-800 leading-relaxed">
+                                {selectedRecipe.instructions[currentStep]}
+                              </p>
+                            </div>
+                          </div>
+                        </Card>
+
+                        {/* Ingredients Reference */}
+                        <Card className="p-4">
+                          <h4 className="font-semibold mb-3 flex items-center gap-2">
+                            <Package className="h-4 w-4" />
+                            Ingredients Reference
+                          </h4>
+                          <div className="grid md:grid-cols-2 gap-2 text-sm">
+                            {selectedRecipe.ingredients.map((ingredient: any, index: number) => (
+                              <div key={index} className="flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
+                                <span>
+                                  {ingredient.amount} {ingredient.unit} {ingredient.item}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </Card>
+
+                        {/* Recipe Info */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                          {selectedRecipe.prepTime && (
+                            <div className="bg-gray-50 p-3 rounded-lg text-center">
+                              <Clock className="h-4 w-4 mx-auto mb-1 text-gray-600" />
+                              <div className="font-medium">Prep Time</div>
+                              <div className="text-gray-600">{selectedRecipe.prepTime}m</div>
+                            </div>
+                          )}
+                          {selectedRecipe.cookTime && (
+                            <div className="bg-gray-50 p-3 rounded-lg text-center">
+                              <Clock className="h-4 w-4 mx-auto mb-1 text-gray-600" />
+                              <div className="font-medium">Cook Time</div>
+                              <div className="text-gray-600">{selectedRecipe.cookTime}m</div>
+                            </div>
+                          )}
+                          {selectedRecipe.servings && (
+                            <div className="bg-gray-50 p-3 rounded-lg text-center">
+                              <Users className="h-4 w-4 mx-auto mb-1 text-gray-600" />
+                              <div className="font-medium">Servings</div>
+                              <div className="text-gray-600">{selectedRecipe.servings}</div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Navigation Buttons */}
+                        <div className="flex justify-between items-center pt-4 border-t">
+                          <Button 
+                            variant="outline"
+                            onClick={prevStep}
+                            disabled={currentStep === 0}
+                            className="flex items-center gap-2"
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                            Previous Step
+                          </Button>
+
+                          <div className="text-center">
+                            {currentStep === selectedRecipe.instructions.length - 1 ? (
+                              <Button 
+                                onClick={() => setIsCookingModeOpen(false)}
+                                className="bg-green-600 hover:bg-green-700 flex items-center gap-2"
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                                Cooking Complete!
+                              </Button>
+                            ) : (
+                              <Button 
+                                onClick={nextStep}
+                                className="flex items-center gap-2"
+                              >
+                                Next Step
+                                <ChevronRight className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+
+                          <Button 
+                            variant="outline"
+                            onClick={() => setIsCookingModeOpen(false)}
+                          >
+                            Exit Cooking Mode
                           </Button>
                         </div>
                       </div>
