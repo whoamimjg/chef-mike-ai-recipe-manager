@@ -900,9 +900,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const { preferences, inventory } = req.body;
       
+      // Get user's existing recipes to analyze against inventory
+      const existingRecipes = await storage.getRecipes(userId);
+      
       const recommendations = await getAIRecipeRecommendations({
         preferences,
-        inventory
+        inventory,
+        existingRecipes
       });
       
       res.json({ recommendations });

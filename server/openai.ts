@@ -19,6 +19,14 @@ interface RecommendationRequest {
     quantity: string;
     unit: string;
   }>;
+  existingRecipes?: Array<{
+    id: number;
+    title: string;
+    ingredients: string;
+    description?: string;
+    prepTime?: number;
+    cookTime?: number;
+  }>;
   mealType?: string;
 }
 
@@ -43,17 +51,17 @@ export async function getAIRecipeRecommendations(
   request: RecommendationRequest
 ): Promise<RecipeRecommendation[]> {
   try {
-    const { preferences, inventory } = request;
+    const { preferences, inventory, existingRecipes } = request;
 
     // Build a comprehensive prompt for smart recipe recommendations
-    let prompt = `You are an expert chef AI. Generate 5 diverse recipe recommendations based on the user's available ingredients and preferences. 
+    let prompt = `You are an expert chef AI. Analyze the user's inventory against their existing recipes AND suggest new recipes.
 
-PRIORITIZE RECIPES THAT:
-1. Use ingredients the user already has (aim for 70%+ ingredient match when possible)
-2. Suggest recipes where they're only missing 1-3 common ingredients
-3. Cover different meal types (breakfast, lunch, dinner, snacks)
-4. Vary in cooking difficulty and cuisine styles
-5. Consider dietary restrictions and preferences
+IMPORTANT INSTRUCTIONS:
+1. FIRST analyze their existing saved recipes against their current inventory
+2. For existing recipes, calculate ingredient match percentage  
+3. THEN suggest 3-4 NEW recipes that use their available ingredients
+4. Prioritize recipes where they have 60%+ of ingredients already
+5. Include both "recipes you can make now" and "recipes missing just a few items"
 
 USER'S AVAILABLE INGREDIENTS:`;
 
@@ -64,6 +72,29 @@ USER'S AVAILABLE INGREDIENTS:`;
       });
     } else {
       prompt += `\nNo specific inventory provided - suggest versatile recipes with common ingredients.\n`;
+    }
+
+    if (existingRecipes?.length) {
+      prompt += `\nUSER'S EXISTING SAVED RECIPES (analyze these against inventory first):\n`;
+      existingRecipes.forEach((recipe, index) => {
+        let ingredients = [];
+        try {
+          ingredients = JSON.parse(recipe.ingredients);
+        } catch {
+          ingredients = [];
+        }
+        prompt += `\n${index + 1}. "${recipe.title}"`;
+        if (recipe.description) prompt += ` - ${recipe.description}`;
+        if (ingredients.length) {
+          prompt += `\n   Ingredients needed: ${ingredients.map((ing: any) => 
+            typeof ing === 'string' ? ing : `${ing.amount || ''} ${ing.unit || ''} ${ing.item || ing}`.trim()
+          ).join(', ')}`;
+        }
+        if (recipe.prepTime || recipe.cookTime) {
+          prompt += `\n   Time: ${recipe.prepTime || 0}min prep + ${recipe.cookTime || 0}min cook`;
+        }
+      });
+      prompt += `\n\nFor each existing recipe, determine if they can make it with current inventory and calculate match percentage.`;
     }
 
     if (preferences?.dietaryRestrictions?.length) {
@@ -90,12 +121,14 @@ USER'S AVAILABLE INGREDIENTS:`;
 
     prompt += `
 
-FOR EACH RECIPE, ANALYZE INGREDIENT MATCHING:
-- Calculate what percentage of ingredients the user already has
-- List any missing ingredients clearly
-- Prioritize recipes with higher ingredient matches
+RESPONSE FORMAT: Return both existing recipe matches AND new suggestions
 
-Please respond with a JSON object with a "recommendations" array containing exactly 5 recipe recommendations. Each recipe should have:
+Please respond with a JSON object with a "recommendations" array containing 5-7 total recommendations:
+- Include existing recipes that match their inventory (if any have 50%+ match)
+- Fill remaining slots with NEW recipe suggestions
+- Sort by inventory match percentage (highest first)
+
+Each recipe should have:
 - title: string
 - description: string (2-3 sentences describing the dish)
 - prepTime: number (minutes)
