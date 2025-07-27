@@ -207,28 +207,80 @@ function getFallbackRecommendations(request: RecommendationRequest): RecipeRecom
     
     existingRecipes.forEach((recipe, index) => {
       console.log(`Analyzing recipe ${index + 1}: "${recipe.title}"`);
+      console.log("Raw ingredients data:", recipe.ingredients);
       let ingredients = [];
       try {
-        ingredients = JSON.parse(recipe.ingredients);
-        console.log("Recipe ingredients:", ingredients);
+        if (typeof recipe.ingredients === 'string') {
+          ingredients = JSON.parse(recipe.ingredients);
+        } else if (Array.isArray(recipe.ingredients)) {
+          ingredients = recipe.ingredients;
+        } else {
+          ingredients = [];
+        }
+        console.log("Parsed recipe ingredients:", ingredients);
       } catch (e) {
-        console.log("Failed to parse ingredients for recipe:", recipe.title);
-        ingredients = [];
+        console.log("Failed to parse ingredients JSON, trying fallback methods");
+        // Try to extract ingredient names from string format
+        if (typeof recipe.ingredients === 'string') {
+          // Split by common delimiters and clean up
+          const ingredientLines = recipe.ingredients
+            .split(/[,\n\r;]/)
+            .map(line => line.trim())
+            .filter(line => line.length > 0);
+          
+          ingredients = ingredientLines.map(line => ({
+            item: line.replace(/^\d+\s*\w*\s*/, ''), // Remove quantities at start
+            amount: '1',
+            unit: ''
+          }));
+        }
+        console.log("Fallback ingredients:", ingredients);
       }
 
       if (ingredients.length > 0) {
         const requiredIngredients = ingredients.map((ing: any) => {
-          const ingredient = (typeof ing === 'string' ? ing : ing.item || ing).toLowerCase();
+          let ingredient = '';
+          if (typeof ing === 'string') {
+            ingredient = ing.toLowerCase();
+          } else if (ing.item) {
+            ingredient = ing.item.toLowerCase();
+          } else if (ing.name) {
+            ingredient = ing.name.toLowerCase();
+          } else {
+            ingredient = String(ing).toLowerCase();
+          }
+          // Clean up ingredient name (remove quantities, units)
+          ingredient = ingredient
+            .replace(/^\d+\s*\w*\s*/, '') // Remove leading numbers and units
+            .replace(/\s*\([^)]*\)/g, '') // Remove parenthetical notes
+            .trim();
           console.log("Required ingredient:", ingredient);
           return ingredient;
         });
         
         const matchedIngredients = requiredIngredients.filter((reqIng: string) => {
-          const isMatch = inventoryItems.some(invIng => 
-            invIng.includes(reqIng) || reqIng.includes(invIng) || 
-            reqIng.includes(invIng.split(' ')[0]) || invIng.includes(reqIng.split(' ')[0])
-          );
-          if (isMatch) console.log(`Matched: ${reqIng} with inventory`);
+          const isMatch = inventoryItems.some(invIng => {
+            // More flexible matching for ingredient names
+            const reqWords = reqIng.split(' ').filter(w => w.length > 2);
+            const invWords = invIng.split(' ').filter(w => w.length > 2);
+            
+            // Direct substring matches
+            if (invIng.includes(reqIng) || reqIng.includes(invIng)) return true;
+            
+            // Word-based matching (any word matches)
+            if (reqWords.some(rw => invWords.some(iw => iw.includes(rw) || rw.includes(iw)))) return true;
+            
+            // Special case matches
+            if ((reqIng.includes('onion') && invIng.includes('onion')) ||
+                (reqIng.includes('tomato') && invIng.includes('tomato')) ||
+                (reqIng.includes('salmon') && invIng.includes('salmon')) ||
+                (reqIng.includes('salt') && invIng.includes('salt')) ||
+                (reqIng.includes('pepper') && invIng.includes('pepper'))) return true;
+            
+            return false;
+          });
+          if (isMatch) console.log(`✓ Matched: "${reqIng}" with inventory`);
+          else console.log(`✗ No match: "${reqIng}"`);
           return isMatch;
         });
         
