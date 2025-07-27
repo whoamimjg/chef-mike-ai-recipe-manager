@@ -10,8 +10,16 @@ import {
   insertUserInventorySchema,
 } from "@shared/schema";
 import { getAIRecipeRecommendations } from "./openai";
+import { processReceiptImage, deleteReceiptImage } from "./receiptOCR";
 import multer from 'multer';
 import path from 'path';
+import fs from 'fs';
+
+// Ensure uploads directory exists
+const uploadsDir = path.join(process.cwd(), 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
 // Configure multer for file uploads
 const upload = multer({
@@ -847,7 +855,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Receipt scanning routes
+  // Receipt OCR processing route
+  app.post('/api/receipts/process-image', isAuthenticated, upload.single('receipt'), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No receipt image uploaded" });
+      }
+
+      const userId = req.user.claims.sub;
+      const imagePath = req.file.path;
+
+      // Process the receipt image with OCR
+      const receiptData = await processReceiptImage(imagePath);
+      
+      // Clean up the uploaded file
+      await deleteReceiptImage(imagePath);
+
+      res.json(receiptData);
+    } catch (error) {
+      console.error("Error processing receipt image:", error);
+      
+      // Clean up file if it exists
+      if (req.file?.path) {
+        await deleteReceiptImage(req.file.path);
+      }
+      
+      res.status(500).json({ message: error instanceof Error ? error.message : "Failed to process receipt image" });
+    }
+  });
+
+  // Receipt saving routes
   app.post('/api/receipts', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

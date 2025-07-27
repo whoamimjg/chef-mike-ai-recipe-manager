@@ -548,15 +548,60 @@ export default function Home() {
     }
   };
 
-  const handleReceiptFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleReceiptFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       setReceiptFile(file);
-      // For now, we'll use manual entry. In a real app, you'd process the image with OCR
-      toast({
-        title: "File Uploaded",
-        description: "Please add items manually below. OCR processing coming soon!",
-      });
+      
+      // Process the image with OCR
+      try {
+        toast({
+          title: "Processing Receipt",
+          description: "Analyzing receipt image with AI...",
+        });
+
+        const formData = new FormData();
+        formData.append('receipt', file);
+
+        const response = await fetch('/api/receipts/process-image', {
+          method: 'POST',
+          body: formData,
+          credentials: 'include'
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to process receipt');
+        }
+
+        const receiptData = await response.json();
+        
+        // Update form data with OCR results
+        setReceiptData({
+          storeName: receiptData.storeName,
+          purchaseDate: receiptData.purchaseDate
+        });
+        
+        // Set the extracted items
+        setReceiptItems(receiptData.items || []);
+        
+        toast({
+          title: "Receipt Processed!",
+          description: `Found ${receiptData.items?.length || 0} items. Review and edit as needed.`,
+        });
+
+      } catch (error) {
+        console.error('OCR processing failed:', error);
+        toast({
+          title: "OCR Failed",
+          description: "Could not process receipt automatically. Please add items manually.",
+          variant: "destructive",
+        });
+        
+        // Start with one empty item for manual entry
+        if (receiptItems.length === 0) {
+          setReceiptItems([{ name: '', quantity: '', unit: '', price: '', category: 'uncategorized' }]);
+        }
+      }
     }
   };
 
