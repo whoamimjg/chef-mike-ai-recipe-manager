@@ -23,6 +23,7 @@ import {
   User, 
   Plus, 
   Edit, 
+  Edit2,
   Trash2, 
   Search,
   Grid,
@@ -40,7 +41,9 @@ import {
   X,
   Link,
   FileText,
-  Import
+  Import,
+  Eye,
+  ImageIcon
 } from "lucide-react";
 import type { Recipe, MealPlan, ShoppingList, UserPreferences, UserInventory } from "@shared/schema";
 
@@ -68,6 +71,8 @@ export default function Home() {
   const [isImportCsvOpen, setIsImportCsvOpen] = useState(false);
   const [importUrl, setImportUrl] = useState('');
   const [importProgress, setImportProgress] = useState('');
+  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
+  const [isRecipeModalOpen, setIsRecipeModalOpen] = useState(false);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -431,6 +436,11 @@ export default function Home() {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     importFromCsvMutation.mutate(formData);
+  };
+
+  const handleViewRecipe = (recipe: Recipe) => {
+    setSelectedRecipe(recipe);
+    setIsRecipeModalOpen(true);
   };
 
   const handleDeleteRecipe = (recipeId: number) => {
@@ -995,6 +1005,204 @@ export default function Home() {
                   </div>
                 </div>
 
+                {/* Recipe Detail Modal */}
+                <Dialog open={isRecipeModalOpen} onOpenChange={setIsRecipeModalOpen}>
+                  <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+                        <ChefHat className="h-6 w-6" />
+                        {selectedRecipe?.title}
+                      </DialogTitle>
+                    </DialogHeader>
+                    
+                    {selectedRecipe && (
+                      <div className="space-y-6">
+                        {/* Recipe Image */}
+                        {selectedRecipe.imageUrl && (
+                          <div className="w-full h-64 bg-gray-100 rounded-lg overflow-hidden">
+                            <img 
+                              src={selectedRecipe.imageUrl} 
+                              alt={selectedRecipe.title}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        )}
+
+                        {/* Recipe Info */}
+                        <div className="grid md:grid-cols-2 gap-6">
+                          <div>
+                            <h3 className="text-lg font-semibold mb-2">Recipe Details</h3>
+                            {selectedRecipe.description && (
+                              <p className="text-gray-600 mb-4">{selectedRecipe.description}</p>
+                            )}
+                            
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-4 text-sm">
+                                {selectedRecipe.servings && (
+                                  <span className="flex items-center gap-1">
+                                    <Users className="h-4 w-4" />
+                                    {selectedRecipe.servings} servings
+                                  </span>
+                                )}
+                                {selectedRecipe.prepTime && (
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="h-4 w-4" />
+                                    {selectedRecipe.prepTime}m prep
+                                  </span>
+                                )}
+                                {selectedRecipe.cookTime && (
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="h-4 w-4" />
+                                    {selectedRecipe.cookTime}m cook
+                                  </span>
+                                )}
+                              </div>
+                              
+                              <div className="flex flex-wrap gap-2">
+                                {selectedRecipe.cuisine && (
+                                  <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
+                                    {selectedRecipe.cuisine}
+                                  </span>
+                                )}
+                                {selectedRecipe.mealType && (
+                                  <span className="px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full">
+                                    {selectedRecipe.mealType}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Ingredients */}
+                          <div>
+                            <h3 className="text-lg font-semibold mb-3">Ingredients</h3>
+                            <div className="space-y-2">
+                              {selectedRecipe.ingredients && selectedRecipe.ingredients.length > 0 ? (
+                                selectedRecipe.ingredients.map((ingredient: any, index: number) => (
+                                  <div key={index} className="flex items-center gap-2 text-sm">
+                                    <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
+                                    <span>
+                                      {ingredient.amount} {ingredient.unit} {ingredient.item}
+                                      {ingredient.notes && (
+                                        <span className="text-gray-500 ml-1">({ingredient.notes})</span>
+                                      )}
+                                    </span>
+                                  </div>
+                                ))
+                              ) : (
+                                <p className="text-gray-500 text-sm">No ingredients listed</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Instructions */}
+                        <div>
+                          <h3 className="text-lg font-semibold mb-3">Instructions</h3>
+                          <div className="space-y-3">
+                            {selectedRecipe.instructions && selectedRecipe.instructions.length > 0 ? (
+                              selectedRecipe.instructions.map((instruction: string, index: number) => (
+                                <div key={index} className="flex gap-3">
+                                  <span className="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-800 rounded-full flex items-center justify-center text-sm font-medium">
+                                    {index + 1}
+                                  </span>
+                                  <p className="text-gray-700">{instruction}</p>
+                                </div>
+                              ))
+                            ) : (
+                              <p className="text-gray-500">No instructions available</p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Nutrition Info */}
+                        {selectedRecipe.nutritionInfo && (
+                          <div>
+                            <h3 className="text-lg font-semibold mb-3">Nutrition Information</h3>
+                            <div className="bg-gray-50 p-4 rounded-lg">
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                {selectedRecipe.nutritionInfo.calories && (
+                                  <div>
+                                    <span className="font-medium">Calories:</span>
+                                    <span className="ml-1">{selectedRecipe.nutritionInfo.calories}</span>
+                                  </div>
+                                )}
+                                {selectedRecipe.nutritionInfo.protein && (
+                                  <div>
+                                    <span className="font-medium">Protein:</span>
+                                    <span className="ml-1">{selectedRecipe.nutritionInfo.protein}g</span>
+                                  </div>
+                                )}
+                                {selectedRecipe.nutritionInfo.carbs && (
+                                  <div>
+                                    <span className="font-medium">Carbs:</span>
+                                    <span className="ml-1">{selectedRecipe.nutritionInfo.carbs}g</span>
+                                  </div>
+                                )}
+                                {selectedRecipe.nutritionInfo.fat && (
+                                  <div>
+                                    <span className="font-medium">Fat:</span>
+                                    <span className="ml-1">{selectedRecipe.nutritionInfo.fat}g</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Tags */}
+                        {selectedRecipe.tags && selectedRecipe.tags.length > 0 && (
+                          <div>
+                            <h3 className="text-lg font-semibold mb-3">Tags</h3>
+                            <div className="flex flex-wrap gap-2">
+                              {selectedRecipe.tags.map((tag: string, index: number) => (
+                                <span key={index} className="px-2 py-1 bg-gray-100 text-gray-700 text-sm rounded">
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Source URL */}
+                        {selectedRecipe.sourceUrl && (
+                          <div>
+                            <h3 className="text-lg font-semibold mb-2">Source</h3>
+                            <a 
+                              href={selectedRecipe.sourceUrl} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-800 underline text-sm"
+                            >
+                              View Original Recipe
+                            </a>
+                          </div>
+                        )}
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-2 pt-4 border-t">
+                          <Button 
+                            onClick={() => {
+                              setIsRecipeModalOpen(false);
+                              handleEditRecipe(selectedRecipe);
+                            }}
+                            className="flex items-center gap-2"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                            Edit Recipe
+                          </Button>
+                          <Button 
+                            variant="outline"
+                            onClick={() => setIsRecipeModalOpen(false)}
+                          >
+                            Close
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </DialogContent>
+                </Dialog>
+
                 <div className="mt-4">
                   <p className="text-primary-600 font-medium">
                     {filteredRecipes.length} recipe{filteredRecipes.length !== 1 ? 's' : ''} found
@@ -1108,57 +1316,112 @@ export default function Home() {
                 ) : (
               <div className={viewMode === "grid" ? "grid md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"}>
                 {filteredRecipes.map((recipe: Recipe) => (
-                  <Card key={recipe.id} className="hover:shadow-lg transition-shadow duration-300">
-                    {recipe.imageUrl && (
-                      <img 
-                        src={recipe.imageUrl} 
-                        alt={recipe.title}
-                        className="w-full h-48 object-cover rounded-t-lg"
-                      />
-                    )}
-                    <CardContent className="p-6">
-                      <h3 className="text-xl font-bold text-gray-900 mb-2">{recipe.title}</h3>
-                      <p className="text-gray-600 mb-4 line-clamp-2">{recipe.description}</p>
+                  <div key={recipe.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group">
+                    {/* Recipe Image Thumbnail */}
+                    <div className="h-48 bg-gray-100 relative overflow-hidden">
+                      {recipe.imageUrl ? (
+                        <img 
+                          src={recipe.imageUrl} 
+                          alt={recipe.title}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                            if (fallback) fallback.classList.remove('hidden');
+                          }}
+                        />
+                      ) : null}
+                      <div className={`${recipe.imageUrl ? 'hidden' : ''} absolute inset-0 flex items-center justify-center bg-gray-100`}>
+                        <ImageIcon className="h-12 w-12 text-gray-400" />
+                      </div>
                       
-                      <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
+                      {/* Action buttons overlay */}
+                      <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleViewRecipe(recipe);
+                          }}
+                          className="h-8 w-8 p-0 bg-white/90 hover:bg-white"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditRecipe(recipe);
+                          }}
+                          className="h-8 w-8 p-0 bg-white/90 hover:bg-white"
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteRecipe(recipe.id);
+                          }}
+                          className="h-8 w-8 p-0 bg-white/90 hover:bg-white text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div 
+                      className="p-4"
+                      onClick={() => handleViewRecipe(recipe)}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className="text-lg font-semibold text-gray-900 flex-1 group-hover:text-blue-600 transition-colors">{recipe.title}</h3>
+                      </div>
+                      
+                      {recipe.description && (
+                        <p className="text-gray-600 text-sm mb-3 line-clamp-2">{recipe.description}</p>
+                      )}
+                      
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {recipe.cuisine && (
+                          <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                            {recipe.cuisine}
+                          </span>
+                        )}
+                        {recipe.mealType && (
+                          <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                            {recipe.mealType}
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center justify-between text-sm text-gray-500">
+                        <div className="flex items-center gap-4">
+                          {recipe.prepTime && (
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-4 w-4" />
+                              {recipe.prepTime}m prep
+                            </span>
+                          )}
+                          {recipe.cookTime && (
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-4 w-4" />
+                              {recipe.cookTime}m cook
+                            </span>
+                          )}
+                        </div>
                         {recipe.servings && (
                           <span className="flex items-center gap-1">
                             <Users className="h-4 w-4" />
-                            {recipe.servings} servings
-                          </span>
-                        )}
-                        {recipe.prepTime && (
-                          <span className="flex items-center gap-1">
-                            <Clock className="h-4 w-4" />
-                            {recipe.prepTime} min prep
-                          </span>
-                        )}
-                        {recipe.cookTime && (
-                          <span className="flex items-center gap-1">
-                            <Clock className="h-4 w-4" />
-                            {recipe.cookTime} min cook
+                            {recipe.servings}
                           </span>
                         )}
                       </div>
-
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" className="flex-1">
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="flex-1 text-red-600 hover:text-red-700"
-                          onClick={() => handleDeleteRecipe(recipe.id)}
-                          disabled={deleteRecipeMutation.isPending}
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 ))}
                 </div>
                 )}
