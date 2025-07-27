@@ -196,48 +196,68 @@ function getFallbackRecommendations(request: RecommendationRequest): RecipeRecom
   const { inventory, existingRecipes } = request;
   const recommendations: RecipeRecommendation[] = [];
 
+  console.log("Fallback: Analyzing existing recipes against inventory");
+  console.log("Existing recipes count:", existingRecipes?.length || 0);
+  console.log("Inventory items:", inventory?.map(i => i.ingredientName) || []);
+
   // Analyze existing recipes against inventory
   if (existingRecipes?.length && inventory?.length) {
     const inventoryItems = inventory.map(item => item.ingredientName.toLowerCase());
+    console.log("Inventory items for matching:", inventoryItems);
     
-    existingRecipes.forEach(recipe => {
+    existingRecipes.forEach((recipe, index) => {
+      console.log(`Analyzing recipe ${index + 1}: "${recipe.title}"`);
       let ingredients = [];
       try {
         ingredients = JSON.parse(recipe.ingredients);
-      } catch {
+        console.log("Recipe ingredients:", ingredients);
+      } catch (e) {
+        console.log("Failed to parse ingredients for recipe:", recipe.title);
         ingredients = [];
       }
 
       if (ingredients.length > 0) {
-        const requiredIngredients = ingredients.map((ing: any) => 
-          (typeof ing === 'string' ? ing : ing.item || ing).toLowerCase()
-        );
+        const requiredIngredients = ingredients.map((ing: any) => {
+          const ingredient = (typeof ing === 'string' ? ing : ing.item || ing).toLowerCase();
+          console.log("Required ingredient:", ingredient);
+          return ingredient;
+        });
         
-        const matchedIngredients = requiredIngredients.filter((reqIng: string) =>
-          inventoryItems.some(invIng => invIng.includes(reqIng) || reqIng.includes(invIng))
-        );
+        const matchedIngredients = requiredIngredients.filter((reqIng: string) => {
+          const isMatch = inventoryItems.some(invIng => 
+            invIng.includes(reqIng) || reqIng.includes(invIng) || 
+            reqIng.includes(invIng.split(' ')[0]) || invIng.includes(reqIng.split(' ')[0])
+          );
+          if (isMatch) console.log(`Matched: ${reqIng} with inventory`);
+          return isMatch;
+        });
         
         const matchPercentage = Math.round((matchedIngredients.length / requiredIngredients.length) * 100);
+        console.log(`Recipe "${recipe.title}" match: ${matchPercentage}% (${matchedIngredients.length}/${requiredIngredients.length})`);
         
-        if (matchPercentage >= 40) { // Include recipes with 40%+ match
+        if (matchPercentage >= 20) { // Lowered threshold to include more recipes
           const missingIngredients = requiredIngredients.filter((reqIng: string) =>
-            !inventoryItems.some(invIng => invIng.includes(reqIng) || reqIng.includes(invIng))
+            !inventoryItems.some(invIng => 
+              invIng.includes(reqIng) || reqIng.includes(invIng) ||
+              reqIng.includes(invIng.split(' ')[0]) || invIng.includes(reqIng.split(' ')[0])
+            )
           );
 
+          console.log(`Adding recipe "${recipe.title}" with ${matchPercentage}% match`);
           recommendations.push({
-            title: recipe.title,
+            title: `${recipe.title} (Your Recipe)`,
             description: recipe.description || "One of your saved recipes that matches your current inventory",
             prepTime: recipe.prepTime || 15,
             cookTime: recipe.cookTime || 30,
             servings: 4,
             difficulty: matchPercentage >= 80 ? "easy" : "medium",
-            cuisine: "Your Recipe",
+            cuisine: "Your Recipe Collection",
             ingredients: ingredients.map((ing: any) => 
               typeof ing === 'string' ? ing : `${ing.amount || '1'} ${ing.unit || ''} ${ing.item || ing}`.trim()
             ),
             instructions: ["Follow your saved recipe instructions"],
             tags: ["saved recipe", "personal collection"],
-            matchReason: `This is one of your saved recipes. You have ${matchPercentage}% of the ingredients needed.`,
+            matchReason: `This is one of your saved recipes. You have ${matchPercentage}% of the ingredients needed. Perfect match for using your ${inventory.map(i => i.ingredientName).join(', ')}.`,
             matchType: matchPercentage >= 80 ? 'full' : 'partial',
             missingIngredients,
             inventoryMatch: matchPercentage
