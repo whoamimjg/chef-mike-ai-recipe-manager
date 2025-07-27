@@ -458,7 +458,11 @@ export default function Home() {
     },
     onSuccess: (response: any) => {
       // Display smart recommendations with ingredient matching info
+      console.log("AI Response received:", response);
       const recommendations = response.recommendations || response || [];
+      console.log("Processed recommendations:", recommendations);
+      console.log("Recommendations length:", recommendations.length);
+      console.log("Type of recommendations:", typeof recommendations);
       setAiRecommendations(recommendations);
       toast({
         title: "Smart Recommendations Generated!",
@@ -2171,6 +2175,7 @@ export default function Home() {
             </Card>
 
             {/* AI Recommendations Results */}
+            {console.log("Current aiRecommendations state:", aiRecommendations)}
             {aiRecommendations.length > 0 && (
               <Card>
                 <CardHeader>
