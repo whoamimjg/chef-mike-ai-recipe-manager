@@ -339,6 +339,7 @@ export default function Home() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/reports/spending"] });
       toast({
         title: "Item Marked as Wasted",
         description: "Item has been marked as wasted for cost tracking",
@@ -395,6 +396,7 @@ export default function Home() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/reports/spending"] });
       toast({
         title: "Item Marked as Used",
         description: "Item has been removed from inventory",

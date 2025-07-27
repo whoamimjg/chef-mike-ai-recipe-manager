@@ -474,6 +474,7 @@ export class DatabaseStorage implements IStorage {
     totalSpent: number;
     mostFrequentItems: Array<{ name: string; count: number; totalSpent: number }>;
     mostWastedItems: Array<{ name: string; count: number; totalWasted: number }>;
+    mostUsedItems: Array<{ name: string; count: number; totalUsed: number }>;
     categoryBreakdown: Array<{ category: string; totalSpent: number }>;
   }> {
     // Build date filter conditions
