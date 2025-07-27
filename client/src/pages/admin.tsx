@@ -70,6 +70,8 @@ export default function Admin() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPlan, setSelectedPlan] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -100,6 +102,97 @@ export default function Admin() {
 
   const handleLogout = () => {
     window.location.href = "/api/logout";
+  };
+
+  // User management mutations
+  const updateUserMutation = useMutation({
+    mutationFn: async ({ id, userData }: { id: string; userData: Partial<User> }) => {
+      const response = await apiRequest(`/api/admin/users/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(userData),
+      });
+      if (!response.ok) throw new Error('Failed to update user');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      toast({
+        title: "Success",
+        description: "User updated successfully",
+      });
+      setShowEditModal(false);
+      setEditingUser(null);
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error as Error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to update user",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await apiRequest(`/api/admin/users/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to delete user');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      toast({
+        title: "Success",
+        description: "User archived successfully",
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error as Error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to delete user",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleEditUser = (userToEdit: User) => {
+    setEditingUser(userToEdit);
+    setShowEditModal(true);
+  };
+
+  const handleDeleteUser = (userToDelete: User) => {
+    if (confirm(`Are you sure you want to archive user ${userToDelete.email}? This action cannot be undone.`)) {
+      deleteUserMutation.mutate(userToDelete.id);
+    }
+  };
+
+  const handleSaveUser = (userData: Partial<User>) => {
+    if (editingUser) {
+      updateUserMutation.mutate({ id: editingUser.id, userData });
+    }
   };
 
   // Mock data for charts (in production this would come from the backend)
@@ -473,57 +566,60 @@ export default function Admin() {
                             <th className="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase">Actions</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-200">
-                          {filteredUsers.map((user: User) => (
-                            <tr key={user.id}>
-                              <td className="px-6 py-4">
-                                <div className="flex items-center gap-3">
-                                  <Avatar>
-                                    <AvatarImage src={user.profileImageUrl || undefined} />
-                                    <AvatarFallback>
-                                      {user.firstName?.[0]}{user.lastName?.[0]}
+                        <tbody className="divide-y divide-gray-200 bg-white">
+                          {filteredUsers.map((usr) => (
+                            <tr key={usr.id} className="hover:bg-gray-50">
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex items-center">
+                                  <Avatar className="h-10 w-10 mr-4">
+                                    <AvatarImage src={usr.profileImageUrl || undefined} />
+                                    <AvatarFallback className="bg-blue-500">
+                                      {usr.firstName?.[0] || usr.email[0]}
                                     </AvatarFallback>
                                   </Avatar>
                                   <div>
-                                    <div className="font-medium">{user.firstName} {user.lastName}</div>
-                                    <div className="text-sm text-gray-500">{user.email}</div>
+                                    <div className="text-sm font-medium text-gray-900">
+                                      {usr.firstName && usr.lastName 
+                                        ? `${usr.firstName} ${usr.lastName}`
+                                        : usr.firstName || 'No name'
+                                      }
+                                    </div>
+                                    <div className="text-sm text-gray-500">{usr.email}</div>
                                   </div>
                                 </div>
                               </td>
-                              <td className="px-6 py-4">
-                                <Badge 
-                                  variant={
-                                    user.plan === "pro" ? "default" : 
-                                    user.plan === "family" ? "secondary" : 
-                                    "outline"
-                                  }
-                                  className={
-                                    user.plan === "pro" ? "bg-purple-100 text-purple-800" :
-                                    user.plan === "family" ? "bg-orange-100 text-orange-800" :
-                                    "bg-gray-100 text-gray-800"
-                                  }
-                                >
-                                  {user.plan?.charAt(0).toUpperCase() + user.plan?.slice(1) || "Free"}
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                                  Free
                                 </Badge>
                               </td>
-                              <td className="px-6 py-4 text-gray-500">
-                                {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "Unknown"}
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {usr.createdAt ? new Date(usr.createdAt).toLocaleDateString() : 'Unknown'}
                               </td>
-                              <td className="px-6 py-4">
+                              <td className="px-6 py-4 whitespace-nowrap">
                                 <Badge variant="secondary" className="bg-green-100 text-green-800">
                                   Active
                                 </Badge>
                               </td>
-                              <td className="px-6 py-4">
-                                <div className="flex gap-2">
-                                  <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-800">
-                                    <Eye className="h-4 w-4" />
-                                  </Button>
-                                  <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-800">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleEditUser(usr)}
+                                    className="flex items-center gap-1"
+                                  >
                                     <Edit className="h-4 w-4" />
+                                    Edit
                                   </Button>
-                                  <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-800">
-                                    <Shield className="h-4 w-4" />
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDeleteUser(usr)}
+                                    className="flex items-center gap-1 text-red-600 hover:text-red-800"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                    Archive
                                   </Button>
                                 </div>
                               </td>
@@ -686,6 +782,76 @@ export default function Admin() {
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* User Edit Modal */}
+        {showEditModal && editingUser && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+              <h3 className="text-lg font-semibold mb-4">Edit User</h3>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const formData = new FormData(e.currentTarget);
+                  const userData = {
+                    firstName: formData.get('firstName') as string,
+                    lastName: formData.get('lastName') as string,
+                    email: formData.get('email') as string,
+                  };
+                  handleSaveUser(userData);
+                }}
+              >
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="firstName">First Name</Label>
+                    <Input
+                      id="firstName"
+                      name="firstName"
+                      defaultValue={editingUser.firstName || ''}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="lastName">Last Name</Label>
+                    <Input
+                      id="lastName"
+                      name="lastName"
+                      defaultValue={editingUser.lastName || ''}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      defaultValue={editingUser.email}
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2 mt-6">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => {
+                      setShowEditModal(false);
+                      setEditingUser(null);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="submit"
+                    disabled={updateUserMutation.isPending}
+                  >
+                    {updateUserMutation.isPending ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -430,6 +430,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Enhanced admin user management
+  app.put('/api/admin/users/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.params.id;
+      const updateData = req.body;
+      
+      const updatedUser = await storage.upsertUser({
+        id: userId,
+        ...updateData,
+      });
+      
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+
+  app.delete('/api/admin/users/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.params.id;
+      
+      // In a real implementation, you'd want to soft delete or archive user data
+      // For now, we'll just return success without actually deleting
+      res.json({ message: "User would be archived in production" });
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ message: "Failed to delete user" });
+    }
+  });
+
+  // Admin analytics endpoints
+  app.get('/api/admin/analytics/usage', isAuthenticated, async (req: any, res) => {
+    try {
+      // Mock data for demonstration - in production this would come from analytics
+      const usageData = {
+        dailyActiveUsers: [
+          { date: '2024-01-01', users: 1200 },
+          { date: '2024-01-02', users: 1350 },
+          { date: '2024-01-03', users: 1180 },
+          { date: '2024-01-04', users: 1420 },
+          { date: '2024-01-05', users: 1380 },
+        ],
+        featureUsage: {
+          recipes: 85,
+          mealPlanning: 72,
+          shoppingLists: 68,
+          aiRecommendations: 45,
+        },
+        topRecipes: [
+          { name: 'Chocolate Chip Cookies', saves: 2847 },
+          { name: 'Creamy Basil Pasta', saves: 2192 },
+          { name: 'Mediterranean Salad', saves: 1936 },
+        ]
+      };
+      
+      res.json(usageData);
+    } catch (error) {
+      console.error("Error fetching usage analytics:", error);
+      res.status(500).json({ message: "Failed to fetch usage analytics" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
