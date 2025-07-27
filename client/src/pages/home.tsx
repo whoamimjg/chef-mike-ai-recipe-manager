@@ -1914,13 +1914,13 @@ export default function Home() {
                               <Star
                                 key={i}
                                 className={`h-3 w-3 ${
-                                  i < recipe.averageRating ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                                  i < Number(recipe.averageRating) ? 'text-yellow-400 fill-current' : 'text-gray-300'
                                 }`}
                               />
                             ))}
                           </div>
                           <span className="text-sm text-gray-600">
-                            {recipe.averageRating.toFixed(1)} ({recipe.ratingCount} rating{recipe.ratingCount !== 1 ? 's' : ''})
+                            {Number(recipe.averageRating).toFixed(1)} ({recipe.ratingCount || 0} rating{(recipe.ratingCount || 0) !== 1 ? 's' : ''})
                           </span>
                         </div>
                       )}
@@ -2018,7 +2018,7 @@ export default function Home() {
                       <div className="flex flex-wrap gap-2">
                         {inventory.map((item) => (
                           <Badge key={item.id} variant="secondary" className="bg-green-100 text-green-800">
-                            {item.name} ({item.quantity} {item.unit})
+                            {item.ingredientName} ({item.quantity} {item.unit})
                           </Badge>
                         ))}
                       </div>
@@ -2207,7 +2207,7 @@ export default function Home() {
                             {categoryItems.map((item) => (
                               <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                                 <div>
-                                  <div className="font-medium text-gray-900">{item.name}</div>
+                                  <div className="font-medium text-gray-900">{item.ingredientName}</div>
                                   <div className="text-sm text-gray-500">{item.quantity} {item.unit}</div>
                                 </div>
                                 <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-800">
