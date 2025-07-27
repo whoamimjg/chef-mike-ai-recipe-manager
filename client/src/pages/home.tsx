@@ -299,14 +299,17 @@ export default function Home() {
       return await apiRequest("POST", `/api/recipes/${recipeId}/rating`, { rating });
     },
     onSuccess: () => {
+      // Close dialog and reset state first
+      setIsRatingDialogOpen(false);
+      setRecipeToRate(null);
+      setSelectedRecipeRating(0);
+      
+      // Then invalidate queries and show success message
       queryClient.invalidateQueries({ queryKey: ["/api/recipes"] });
       toast({
         title: "Success",
         description: "Recipe rated successfully!",
       });
-      setIsRatingDialogOpen(false);
-      setRecipeToRate(null);
-      setSelectedRecipeRating(0);
     },
     onError: (error) => {
       if (isUnauthorizedError(error)) {
@@ -2615,7 +2618,7 @@ export default function Home() {
 
       {/* Rating Dialog */}
       <Dialog open={isRatingDialogOpen} onOpenChange={setIsRatingDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" aria-describedby="rating-dialog-description">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Star className="h-5 w-5 text-yellow-500" />
@@ -2626,7 +2629,7 @@ export default function Home() {
             <div className="space-y-4">
               <div>
                 <h3 className="font-semibold text-lg">{recipeToRate.title}</h3>
-                <p className="text-sm text-gray-600">How would you rate this recipe?</p>
+                <p id="rating-dialog-description" className="text-sm text-gray-600">How would you rate this recipe? Click the stars to select your rating from 1 to 10.</p>
               </div>
               
               <div className="flex items-center gap-2">
