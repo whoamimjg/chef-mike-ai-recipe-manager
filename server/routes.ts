@@ -148,6 +148,204 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Recipe import routes
+  app.post('/api/recipes/import-url', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { url } = req.body;
+      
+      if (!url) {
+        return res.status(400).json({ message: "URL is required" });
+      }
+
+      // Use web scraping to extract recipe data
+      const response = await fetch(url);
+      const html = await response.text();
+      
+      // Basic HTML parsing to extract recipe information
+      const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+      const title = titleMatch ? titleMatch[1].replace(/\s*-[^-]*$/, '').trim() : 'Imported Recipe';
+      
+      // Try to extract structured data (JSON-LD)
+      const jsonLdMatch = html.match(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([^<]+)<\/script>/i);
+      let recipeData: any = {};
+      
+      if (jsonLdMatch) {
+        try {
+          const structuredData = JSON.parse(jsonLdMatch[1]);
+          if (structuredData['@type'] === 'Recipe' || structuredData.name) {
+            recipeData = {
+              title: structuredData.name || title,
+              description: structuredData.description || '',
+              ingredients: Array.isArray(structuredData.recipeIngredient) 
+                ? structuredData.recipeIngredient.map((ing: string) => ({
+                    unit: '',
+                    amount: '',
+                    item: ing,
+                    notes: ''
+                  }))
+                : [{ unit: '', amount: '', item: 'See original recipe', notes: '' }],
+              instructions: Array.isArray(structuredData.recipeInstructions)
+                ? structuredData.recipeInstructions.map((inst: any) => 
+                    typeof inst === 'string' ? inst : inst.text || inst.name || 'See original recipe'
+                  )
+                : ['See original recipe for instructions'],
+              prepTime: structuredData.prepTime ? parseInt(structuredData.prepTime.replace(/\D/g, '')) || null : null,
+              cookTime: structuredData.cookTime ? parseInt(structuredData.cookTime.replace(/\D/g, '')) || null : null,
+              servings: structuredData.recipeYield ? parseInt(structuredData.recipeYield) || null : null,
+              imageUrl: structuredData.image || '',
+              cuisine: structuredData.recipeCuisine || '',
+              mealType: '',
+              tags: [],
+              nutritionInfo: null,
+              sourceUrl: url
+            };
+          }
+        } catch (parseError) {
+          console.log('Failed to parse JSON-LD, using basic extraction');
+        }
+      }
+      
+      // Fallback to basic extraction if no structured data
+      if (!recipeData.title) {
+        recipeData = {
+          title: title,
+          description: `Recipe imported from ${new URL(url).hostname}`,
+          ingredients: [{ unit: '', amount: '', item: 'See original recipe', notes: '' }],
+          instructions: ['See original recipe for full instructions'],
+          prepTime: null,
+          cookTime: null,
+          servings: null,
+          imageUrl: '',
+          cuisine: '',
+          mealType: '',
+          tags: [],
+          nutritionInfo: null,
+          sourceUrl: url
+        };
+      }
+
+      const recipe = await storage.createRecipe({
+        ...recipeData,
+        userId,
+      });
+
+      res.status(201).json(recipe);
+    } catch (error) {
+      console.error("Error importing recipe from URL:", error);
+      res.status(500).json({ message: "Failed to import recipe from URL" });
+    }
+  });
+
+  app.post('/api/recipes/import-csv', isAuthenticated, upload.single('csvFile'), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      if (!req.file) {
+        return res.status(400).json({ message: "CSV file is required" });
+      }
+
+      const csvContent = req.file.buffer.toString('utf-8');
+      const lines = csvContent.split('\n').filter(line => line.trim());
+      
+      if (lines.length < 2) {
+        return res.status(400).json({ message: "CSV file must contain headers and at least one recipe" });
+      }
+
+      const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+      const recipes = [];
+      
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+        
+        if (values.length !== headers.length) {
+          continue; // Skip malformed rows
+        }
+        
+        const recipeData: any = { userId };
+        
+        headers.forEach((header, index) => {
+          const value = values[index];
+          
+          switch (header) {
+            case 'title':
+              recipeData.title = value;
+              break;
+            case 'description':
+              recipeData.description = value;
+              break;
+            case 'ingredients':
+              // Parse ingredients as JSON or split by semicolon
+              try {
+                recipeData.ingredients = JSON.parse(value);
+              } catch {
+                recipeData.ingredients = value.split(';').map((ing: string) => ({
+                  unit: '',
+                  amount: '',
+                  item: ing.trim(),
+                  notes: ''
+                }));
+              }
+              break;
+            case 'instructions':
+              // Parse instructions as JSON or split by semicolon
+              try {
+                recipeData.instructions = JSON.parse(value);
+              } catch {
+                recipeData.instructions = value.split(';').map((inst: string) => inst.trim());
+              }
+              break;
+            case 'cuisine':
+              recipeData.cuisine = value;
+              break;
+            case 'mealtype':
+            case 'meal_type':
+              recipeData.mealType = value;
+              break;
+            case 'preptime':
+            case 'prep_time':
+              recipeData.prepTime = value ? parseInt(value) : null;
+              break;
+            case 'cooktime':
+            case 'cook_time':
+              recipeData.cookTime = value ? parseInt(value) : null;
+              break;
+            case 'servings':
+              recipeData.servings = value ? parseInt(value) : null;
+              break;
+            case 'imageurl':
+            case 'image_url':
+              recipeData.imageUrl = value;
+              break;
+          }
+        });
+
+        // Set defaults for required fields
+        if (!recipeData.title) recipeData.title = `Imported Recipe ${i}`;
+        if (!recipeData.ingredients) recipeData.ingredients = [];
+        if (!recipeData.instructions) recipeData.instructions = [];
+        if (!recipeData.tags) recipeData.tags = [];
+
+        try {
+          const recipe = await storage.createRecipe(recipeData);
+          recipes.push(recipe);
+        } catch (error) {
+          console.error(`Error creating recipe ${i}:`, error);
+          // Continue with other recipes
+        }
+      }
+
+      res.status(201).json({ 
+        message: `Successfully imported ${recipes.length} recipes`,
+        count: recipes.length,
+        recipes 
+      });
+    } catch (error) {
+      console.error("Error importing recipes from CSV:", error);
+      res.status(500).json({ message: "Failed to import recipes from CSV" });
+    }
+  });
+
   // Meal plan routes
   app.get('/api/meal-plans', isAuthenticated, async (req: any, res) => {
     try {

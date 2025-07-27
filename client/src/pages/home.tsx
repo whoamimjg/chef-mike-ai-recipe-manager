@@ -37,7 +37,10 @@ import {
   Sparkles,
   Wand2,
   Filter,
-  X
+  X,
+  Link,
+  FileText,
+  Import
 } from "lucide-react";
 import type { Recipe, MealPlan, ShoppingList, UserPreferences, UserInventory } from "@shared/schema";
 
@@ -61,6 +64,10 @@ export default function Home() {
   const [filterMealType, setFilterMealType] = useState('');
   const [imageOption, setImageOption] = useState('upload'); // 'upload' or 'url'
   const [imageUrl, setImageUrl] = useState('');
+  const [isImportUrlOpen, setIsImportUrlOpen] = useState(false);
+  const [isImportCsvOpen, setIsImportCsvOpen] = useState(false);
+  const [importUrl, setImportUrl] = useState('');
+  const [importProgress, setImportProgress] = useState('');
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -339,6 +346,93 @@ export default function Home() {
     createRecipeMutation.mutate(formData);
   };
 
+  // Import from URL mutation
+  const importFromUrlMutation = useMutation({
+    mutationFn: async (url: string) => {
+      setImportProgress('Fetching recipe from URL...');
+      const response = await apiRequest("POST", "/api/recipes/import-url", { url });
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/recipes"] });
+      setIsImportUrlOpen(false);
+      setImportUrl('');
+      setImportProgress('');
+      toast({
+        title: "Success",
+        description: "Recipe imported successfully from URL!",
+      });
+    },
+    onError: (error) => {
+      setImportProgress('');
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to import recipe from URL. Please check the URL and try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Import from CSV mutation
+  const importFromCsvMutation = useMutation({
+    mutationFn: async (formData: FormData) => {
+      setImportProgress('Processing CSV file...');
+      const response = await apiRequest("POST", "/api/recipes/import-csv", formData);
+      return response;
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/recipes"] });
+      setIsImportCsvOpen(false);
+      setImportProgress('');
+      toast({
+        title: "Success",
+        description: `Successfully imported ${data.count || 'multiple'} recipes from CSV!`,
+      });
+    },
+    onError: (error) => {
+      setImportProgress('');
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to import recipes from CSV. Please check the file format and try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleImportFromUrl = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!importUrl.trim()) return;
+    importFromUrlMutation.mutate(importUrl.trim());
+  };
+
+  const handleImportFromCsv = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    importFromCsvMutation.mutate(formData);
+  };
+
   const handleDeleteRecipe = (recipeId: number) => {
     if (confirm("Are you sure you want to delete this recipe?")) {
       deleteRecipeMutation.mutate(recipeId);
@@ -490,13 +584,14 @@ export default function Home() {
                     </div>
                   </div>
                   
-                  <Dialog open={isAddRecipeOpen} onOpenChange={setIsAddRecipeOpen}>
-                    <DialogTrigger asChild>
-                      <Button className="flex items-center gap-2">
-                        <Plus className="h-4 w-4" />
-                        Add Recipe
-                      </Button>
-                    </DialogTrigger>
+                  <div className="flex gap-2">
+                    <Dialog open={isAddRecipeOpen} onOpenChange={setIsAddRecipeOpen}>
+                      <DialogTrigger asChild>
+                        <Button className="flex items-center gap-2">
+                          <Plus className="h-4 w-4" />
+                          Add Recipe
+                        </Button>
+                      </DialogTrigger>
                     <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                       <DialogHeader>
                         <DialogTitle className="text-2xl font-bold flex items-center gap-2">
@@ -767,6 +862,137 @@ export default function Home() {
                       </form>
                     </DialogContent>
                   </Dialog>
+
+                  {/* Import from URL Dialog */}
+                  <Dialog open={isImportUrlOpen} onOpenChange={setIsImportUrlOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" className="flex items-center gap-2">
+                        <Link className="h-4 w-4" />
+                        Import from URL
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md">
+                      <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                          <Link className="h-5 w-5" />
+                          Import Recipe from URL
+                        </DialogTitle>
+                      </DialogHeader>
+                      <form onSubmit={handleImportFromUrl} className="space-y-4">
+                        <div>
+                          <Label htmlFor="importUrl">Recipe URL</Label>
+                          <Input 
+                            id="importUrl"
+                            placeholder="https://example.com/recipe"
+                            value={importUrl}
+                            onChange={(e) => setImportUrl(e.target.value)}
+                            required
+                          />
+                          <p className="text-sm text-gray-600 mt-1">
+                            Paste a URL from popular recipe sites
+                          </p>
+                        </div>
+                        
+                        {importProgress && (
+                          <div className="text-sm text-blue-600 bg-blue-50 p-3 rounded-lg">
+                            {importProgress}
+                          </div>
+                        )}
+
+                        <div className="flex justify-end gap-2">
+                          <Button type="button" variant="outline" onClick={() => {
+                            setIsImportUrlOpen(false);
+                            setImportUrl('');
+                            setImportProgress('');
+                          }}>
+                            Cancel
+                          </Button>
+                          <Button type="submit" disabled={importFromUrlMutation.isPending}>
+                            {importFromUrlMutation.isPending ? (
+                              <>
+                                <Import className="h-4 w-4 mr-2 animate-spin" />
+                                Importing...
+                              </>
+                            ) : (
+                              <>
+                                <Import className="h-4 w-4 mr-2" />
+                                Import Recipe
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+
+                  {/* Import from CSV Dialog */}
+                  <Dialog open={isImportCsvOpen} onOpenChange={setIsImportCsvOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" className="flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        Import CSV
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md">
+                      <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                          <FileText className="h-5 w-5" />
+                          Import Recipes from CSV
+                        </DialogTitle>
+                      </DialogHeader>
+                      <form onSubmit={handleImportFromCsv} className="space-y-4">
+                        <div>
+                          <Label htmlFor="csvFile">CSV File</Label>
+                          <Input 
+                            id="csvFile"
+                            name="csvFile"
+                            type="file"
+                            accept=".csv"
+                            required
+                          />
+                          <p className="text-sm text-gray-600 mt-1">
+                            Upload a CSV file with recipe data
+                          </p>
+                        </div>
+
+                        <div className="bg-gray-50 p-3 rounded-lg text-sm">
+                          <p className="font-medium mb-2">Expected CSV format:</p>
+                          <code className="text-xs bg-white p-2 rounded block">
+                            title,description,ingredients,instructions,cuisine,prepTime,cookTime,servings
+                          </code>
+                        </div>
+                        
+                        {importProgress && (
+                          <div className="text-sm text-blue-600 bg-blue-50 p-3 rounded-lg">
+                            {importProgress}
+                          </div>
+                        )}
+
+                        <div className="flex justify-end gap-2">
+                          <Button type="button" variant="outline" onClick={() => {
+                            setIsImportCsvOpen(false);
+                            setImportProgress('');
+                          }}>
+                            Cancel
+                          </Button>
+                          <Button type="submit" disabled={importFromCsvMutation.isPending}>
+                            {importFromCsvMutation.isPending ? (
+                              <>
+                                <Upload className="h-4 w-4 mr-2 animate-spin" />
+                                Importing...
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="h-4 w-4 mr-2" />
+                                Import CSV
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+                  </div>
                 </div>
 
                 <div className="mt-4">
