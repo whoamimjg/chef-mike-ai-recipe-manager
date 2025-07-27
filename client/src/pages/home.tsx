@@ -87,6 +87,8 @@ export default function Home() {
   const [isBarcodeScanning, setIsBarcodeScanning] = useState(false);
   const [isReceiptScanning, setIsReceiptScanning] = useState(false);
   const [receiptItems, setReceiptItems] = useState<any[]>([]);
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptData, setReceiptData] = useState({ storeName: '', purchaseDate: new Date().toISOString().split('T')[0] });
   const [isReportsOpen, setIsReportsOpen] = useState(false);
   const [spendingReport, setSpendingReport] = useState<any>(null);
   const [recipeIngredients, setRecipeIngredients] = useState([{ unit: '', amount: '', item: '', notes: '' }]);
@@ -522,13 +524,40 @@ export default function Home() {
     }
   };
 
-  const handleProcessReceipt = async (items: any[]) => {
-    // This would process the receipt items and add them to inventory
-    setIsReceiptScanning(false);
-    toast({
-      title: "Demo Mode",
-      description: "Receipt processing would add multiple items to inventory with cost tracking",
-    });
+  const handleProcessReceipt = async () => {
+    try {
+      if (receiptItems.length === 0) {
+        toast({
+          title: "No Items",
+          description: "Please add at least one item to the receipt",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const totalAmount = receiptItems.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
+      
+      await receiptMutation.mutateAsync({
+        storeName: receiptData.storeName || "Unknown Store",
+        purchaseDate: receiptData.purchaseDate,
+        totalAmount,
+        items: receiptItems.filter(item => item.name && item.quantity && item.price)
+      });
+    } catch (error) {
+      // Error handling is in the mutation
+    }
+  };
+
+  const handleReceiptFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setReceiptFile(file);
+      // For now, we'll use manual entry. In a real app, you'd process the image with OCR
+      toast({
+        title: "File Uploaded",
+        description: "Please add items manually below. OCR processing coming soon!",
+      });
+    }
   };
 
   // Receipt scanning mutation
@@ -3927,21 +3956,47 @@ export default function Home() {
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <Label>Store Name</Label>
-                <Input placeholder="e.g., Whole Foods" />
+                <Input 
+                  placeholder="e.g., Whole Foods" 
+                  value={receiptData.storeName}
+                  onChange={(e) => setReceiptData(prev => ({ ...prev, storeName: e.target.value }))}
+                />
               </div>
               <div>
                 <Label>Purchase Date</Label>
-                <Input type="date" defaultValue={new Date().toISOString().split('T')[0]} />
+                <Input 
+                  type="date" 
+                  value={receiptData.purchaseDate}
+                  onChange={(e) => setReceiptData(prev => ({ ...prev, purchaseDate: e.target.value }))}
+                />
               </div>
             </div>
             
             <div className="text-center p-8 border-2 border-dashed border-gray-300 rounded-lg">
               <FileText className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-              <p className="text-gray-600 mb-4">Take a photo of your receipt or upload an image</p>
-              <div className="bg-gray-100 h-48 rounded-lg flex items-center justify-center">
-                <p className="text-gray-500">Receipt photo would appear here</p>
-              </div>
-              <Button variant="outline" className="mt-4">
+              <p className="text-gray-600 mb-4">Upload a receipt image</p>
+              {receiptFile ? (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <p className="text-green-800 font-medium">{receiptFile.name}</p>
+                  <p className="text-sm text-green-600">File uploaded successfully</p>
+                </div>
+              ) : (
+                <div className="bg-gray-100 h-32 rounded-lg flex items-center justify-center">
+                  <p className="text-gray-500">No file selected</p>
+                </div>
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleReceiptFileChange}
+                className="hidden"
+                id="receipt-upload"
+              />
+              <Button 
+                variant="outline" 
+                className="mt-4"
+                onClick={() => document.getElementById('receipt-upload')?.click()}
+              >
                 <Upload className="h-4 w-4 mr-2" />
                 Upload Receipt Photo
               </Button>
@@ -3949,17 +4004,67 @@ export default function Home() {
 
             {/* Manual Item Entry */}
             <div className="border-t pt-4">
-              <h4 className="font-medium mb-3">Or Add Items Manually</h4>
+              <h4 className="font-medium mb-3">Add Items Manually</h4>
               <div className="space-y-3">
                 {receiptItems.map((item, index) => (
-                  <div key={index} className="grid grid-cols-4 gap-2">
-                    <Input placeholder="Item name" />
-                    <Input placeholder="Qty" type="number" />
-                    <Input placeholder="Unit" />
-                    <Input placeholder="Price" type="number" step="0.01" />
+                  <div key={index} className="grid grid-cols-5 gap-2">
+                    <Input 
+                      placeholder="Item name" 
+                      value={item.name || ''}
+                      onChange={(e) => {
+                        const newItems = [...receiptItems];
+                        newItems[index] = { ...newItems[index], name: e.target.value };
+                        setReceiptItems(newItems);
+                      }}
+                    />
+                    <Input 
+                      placeholder="Qty" 
+                      type="number" 
+                      value={item.quantity || ''}
+                      onChange={(e) => {
+                        const newItems = [...receiptItems];
+                        newItems[index] = { ...newItems[index], quantity: e.target.value };
+                        setReceiptItems(newItems);
+                      }}
+                    />
+                    <Input 
+                      placeholder="Unit" 
+                      value={item.unit || ''}
+                      onChange={(e) => {
+                        const newItems = [...receiptItems];
+                        newItems[index] = { ...newItems[index], unit: e.target.value };
+                        setReceiptItems(newItems);
+                      }}
+                    />
+                    <Input 
+                      placeholder="Price" 
+                      type="number" 
+                      step="0.01" 
+                      value={item.price || ''}
+                      onChange={(e) => {
+                        const newItems = [...receiptItems];
+                        newItems[index] = { ...newItems[index], price: e.target.value };
+                        setReceiptItems(newItems);
+                      }}
+                    />
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => {
+                        const newItems = receiptItems.filter((_, i) => i !== index);
+                        setReceiptItems(newItems);
+                      }}
+                      className="text-red-600 hover:text-red-800"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
                 ))}
-                <Button type="button" variant="outline" onClick={() => setReceiptItems([...receiptItems, {}])}>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setReceiptItems([...receiptItems, { name: '', quantity: '', unit: '', price: '', category: 'uncategorized' }])}
+                >
                   <Plus className="h-4 w-4 mr-2" />
                   Add Item
                 </Button>
@@ -3967,24 +4072,24 @@ export default function Home() {
             </div>
 
             <div className="flex gap-2 pt-4">
-              <Button variant="outline" onClick={() => setIsReceiptScanning(false)} className="flex-1">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setIsReceiptScanning(false);
+                  setReceiptItems([]);
+                  setReceiptFile(null);
+                  setReceiptData({ storeName: '', purchaseDate: new Date().toISOString().split('T')[0] });
+                }} 
+                className="flex-1"
+              >
                 Cancel
               </Button>
               <Button 
-                onClick={() => {
-                  if (receiptItems.length > 0) {
-                    handleProcessReceipt(receiptItems);
-                  } else {
-                    setIsReceiptScanning(false);
-                    toast({
-                      title: "Demo Mode",
-                      description: "Receipt processing would analyze the image and add items to inventory",
-                    });
-                  }
-                }}
+                onClick={handleProcessReceipt}
+                disabled={receiptMutation.isPending || receiptItems.length === 0}
                 className="flex-1"
               >
-                Process Receipt
+                {receiptMutation.isPending ? 'Processing...' : 'Process Receipt'}
               </Button>
             </div>
           </div>
