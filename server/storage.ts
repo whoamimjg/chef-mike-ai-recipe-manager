@@ -6,6 +6,7 @@ import {
   shoppingLists,
   userPreferences,
   userInventory,
+  purchaseReceipts,
   type User,
   type UpsertUser,
   type Recipe,
@@ -20,9 +21,11 @@ import {
   type InsertUserPreferences,
   type UserInventory,
   type InsertUserInventory,
+  type PurchaseReceipt,
+  type InsertPurchaseReceipt,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, gte, lte, desc, asc, ilike } from "drizzle-orm";
+import { eq, and, gte, lte, desc, asc, ilike, isNotNull } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -64,6 +67,20 @@ export interface IStorage {
   addInventoryItem(item: InsertUserInventory): Promise<UserInventory>;
   updateInventoryItem(id: number, item: Partial<InsertUserInventory>, userId: string): Promise<UserInventory | undefined>;
   deleteInventoryItem(id: number, userId: string): Promise<boolean>;
+  markItemAsWasted(id: number, userId: string): Promise<void>;
+  getInventoryByBarcode(userId: string, barcode: string): Promise<UserInventory | undefined>;
+  
+  // Receipt operations
+  addPurchaseReceipt(receipt: InsertPurchaseReceipt): Promise<PurchaseReceipt>;
+  getPurchaseReceipts(userId: string): Promise<PurchaseReceipt[]>;
+  
+  // Reporting operations
+  getSpendingReport(userId: string, startDate?: Date, endDate?: Date): Promise<{
+    totalSpent: number;
+    mostFrequentItems: Array<{ name: string; count: number; totalSpent: number }>;
+    mostWastedItems: Array<{ name: string; count: number; totalWasted: number }>;
+    categoryBreakdown: Array<{ category: string; totalSpent: number }>;
+  }>;
   
   // Admin operations
   getAllUsers(): Promise<User[]>;
@@ -360,6 +377,125 @@ export class DatabaseStorage implements IStorage {
       .delete(userInventory)
       .where(and(eq(userInventory.id, id), eq(userInventory.userId, userId)));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  async markItemAsWasted(id: number, userId: string): Promise<void> {
+    await db
+      .update(userInventory)
+      .set({ wasteDate: new Date() })
+      .where(and(eq(userInventory.id, id), eq(userInventory.userId, userId)));
+  }
+
+  async getInventoryByBarcode(userId: string, barcode: string): Promise<UserInventory | undefined> {
+    const [item] = await db
+      .select()
+      .from(userInventory)
+      .where(and(eq(userInventory.userId, userId), eq(userInventory.upcBarcode, barcode)));
+    return item;
+  }
+
+  // Receipt operations
+  async addPurchaseReceipt(receipt: InsertPurchaseReceipt): Promise<PurchaseReceipt> {
+    const insertData: any = receipt; // Type casting to handle JSON arrays
+    const [newReceipt] = await db
+      .insert(purchaseReceipts)
+      .values(insertData)
+      .returning();
+    return newReceipt;
+  }
+
+  async getPurchaseReceipts(userId: string): Promise<PurchaseReceipt[]> {
+    return await db
+      .select()
+      .from(purchaseReceipts)
+      .where(eq(purchaseReceipts.userId, userId))
+      .orderBy(desc(purchaseReceipts.purchaseDate));
+  }
+
+  // Reporting operations
+  async getSpendingReport(userId: string, startDate?: Date, endDate?: Date): Promise<{
+    totalSpent: number;
+    mostFrequentItems: Array<{ name: string; count: number; totalSpent: number }>;
+    mostWastedItems: Array<{ name: string; count: number; totalWasted: number }>;
+    categoryBreakdown: Array<{ category: string; totalSpent: number }>;
+  }> {
+    // Build date filter conditions
+    const dateFilters = [];
+    if (startDate) {
+      dateFilters.push(gte(userInventory.purchaseDate, startDate));
+    }
+    if (endDate) {
+      dateFilters.push(lte(userInventory.purchaseDate, endDate));
+    }
+
+    // Get total spending
+    const spendingData = await db
+      .select()
+      .from(userInventory)
+      .where(and(
+        eq(userInventory.userId, userId),
+        ...dateFilters
+      ));
+
+    const totalSpent = spendingData.reduce((sum, item) => {
+      return sum + (item.totalCost ? parseFloat(item.totalCost) : 0);
+    }, 0);
+
+    // Get most frequent items (by purchase count)
+    const frequentItemsMap = new Map<string, { count: number; totalSpent: number }>();
+    spendingData.forEach(item => {
+      const existing = frequentItemsMap.get(item.ingredientName) || { count: 0, totalSpent: 0 };
+      existing.count += 1;
+      existing.totalSpent += item.totalCost ? parseFloat(item.totalCost) : 0;
+      frequentItemsMap.set(item.ingredientName, existing);
+    });
+
+    const mostFrequentItems = Array.from(frequentItemsMap.entries())
+      .map(([name, data]) => ({ name, ...data }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+
+    // Get most wasted items
+    const wastedData = await db
+      .select()
+      .from(userInventory)
+      .where(and(
+        eq(userInventory.userId, userId),
+        isNotNull(userInventory.wasteDate), // Items that have been marked as wasted
+        ...dateFilters
+      ));
+
+    const wastedItemsMap = new Map<string, { count: number; totalWasted: number }>();
+    wastedData.forEach(item => {
+      const existing = wastedItemsMap.get(item.ingredientName) || { count: 0, totalWasted: 0 };
+      existing.count += 1;
+      existing.totalWasted += item.totalCost ? parseFloat(item.totalCost) : 0;
+      wastedItemsMap.set(item.ingredientName, existing);
+    });
+
+    const mostWastedItems = Array.from(wastedItemsMap.entries())
+      .map(([name, data]) => ({ name, ...data }))
+      .sort((a, b) => b.totalWasted - a.totalWasted)
+      .slice(0, 10);
+
+    // Category breakdown
+    const categoryMap = new Map<string, number>();
+    spendingData.forEach(item => {
+      const category = item.category || 'uncategorized';
+      const existing = categoryMap.get(category) || 0;
+      categoryMap.set(category, existing + (item.totalCost ? parseFloat(item.totalCost) : 0));
+    });
+
+    const categoryBreakdown = Array.from(categoryMap.entries())
+      .map(([category, totalSpent]) => ({ category, totalSpent }))
+      .sort((a, b) => b.totalSpent - a.totalSpent);
+
+    return {
+      totalSpent,
+      mostFrequentItems,
+      mostWastedItems,
+      categoryBreakdown,
+    };
   }
 
   // Admin operations

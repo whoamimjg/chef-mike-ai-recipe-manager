@@ -10,6 +10,7 @@ import {
   index,
   serial,
   numeric,
+  decimal,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -141,8 +142,31 @@ export const userInventory = pgTable("user_inventory", {
   unit: varchar("unit"),
   expiryDate: varchar("expiry_date"), // YYYY-MM-DD format
   category: varchar("category"),
+  upcBarcode: varchar("upc_barcode"),
+  pricePerUnit: decimal("price_per_unit", { precision: 10, scale: 2 }),
+  totalCost: decimal("total_cost", { precision: 10, scale: 2 }),
+  purchaseDate: timestamp("purchase_date"),
+  wasteDate: timestamp("waste_date"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Purchase receipts table for bulk ingredient adding
+export const purchaseReceipts = pgTable("purchase_receipts", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  storeName: varchar("store_name"),
+  totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
+  purchaseDate: timestamp("purchase_date").notNull(),
+  receiptImageUrl: varchar("receipt_image_url"),
+  items: jsonb("items").notNull().$type<Array<{
+    name: string;
+    quantity: string;
+    unit: string;
+    price: number;
+    category?: string;
+  }>>(),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 // Define relations
@@ -152,6 +176,7 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   shoppingLists: many(shoppingLists),
   preferences: one(userPreferences),
   inventory: many(userInventory),
+  receipts: many(purchaseReceipts),
 }));
 
 export const recipesRelations = relations(recipes, ({ one, many }) => ({
@@ -206,6 +231,13 @@ export const userInventoryRelations = relations(userInventory, ({ one }) => ({
   }),
 }));
 
+export const purchaseReceiptsRelations = relations(purchaseReceipts, ({ one }) => ({
+  user: one(users, {
+    fields: [purchaseReceipts.userId],
+    references: [users.id],
+  }),
+}));
+
 // Export insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -247,6 +279,11 @@ export const insertRecipeRatingSchema = createInsertSchema(recipeRatings).omit({
   createdAt: true,
 });
 
+export const insertPurchaseReceiptSchema = createInsertSchema(purchaseReceipts).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Export types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -262,3 +299,5 @@ export type InsertUserPreferences = z.infer<typeof insertUserPreferencesSchema>;
 export type UserPreferences = typeof userPreferences.$inferSelect;
 export type InsertUserInventory = z.infer<typeof insertUserInventorySchema>;
 export type UserInventory = typeof userInventory.$inferSelect;
+export type InsertPurchaseReceipt = z.infer<typeof insertPurchaseReceiptSchema>;
+export type PurchaseReceipt = typeof purchaseReceipts.$inferSelect;

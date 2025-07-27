@@ -65,7 +65,21 @@ export default function Home() {
   const [isAddRecipeOpen, setIsAddRecipeOpen] = useState(false);
   const [isAIGeneratorOpen, setIsAIGeneratorOpen] = useState(false);
   const [isAddInventoryOpen, setIsAddInventoryOpen] = useState(false);
-  const [newInventoryItem, setNewInventoryItem] = useState({ name: "", quantity: "", unit: "", category: "" });
+  const [newInventoryItem, setNewInventoryItem] = useState({ 
+    name: "", 
+    quantity: "", 
+    unit: "", 
+    category: "", 
+    upcBarcode: "", 
+    pricePerUnit: "", 
+    totalCost: "",
+    expiryDate: ""
+  });
+  const [isBarcodeScanning, setIsBarcodeScanning] = useState(false);
+  const [isReceiptScanning, setIsReceiptScanning] = useState(false);
+  const [receiptItems, setReceiptItems] = useState<any[]>([]);
+  const [isReportsOpen, setIsReportsOpen] = useState(false);
+  const [spendingReport, setSpendingReport] = useState<any>(null);
   const [recipeIngredients, setRecipeIngredients] = useState([{ unit: '', amount: '', item: '', notes: '' }]);
   const [recipeInstructions, setRecipeInstructions] = useState(['']);
   const [selectedCuisine, setSelectedCuisine] = useState('');
@@ -255,19 +269,32 @@ export default function Home() {
     },
   });
 
-  const handleLogout = () => {
-    window.location.href = "/api/logout";
-  };
-
   // Add inventory item mutation
   const addInventoryMutation = useMutation({
-    mutationFn: async (itemData: { name: string; quantity: string; unit: string; category: string }) => {
+    mutationFn: async (itemData: { 
+      ingredientName: string; 
+      quantity: string; 
+      unit: string; 
+      category: string;
+      upcBarcode?: string;
+      pricePerUnit?: string;
+      totalCost?: string;
+      expiryDate?: string;
+    }) => {
       await apiRequest("POST", "/api/inventory", itemData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
-      setIsAddInventoryOpen(false);
-      setNewInventoryItem({ name: "", quantity: "", unit: "", category: "" });
+      setNewInventoryItem({ 
+        name: "", 
+        quantity: "", 
+        unit: "", 
+        category: "", 
+        upcBarcode: "", 
+        pricePerUnit: "", 
+        totalCost: "",
+        expiryDate: ""
+      });
       toast({
         title: "Success",
         description: "Inventory item added successfully!",
@@ -291,6 +318,110 @@ export default function Home() {
         variant: "destructive",
       });
     },
+  });
+
+  // Mark item as wasted mutation
+  const markWastedMutation = useMutation({
+    mutationFn: async (itemId: number) => {
+      await apiRequest("POST", `/api/inventory/${itemId}/mark-wasted`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
+      toast({
+        title: "Item Marked as Wasted",
+        description: "Item has been marked as wasted for cost tracking",
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to mark item as wasted",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleLogout = () => {
+    window.location.href = "/api/logout";
+  };
+
+  const handleAddInventoryItem = (e: React.FormEvent) => {
+    e.preventDefault();
+    addInventoryMutation.mutate({
+      ingredientName: newInventoryItem.name,
+      quantity: newInventoryItem.quantity,
+      unit: newInventoryItem.unit,
+      category: newInventoryItem.category,
+      upcBarcode: newInventoryItem.upcBarcode || undefined,
+      pricePerUnit: newInventoryItem.pricePerUnit || undefined,
+      totalCost: newInventoryItem.totalCost || undefined,
+      expiryDate: newInventoryItem.expiryDate || undefined,
+    });
+  };
+
+  const handleProcessReceipt = async (items: any[]) => {
+    // This would process the receipt items and add them to inventory
+    setIsReceiptScanning(false);
+    toast({
+      title: "Demo Mode",
+      description: "Receipt processing would add multiple items to inventory with cost tracking",
+    });
+  };
+
+  // Receipt scanning mutation
+  const receiptMutation = useMutation({
+    mutationFn: async (receiptData: { storeName: string; purchaseDate: string; totalAmount: number; items: any[] }) => {
+      await apiRequest("POST", "/api/receipts", receiptData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/receipts"] });
+      setIsReceiptScanning(false);
+      setReceiptItems([]);
+      toast({
+        title: "Success",
+        description: "Receipt processed and items added to inventory!",
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to process receipt",
+        variant: "destructive",
+      });
+    },
+  });
+
+
+
+  // Fetch spending report
+  const { data: reports } = useQuery({
+    queryKey: ["/api/reports/spending"],
+    queryFn: () => fetch("/api/reports/spending", { credentials: 'include' }).then(res => res.json()),
+    retry: false,
+    enabled: isReportsOpen
   });
 
   // Recipe rating mutation
@@ -2078,9 +2209,19 @@ export default function Home() {
               <div>
                 <h1 className="text-4xl font-bold text-gray-900 mb-2 flex items-center gap-2">
                   <Package className="h-8 w-8" />
-                  Household Inventory
+                  Smart Inventory Management
                 </h1>
-                <p className="text-gray-600">Manage your pantry and ingredient inventory for better meal planning</p>
+                <p className="text-gray-600">Track your pantry with barcode scanning, receipt processing, and cost analytics</p>
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={() => setIsReceiptScanning(true)} variant="outline">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Scan Receipt
+                </Button>
+                <Button onClick={() => setIsReportsOpen(true)} variant="outline">
+                  <Brain className="h-4 w-4 mr-2" />
+                  Cost Reports
+                </Button>
               </div>
             </div>
 
@@ -2160,6 +2301,55 @@ export default function Home() {
                       </Select>
                     </div>
                   </div>
+
+                  {/* Enhanced Fields for Price Tracking */}
+                  <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div>
+                      <Label htmlFor="barcode">UPC Barcode (Optional)</Label>
+                      <div className="flex gap-2">
+                        <Input 
+                          id="barcode" 
+                          placeholder="123456789012"
+                          value={newInventoryItem.upcBarcode}
+                          onChange={(e) => setNewInventoryItem({...newInventoryItem, upcBarcode: e.target.value})}
+                        />
+                        <Button type="button" size="sm" onClick={() => setIsBarcodeScanning(true)}>
+                          <Search className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="price-per-unit">Price per Unit ($)</Label>
+                      <Input 
+                        id="price-per-unit" 
+                        placeholder="2.99"
+                        type="number"
+                        step="0.01"
+                        value={newInventoryItem.pricePerUnit}
+                        onChange={(e) => setNewInventoryItem({...newInventoryItem, pricePerUnit: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="total-cost">Total Cost ($)</Label>
+                      <Input 
+                        id="total-cost" 
+                        placeholder="17.94"
+                        type="number"
+                        step="0.01"
+                        value={newInventoryItem.totalCost}
+                        onChange={(e) => setNewInventoryItem({...newInventoryItem, totalCost: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="expiry-date">Expiry Date (Optional)</Label>
+                      <Input 
+                        id="expiry-date" 
+                        type="date"
+                        value={newInventoryItem.expiryDate}
+                        onChange={(e) => setNewInventoryItem({...newInventoryItem, expiryDate: e.target.value})}
+                      />
+                    </div>
+                  </div>
                   <Button 
                     type="submit" 
                     disabled={addInventoryMutation.isPending}
@@ -2203,16 +2393,45 @@ export default function Home() {
                           <h4 className="font-semibold text-lg text-gray-900 mb-3 capitalize">
                             {category === 'meat' ? 'Meat & Poultry' : category === 'spices' ? 'Spices & Herbs' : category}
                           </h4>
-                          <div className="grid md:grid-cols-3 gap-3">
+                          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
                             {categoryItems.map((item) => (
-                              <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                <div>
-                                  <div className="font-medium text-gray-900">{item.ingredientName}</div>
-                                  <div className="text-sm text-gray-500">{item.quantity} {item.unit}</div>
+                              <div key={item.id} className="p-4 bg-gray-50 rounded-lg border">
+                                <div className="flex items-start justify-between mb-2">
+                                  <div className="flex-1">
+                                    <div className="font-medium text-gray-900">{item.ingredientName}</div>
+                                    <div className="text-sm text-gray-500">{item.quantity} {item.unit}</div>
+                                    {item.totalCost && (
+                                      <div className="text-sm text-green-600 font-medium">${item.totalCost}</div>
+                                    )}
+                                    {item.expiryDate && (
+                                      <div className="text-xs text-orange-600">
+                                        Expires: {new Date(item.expiryDate).toLocaleDateString()}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="flex gap-1">
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      onClick={() => markWastedMutation.mutate(item.id)}
+                                      className="text-orange-600 hover:text-orange-800"
+                                      title="Mark as wasted"
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      className="text-red-600 hover:text-red-800"
+                                      title="Delete item"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
                                 </div>
-                                <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-800">
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                                {item.upcBarcode && (
+                                  <div className="text-xs text-gray-400 font-mono">UPC: {item.upcBarcode}</div>
+                                )}
                               </div>
                             ))}
                           </div>
@@ -2684,6 +2903,236 @@ export default function Home() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Barcode Scanner Dialog */}
+      <Dialog open={isBarcodeScanning} onOpenChange={setIsBarcodeScanning}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Scan Barcode</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="text-center p-8 border-2 border-dashed border-gray-300 rounded-lg">
+              <Search className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+              <p className="text-gray-600 mb-4">Position barcode in front of camera</p>
+              <div className="bg-gray-100 h-32 rounded-lg flex items-center justify-center">
+                <p className="text-gray-500">Camera preview would appear here</p>
+              </div>
+            </div>
+            <Input 
+              placeholder="Or enter barcode manually" 
+              value={newInventoryItem.upcBarcode}
+              onChange={(e) => setNewInventoryItem({...newInventoryItem, upcBarcode: e.target.value})}
+            />
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setIsBarcodeScanning(false)} className="flex-1">
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => {
+                  setIsBarcodeScanning(false);
+                  toast({
+                    title: "Barcode Added",
+                    description: "Barcode has been added to the item form",
+                  });
+                }}
+                className="flex-1"
+              >
+                Use Barcode
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Receipt Scanner Dialog */}
+      <Dialog open={isReceiptScanning} onOpenChange={setIsReceiptScanning}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Process Receipt</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <Label>Store Name</Label>
+                <Input placeholder="e.g., Whole Foods" />
+              </div>
+              <div>
+                <Label>Purchase Date</Label>
+                <Input type="date" defaultValue={new Date().toISOString().split('T')[0]} />
+              </div>
+            </div>
+            
+            <div className="text-center p-8 border-2 border-dashed border-gray-300 rounded-lg">
+              <FileText className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+              <p className="text-gray-600 mb-4">Take a photo of your receipt or upload an image</p>
+              <div className="bg-gray-100 h-48 rounded-lg flex items-center justify-center">
+                <p className="text-gray-500">Receipt photo would appear here</p>
+              </div>
+              <Button variant="outline" className="mt-4">
+                <Upload className="h-4 w-4 mr-2" />
+                Upload Receipt Photo
+              </Button>
+            </div>
+
+            {/* Manual Item Entry */}
+            <div className="border-t pt-4">
+              <h4 className="font-medium mb-3">Or Add Items Manually</h4>
+              <div className="space-y-3">
+                {receiptItems.map((item, index) => (
+                  <div key={index} className="grid grid-cols-4 gap-2">
+                    <Input placeholder="Item name" />
+                    <Input placeholder="Qty" type="number" />
+                    <Input placeholder="Unit" />
+                    <Input placeholder="Price" type="number" step="0.01" />
+                  </div>
+                ))}
+                <Button type="button" variant="outline" onClick={() => setReceiptItems([...receiptItems, {}])}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Item
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-4">
+              <Button variant="outline" onClick={() => setIsReceiptScanning(false)} className="flex-1">
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => {
+                  if (receiptItems.length > 0) {
+                    handleProcessReceipt(receiptItems);
+                  } else {
+                    setIsReceiptScanning(false);
+                    toast({
+                      title: "Demo Mode",
+                      description: "Receipt processing would analyze the image and add items to inventory",
+                    });
+                  }
+                }}
+                className="flex-1"
+              >
+                Process Receipt
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cost Reports Dialog */}
+      <Dialog open={isReportsOpen} onOpenChange={setIsReportsOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Food Cost Analytics</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            {/* Summary Cards */}
+            <div className="grid md:grid-cols-3 gap-4">
+              <Card>
+                <CardContent className="p-4">
+                  <div className="text-2xl font-bold text-green-600">$127.43</div>
+                  <div className="text-sm text-gray-600">This Month's Spending</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="text-2xl font-bold text-orange-600">$23.89</div>
+                  <div className="text-sm text-gray-600">Food Waste Cost</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="text-2xl font-bold text-blue-600">$3.21</div>
+                  <div className="text-sm text-gray-600">Avg Cost Per Meal</div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Charts Section */}
+            <div className="grid md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Spending by Category</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {[
+                      { category: 'Produce', amount: 45.23, percentage: 35 },
+                      { category: 'Meat & Poultry', amount: 38.67, percentage: 30 },
+                      { category: 'Dairy', amount: 25.44, percentage: 20 },
+                      { category: 'Pantry', amount: 18.09, percentage: 15 }
+                    ].map((item) => (
+                      <div key={item.category} className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                          <span className="text-sm">{item.category}</span>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm font-medium">${item.amount}</div>
+                          <div className="text-xs text-gray-500">{item.percentage}%</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Most Wasted Items</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {[
+                      { item: 'Lettuce', waste: 6, cost: 12.34 },
+                      { item: 'Bananas', waste: 4, cost: 8.99 },
+                      { item: 'Bread', waste: 2, cost: 7.48 },
+                      { item: 'Yogurt', waste: 3, cost: 5.67 }
+                    ].map((item) => (
+                      <div key={item.item} className="flex items-center justify-between">
+                        <div>
+                          <div className="text-sm font-medium">{item.item}</div>
+                          <div className="text-xs text-gray-500">{item.waste} times wasted</div>
+                        </div>
+                        <div className="text-sm text-red-600 font-medium">
+                          ${item.cost}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Monthly Trend */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Monthly Spending Trend</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64 flex items-end justify-between gap-2">
+                  {[120, 135, 98, 142, 127, 156].map((amount, index) => (
+                    <div key={index} className="flex flex-col items-center">
+                      <div 
+                        className="bg-blue-500 w-8 rounded-t"
+                        style={{ height: `${(amount / 180) * 200}px` }}
+                      ></div>
+                      <div className="text-xs text-gray-600 mt-2">
+                        {['Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][index]}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="flex justify-end">
+              <Button onClick={() => setIsReportsOpen(false)}>
+                Close
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

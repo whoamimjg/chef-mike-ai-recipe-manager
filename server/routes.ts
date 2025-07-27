@@ -756,6 +756,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const inventoryData = insertUserInventorySchema.parse({
         ...req.body,
         userId,
+        purchaseDate: req.body.purchaseDate ? new Date(req.body.purchaseDate) : new Date()
       });
 
       const item = await storage.addInventoryItem(inventoryData);
@@ -763,6 +764,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error adding inventory item:", error);
       res.status(500).json({ message: "Failed to add inventory item" });
+    }
+  });
+
+  app.put('/api/inventory/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const itemId = parseInt(req.params.id);
+      const item = await storage.updateInventoryItem(itemId, req.body, userId);
+      if (!item) {
+        return res.status(404).json({ message: "Inventory item not found" });
+      }
+      res.json(item);
+    } catch (error) {
+      console.error("Error updating inventory item:", error);
+      res.status(500).json({ message: "Failed to update inventory item" });
+    }
+  });
+
+  app.delete('/api/inventory/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const itemId = parseInt(req.params.id);
+      const success = await storage.deleteInventoryItem(itemId, userId);
+      if (!success) {
+        return res.status(404).json({ message: "Inventory item not found" });
+      }
+      res.json({ message: "Inventory item deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting inventory item:", error);
+      res.status(500).json({ message: "Failed to delete inventory item" });
+    }
+  });
+
+  // Enhanced inventory features
+  app.post('/api/inventory/:id/waste', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const itemId = parseInt(req.params.id);
+      await storage.markItemAsWasted(itemId, userId);
+      res.json({ message: "Item marked as wasted" });
+    } catch (error) {
+      console.error("Error marking item as wasted:", error);
+      res.status(500).json({ message: "Failed to mark item as wasted" });
+    }
+  });
+
+  app.get('/api/inventory/barcode/:barcode', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const barcode = req.params.barcode;
+      const item = await storage.getInventoryByBarcode(userId, barcode);
+      if (!item) {
+        return res.status(404).json({ message: "Item not found" });
+      }
+      res.json(item);
+    } catch (error) {
+      console.error("Error finding item by barcode:", error);
+      res.status(500).json({ message: "Failed to find item by barcode" });
+    }
+  });
+
+  // Receipt scanning routes
+  app.post('/api/receipts', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const receipt = await storage.addPurchaseReceipt({
+        ...req.body,
+        userId,
+        purchaseDate: new Date(req.body.purchaseDate)
+      });
+      
+      // Also add items to inventory
+      const inventoryPromises = req.body.items.map((item: any) => 
+        storage.addInventoryItem({
+          userId,
+          ingredientName: item.name,
+          quantity: item.quantity,
+          unit: item.unit,
+          category: item.category || 'uncategorized',
+          totalCost: item.price.toString(),
+          pricePerUnit: (item.price / parseFloat(item.quantity || '1')).toString(),
+          purchaseDate: new Date(req.body.purchaseDate)
+        })
+      );
+      
+      await Promise.all(inventoryPromises);
+      
+      res.status(201).json(receipt);
+    } catch (error) {
+      console.error("Error adding receipt:", error);
+      res.status(500).json({ message: "Failed to add receipt" });
+    }
+  });
+
+  app.get('/api/receipts', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const receipts = await storage.getPurchaseReceipts(userId);
+      res.json(receipts);
+    } catch (error) {
+      console.error("Error fetching receipts:", error);
+      res.status(500).json({ message: "Failed to fetch receipts" });
+    }
+  });
+
+  // Food cost reporting
+  app.get('/api/reports/spending', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
+      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+      
+      const report = await storage.getSpendingReport(userId, startDate, endDate);
+      res.json(report);
+    } catch (error) {
+      console.error("Error generating spending report:", error);
+      res.status(500).json({ message: "Failed to generate spending report" });
     }
   });
 
