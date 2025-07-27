@@ -753,8 +753,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/inventory', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const inventoryData = insertUserInventorySchema.parse({
+      
+      // Convert empty strings to undefined for numeric fields
+      const cleanedBody = {
         ...req.body,
+        pricePerUnit: req.body.pricePerUnit && req.body.pricePerUnit !== '' ? req.body.pricePerUnit : undefined,
+        totalCost: req.body.totalCost && req.body.totalCost !== '' ? req.body.totalCost : undefined,
+        upcBarcode: req.body.upcBarcode && req.body.upcBarcode !== '' ? req.body.upcBarcode : undefined,
+        expiryDate: req.body.expiryDate && req.body.expiryDate !== '' ? req.body.expiryDate : undefined,
+      };
+      
+      const inventoryData = insertUserInventorySchema.parse({
+        ...cleanedBody,
         userId,
         purchaseDate: req.body.purchaseDate ? new Date(req.body.purchaseDate) : new Date()
       });

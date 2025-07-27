@@ -2228,10 +2228,10 @@ export default function Home() {
                       quantity: newInventoryItem.quantity,
                       unit: newInventoryItem.unit,
                       category: newInventoryItem.category,
-                      upcBarcode: newInventoryItem.upcBarcode,
-                      pricePerUnit: newInventoryItem.pricePerUnit,
-                      totalCost: newInventoryItem.totalCost,
-                      expiryDate: newInventoryItem.expiryDate
+                      upcBarcode: newInventoryItem.upcBarcode || undefined,
+                      pricePerUnit: newInventoryItem.pricePerUnit || undefined,
+                      totalCost: newInventoryItem.totalCost || undefined,
+                      expiryDate: newInventoryItem.expiryDate || undefined
                     });
                   }}
                   className="space-y-4"
