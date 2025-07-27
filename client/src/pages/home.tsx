@@ -2661,11 +2661,13 @@ export default function Home() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Categories</SelectItem>
-                        <SelectItem value="breakfast">Breakfast</SelectItem>
-                        <SelectItem value="lunch">Lunch</SelectItem>
-                        <SelectItem value="dinner">Dinner</SelectItem>
-                        <SelectItem value="snack">Snacks</SelectItem>
+                        <SelectItem value="appetizer">Appetizers</SelectItem>
+                        <SelectItem value="main-course">Main Course</SelectItem>
+                        <SelectItem value="side-dish">Side Dishes</SelectItem>
                         <SelectItem value="dessert">Desserts</SelectItem>
+                        <SelectItem value="beverage">Beverages</SelectItem>
+                        <SelectItem value="soup">Soups</SelectItem>
+                        <SelectItem value="salad">Salads</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -2678,8 +2680,9 @@ export default function Home() {
                         draggable
                         onDragStart={(e) => {
                           e.dataTransfer.setData('application/json', JSON.stringify(recipe));
+                          e.dataTransfer.effectAllowed = 'copy';
                         }}
-                        className="p-3 border-b border-gray-100 hover:bg-gray-50 cursor-grab active:cursor-grabbing transition-colors"
+                        className="p-3 border-b border-gray-100 hover:bg-gray-50 cursor-grab active:cursor-grabbing transition-colors select-none"
                       >
                         <div className="flex items-start gap-3">
                           <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center text-xs">
@@ -2748,14 +2751,30 @@ export default function Home() {
                               {/* Breakfast */}
                               <div 
                                 className="flex-1 border-b border-gray-100 p-2"
-                                onDragOver={(e) => e.preventDefault()}
+                                onDragOver={(e) => {
+                                  e.preventDefault();
+                                  e.dataTransfer.dropEffect = 'copy';
+                                }}
+                                onDragEnter={(e) => {
+                                  e.preventDefault();
+                                  e.currentTarget.classList.add('bg-blue-50', 'border-blue-300');
+                                }}
+                                onDragLeave={(e) => {
+                                  e.preventDefault();
+                                  e.currentTarget.classList.remove('bg-blue-50', 'border-blue-300');
+                                }}
                                 onDrop={(e) => {
                                   e.preventDefault();
-                                  const recipe = JSON.parse(e.dataTransfer.getData('application/json'));
-                                  toast({
-                                    title: "Recipe Added",
-                                    description: `${recipe.title} added to breakfast on ${date.toLocaleDateString()}`,
-                                  });
+                                  e.currentTarget.classList.remove('bg-blue-50', 'border-blue-300');
+                                  try {
+                                    const recipe = JSON.parse(e.dataTransfer.getData('application/json'));
+                                    toast({
+                                      title: "Recipe Added",
+                                      description: `${recipe.title} added to breakfast on ${date.toLocaleDateString()}`,
+                                    });
+                                  } catch (error) {
+                                    console.error('Error parsing dropped recipe:', error);
+                                  }
                                 }}
                               >
                                 <div className="text-xs text-gray-500 mb-1">🌅 Breakfast</div>
@@ -2767,14 +2786,30 @@ export default function Home() {
                               {/* Lunch */}
                               <div 
                                 className="flex-1 border-b border-gray-100 p-2"
-                                onDragOver={(e) => e.preventDefault()}
+                                onDragOver={(e) => {
+                                  e.preventDefault();
+                                  e.dataTransfer.dropEffect = 'copy';
+                                }}
+                                onDragEnter={(e) => {
+                                  e.preventDefault();
+                                  e.currentTarget.classList.add('bg-blue-50', 'border-blue-300');
+                                }}
+                                onDragLeave={(e) => {
+                                  e.preventDefault();
+                                  e.currentTarget.classList.remove('bg-blue-50', 'border-blue-300');
+                                }}
                                 onDrop={(e) => {
                                   e.preventDefault();
-                                  const recipe = JSON.parse(e.dataTransfer.getData('application/json'));
-                                  toast({
-                                    title: "Recipe Added",
-                                    description: `${recipe.title} added to lunch on ${date.toLocaleDateString()}`,
-                                  });
+                                  e.currentTarget.classList.remove('bg-blue-50', 'border-blue-300');
+                                  try {
+                                    const recipe = JSON.parse(e.dataTransfer.getData('application/json'));
+                                    toast({
+                                      title: "Recipe Added",
+                                      description: `${recipe.title} added to lunch on ${date.toLocaleDateString()}`,
+                                    });
+                                  } catch (error) {
+                                    console.error('Error parsing dropped recipe:', error);
+                                  }
                                 }}
                               >
                                 <div className="text-xs text-gray-500 mb-1">☀️ Lunch</div>
@@ -2786,14 +2821,30 @@ export default function Home() {
                               {/* Dinner */}
                               <div 
                                 className="flex-1 border-b border-gray-100 p-2"
-                                onDragOver={(e) => e.preventDefault()}
+                                onDragOver={(e) => {
+                                  e.preventDefault();
+                                  e.dataTransfer.dropEffect = 'copy';
+                                }}
+                                onDragEnter={(e) => {
+                                  e.preventDefault();
+                                  e.currentTarget.classList.add('bg-blue-50', 'border-blue-300');
+                                }}
+                                onDragLeave={(e) => {
+                                  e.preventDefault();
+                                  e.currentTarget.classList.remove('bg-blue-50', 'border-blue-300');
+                                }}
                                 onDrop={(e) => {
                                   e.preventDefault();
-                                  const recipe = JSON.parse(e.dataTransfer.getData('application/json'));
-                                  toast({
-                                    title: "Recipe Added",
-                                    description: `${recipe.title} added to dinner on ${date.toLocaleDateString()}`,
-                                  });
+                                  e.currentTarget.classList.remove('bg-blue-50', 'border-blue-300');
+                                  try {
+                                    const recipe = JSON.parse(e.dataTransfer.getData('application/json'));
+                                    toast({
+                                      title: "Recipe Added",
+                                      description: `${recipe.title} added to dinner on ${date.toLocaleDateString()}`,
+                                    });
+                                  } catch (error) {
+                                    console.error('Error parsing dropped recipe:', error);
+                                  }
                                 }}
                               >
                                 <div className="text-xs text-gray-500 mb-1">🌙 Dinner</div>
@@ -2805,14 +2856,30 @@ export default function Home() {
                               {/* Snacks */}
                               <div 
                                 className="flex-1 p-2"
-                                onDragOver={(e) => e.preventDefault()}
+                                onDragOver={(e) => {
+                                  e.preventDefault();
+                                  e.dataTransfer.dropEffect = 'copy';
+                                }}
+                                onDragEnter={(e) => {
+                                  e.preventDefault();
+                                  e.currentTarget.classList.add('bg-blue-50', 'border-blue-300');
+                                }}
+                                onDragLeave={(e) => {
+                                  e.preventDefault();
+                                  e.currentTarget.classList.remove('bg-blue-50', 'border-blue-300');
+                                }}
                                 onDrop={(e) => {
                                   e.preventDefault();
-                                  const recipe = JSON.parse(e.dataTransfer.getData('application/json'));
-                                  toast({
-                                    title: "Recipe Added",
-                                    description: `${recipe.title} added to snacks on ${date.toLocaleDateString()}`,
-                                  });
+                                  e.currentTarget.classList.remove('bg-blue-50', 'border-blue-300');
+                                  try {
+                                    const recipe = JSON.parse(e.dataTransfer.getData('application/json'));
+                                    toast({
+                                      title: "Recipe Added",
+                                      description: `${recipe.title} added to snacks on ${date.toLocaleDateString()}`,
+                                    });
+                                  } catch (error) {
+                                    console.error('Error parsing dropped recipe:', error);
+                                  }
                                 }}
                               >
                                 <div className="text-xs text-gray-500 mb-1">🍎 Snacks</div>
