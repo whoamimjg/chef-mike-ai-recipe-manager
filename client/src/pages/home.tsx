@@ -63,6 +63,14 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [mealPlannerView, setMealPlannerView] = useState<'day' | 'week' | 'month'>('week');
+  const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => {
+    const today = new Date();
+    const start = new Date(today);
+    start.setDate(today.getDate() - today.getDay());
+    return start;
+  });
+  const [mealPlanData, setMealPlanData] = useState<Record<string, Record<string, any>>>({});
   const [isAddRecipeOpen, setIsAddRecipeOpen] = useState(false);
   const [isAIGeneratorOpen, setIsAIGeneratorOpen] = useState(false);
   const [isAddInventoryOpen, setIsAddInventoryOpen] = useState(false);
@@ -352,6 +360,30 @@ export default function Home() {
         variant: "destructive",
       });
     },
+  });
+
+  // Add meal plan mutation
+  const addMealPlanMutation = useMutation({
+    mutationFn: async (data: { recipeId: number; date: string; mealType: string }) => {
+      return await apiRequest("POST", "/api/meal-plans", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/meal-plans'] });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      console.error("Failed to add meal plan:", error);
+    }
   });
 
   const handleLogout = () => {
@@ -2615,7 +2647,7 @@ export default function Home() {
                 {/* View Toggle */}
                 <div className="flex items-center gap-2">
                   <Label>View:</Label>
-                  <Select defaultValue="week">
+                  <Select value={mealPlannerView} onValueChange={(value: 'day' | 'week' | 'month') => setMealPlannerView(value)}>
                     <SelectTrigger className="w-32">
                       <SelectValue />
                     </SelectTrigger>
@@ -2626,16 +2658,6 @@ export default function Home() {
                     </SelectContent>
                   </Select>
                 </div>
-                
-                {/* Calendar Integration */}
-                <Button variant="outline" size="sm">
-                  <CalendarIcon className="h-4 w-4 mr-2" />
-                  Sync with Google Calendar
-                </Button>
-                <Button variant="outline" size="sm">
-                  <CalendarIcon className="h-4 w-4 mr-2" />
-                  Sync with Outlook
-                </Button>
               </div>
             </div>
 
@@ -2714,37 +2736,81 @@ export default function Home() {
                 <Card className="h-full">
                   <CardHeader className="pb-3">
                     <div className="flex justify-between items-center">
-                      <CardTitle>Week View - {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</CardTitle>
+                      <CardTitle>
+                        {mealPlannerView === 'day' && `Day View - ${selectedDate.toLocaleDateString()}`}
+                        {mealPlannerView === 'week' && `Week View - ${currentWeekStart.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`}
+                        {mealPlannerView === 'month' && `Month View - ${new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`}
+                      </CardTitle>
                       <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            if (mealPlannerView === 'week') {
+                              const newStart = new Date(currentWeekStart);
+                              newStart.setDate(newStart.getDate() - 7);
+                              setCurrentWeekStart(newStart);
+                            }
+                          }}
+                        >
                           <ChevronLeft className="h-4 w-4" />
                         </Button>
-                        <Button variant="outline" size="sm">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            if (mealPlannerView === 'week') {
+                              const today = new Date();
+                              const start = new Date(today);
+                              start.setDate(today.getDate() - today.getDay());
+                              setCurrentWeekStart(start);
+                            }
+                          }}
+                        >
                           Today
                         </Button>
-                        <Button variant="outline" size="sm">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            if (mealPlannerView === 'week') {
+                              const newStart = new Date(currentWeekStart);
+                              newStart.setDate(newStart.getDate() + 7);
+                              setCurrentWeekStart(newStart);
+                            }
+                          }}
+                        >
                           <ChevronRight className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
                   </CardHeader>
                   <CardContent className="p-0">
-                    {/* Week View Grid */}
-                    <div className="grid grid-cols-7 h-[680px]">
-                      {/* Day Headers */}
-                      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => {
-                        const date = new Date();
-                        date.setDate(date.getDate() - date.getDay() + index);
-                        const isToday = date.toDateString() === new Date().toDateString();
-                        
-                        return (
-                          <div key={day} className="border-r border-gray-200 last:border-r-0">
-                            <div className={`p-3 text-center border-b border-gray-200 ${isToday ? 'bg-blue-50' : 'bg-gray-50'}`}>
-                              <div className="text-sm font-medium text-gray-900">{day}</div>
-                              <div className={`text-xs mt-1 ${isToday ? 'text-blue-600 font-semibold' : 'text-gray-500'}`}>
-                                {date.getDate()}
+                    {/* Render different views based on selection */}
+                    {mealPlannerView === 'week' && (
+                      <div className="grid grid-cols-7 h-[680px]">
+                        {/* Week View - Day Headers */}
+                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => {
+                          const date = new Date(currentWeekStart);
+                          date.setDate(currentWeekStart.getDate() + index);
+                          const isToday = date.toDateString() === new Date().toDateString();
+                          const dateStr = date.toISOString().split('T')[0];
+                          
+                          // Get meal plans for this date
+                          const dayMealPlans = mealPlans?.filter(plan => plan.date === dateStr) || [];
+                          const breakfastPlans = dayMealPlans.filter(plan => plan.mealType === 'breakfast');
+                          const lunchPlans = dayMealPlans.filter(plan => plan.mealType === 'lunch');
+                          const dinnerPlans = dayMealPlans.filter(plan => plan.mealType === 'dinner');
+                          const snackPlans = dayMealPlans.filter(plan => plan.mealType === 'snack');
+                          
+                          return (
+                            <div key={day} className="border-r border-gray-200 last:border-r-0">
+                              <div className={`p-3 text-center border-b border-gray-200 ${isToday ? 'bg-blue-50' : 'bg-gray-50'}`}>
+                                <div className="text-sm font-medium text-gray-900">{day}</div>
+                                <div className={`text-xs mt-1 ${isToday ? 'text-blue-600 font-semibold' : 'text-gray-500'}`}>
+                                  {date.getDate()}
+                                </div>
                               </div>
-                            </div>
                             
                             {/* Meal Slots */}
                             <div className="h-[600px] flex flex-col">
@@ -2768,6 +2834,11 @@ export default function Home() {
                                   e.currentTarget.classList.remove('bg-blue-50', 'border-blue-300');
                                   try {
                                     const recipe = JSON.parse(e.dataTransfer.getData('application/json'));
+                                    addMealPlanMutation.mutate({
+                                      recipeId: recipe.id,
+                                      date: date.toISOString().split('T')[0],
+                                      mealType: 'breakfast'
+                                    });
                                     toast({
                                       title: "Recipe Added",
                                       description: `${recipe.title} added to breakfast on ${date.toLocaleDateString()}`,
@@ -2778,8 +2849,19 @@ export default function Home() {
                                 }}
                               >
                                 <div className="text-xs text-gray-500 mb-1">🌅 Breakfast</div>
-                                <div className="min-h-[40px] bg-gray-50 rounded border-2 border-dashed border-gray-200 flex items-center justify-center text-xs text-gray-400 hover:border-blue-300 hover:bg-blue-50 transition-colors">
-                                  Drop recipe here
+                                <div className="min-h-[40px] bg-gray-50 rounded border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-xs text-gray-400 hover:border-blue-300 hover:bg-blue-50 transition-colors p-1">
+                                  {breakfastPlans.length > 0 ? (
+                                    breakfastPlans.map((plan) => {
+                                      const recipe = recipes?.find(r => r.id === plan.recipeId);
+                                      return (
+                                        <div key={plan.id} className="bg-blue-100 text-blue-800 rounded px-2 py-1 mb-1 text-xs truncate w-full text-center">
+                                          {recipe?.title || 'Recipe'}
+                                        </div>
+                                      );
+                                    })
+                                  ) : (
+                                    'Drop recipe here'
+                                  )}
                                 </div>
                               </div>
                               
@@ -2803,6 +2885,11 @@ export default function Home() {
                                   e.currentTarget.classList.remove('bg-blue-50', 'border-blue-300');
                                   try {
                                     const recipe = JSON.parse(e.dataTransfer.getData('application/json'));
+                                    addMealPlanMutation.mutate({
+                                      recipeId: recipe.id,
+                                      date: date.toISOString().split('T')[0],
+                                      mealType: 'lunch'
+                                    });
                                     toast({
                                       title: "Recipe Added",
                                       description: `${recipe.title} added to lunch on ${date.toLocaleDateString()}`,
@@ -2813,8 +2900,19 @@ export default function Home() {
                                 }}
                               >
                                 <div className="text-xs text-gray-500 mb-1">☀️ Lunch</div>
-                                <div className="min-h-[40px] bg-gray-50 rounded border-2 border-dashed border-gray-200 flex items-center justify-center text-xs text-gray-400 hover:border-blue-300 hover:bg-blue-50 transition-colors">
-                                  Drop recipe here
+                                <div className="min-h-[40px] bg-gray-50 rounded border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-xs text-gray-400 hover:border-blue-300 hover:bg-blue-50 transition-colors p-1">
+                                  {lunchPlans.length > 0 ? (
+                                    lunchPlans.map((plan) => {
+                                      const recipe = recipes?.find(r => r.id === plan.recipeId);
+                                      return (
+                                        <div key={plan.id} className="bg-green-100 text-green-800 rounded px-2 py-1 mb-1 text-xs truncate w-full text-center">
+                                          {recipe?.title || 'Recipe'}
+                                        </div>
+                                      );
+                                    })
+                                  ) : (
+                                    'Drop recipe here'
+                                  )}
                                 </div>
                               </div>
                               
@@ -2838,6 +2936,11 @@ export default function Home() {
                                   e.currentTarget.classList.remove('bg-blue-50', 'border-blue-300');
                                   try {
                                     const recipe = JSON.parse(e.dataTransfer.getData('application/json'));
+                                    addMealPlanMutation.mutate({
+                                      recipeId: recipe.id,
+                                      date: date.toISOString().split('T')[0],
+                                      mealType: 'dinner'
+                                    });
                                     toast({
                                       title: "Recipe Added",
                                       description: `${recipe.title} added to dinner on ${date.toLocaleDateString()}`,
@@ -2848,8 +2951,19 @@ export default function Home() {
                                 }}
                               >
                                 <div className="text-xs text-gray-500 mb-1">🌙 Dinner</div>
-                                <div className="min-h-[40px] bg-gray-50 rounded border-2 border-dashed border-gray-200 flex items-center justify-center text-xs text-gray-400 hover:border-blue-300 hover:bg-blue-50 transition-colors">
-                                  Drop recipe here
+                                <div className="min-h-[40px] bg-gray-50 rounded border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-xs text-gray-400 hover:border-blue-300 hover:bg-blue-50 transition-colors p-1">
+                                  {dinnerPlans.length > 0 ? (
+                                    dinnerPlans.map((plan) => {
+                                      const recipe = recipes?.find(r => r.id === plan.recipeId);
+                                      return (
+                                        <div key={plan.id} className="bg-orange-100 text-orange-800 rounded px-2 py-1 mb-1 text-xs truncate w-full text-center">
+                                          {recipe?.title || 'Recipe'}
+                                        </div>
+                                      );
+                                    })
+                                  ) : (
+                                    'Drop recipe here'
+                                  )}
                                 </div>
                               </div>
                               
@@ -2873,6 +2987,11 @@ export default function Home() {
                                   e.currentTarget.classList.remove('bg-blue-50', 'border-blue-300');
                                   try {
                                     const recipe = JSON.parse(e.dataTransfer.getData('application/json'));
+                                    addMealPlanMutation.mutate({
+                                      recipeId: recipe.id,
+                                      date: date.toISOString().split('T')[0],
+                                      mealType: 'snack'
+                                    });
                                     toast({
                                       title: "Recipe Added",
                                       description: `${recipe.title} added to snacks on ${date.toLocaleDateString()}`,
@@ -2883,8 +3002,19 @@ export default function Home() {
                                 }}
                               >
                                 <div className="text-xs text-gray-500 mb-1">🍎 Snacks</div>
-                                <div className="min-h-[40px] bg-gray-50 rounded border-2 border-dashed border-gray-200 flex items-center justify-center text-xs text-gray-400 hover:border-blue-300 hover:bg-blue-50 transition-colors">
-                                  Drop recipe here
+                                <div className="min-h-[40px] bg-gray-50 rounded border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-xs text-gray-400 hover:border-blue-300 hover:bg-blue-50 transition-colors p-1">
+                                  {snackPlans.length > 0 ? (
+                                    snackPlans.map((plan) => {
+                                      const recipe = recipes?.find(r => r.id === plan.recipeId);
+                                      return (
+                                        <div key={plan.id} className="bg-purple-100 text-purple-800 rounded px-2 py-1 mb-1 text-xs truncate w-full text-center">
+                                          {recipe?.title || 'Recipe'}
+                                        </div>
+                                      );
+                                    })
+                                  ) : (
+                                    'Drop recipe here'
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -2892,6 +3022,27 @@ export default function Home() {
                         );
                       })}
                     </div>
+                    )}
+
+                    {/* Day View */}
+                    {mealPlannerView === 'day' && (
+                      <div className="p-6 space-y-6">
+                        <h3 className="text-xl font-semibold">Meals for {selectedDate.toLocaleDateString()}</h3>
+                        {/* Day view content would go here */}
+                        <div className="text-gray-500 text-center py-12">
+                          Day view coming soon - use the calendar to select a date
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Month View */}
+                    {mealPlannerView === 'month' && (
+                      <div className="p-6">
+                        <div className="text-gray-500 text-center py-12">
+                          Month view coming soon - showing condensed calendar view
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
