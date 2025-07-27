@@ -32,9 +32,12 @@ import {
   Star,
   Brain,
   Download,
-  Upload
+  Upload,
+  Package,
+  Sparkles,
+  Wand2
 } from "lucide-react";
-import type { Recipe, MealPlan, ShoppingList, UserPreferences } from "@shared/schema";
+import type { Recipe, MealPlan, ShoppingList, UserPreferences, UserInventory } from "@shared/schema";
 
 export default function Home() {
   const { user, isLoading, isAuthenticated } = useAuth();
@@ -45,6 +48,9 @@ export default function Home() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isAddRecipeOpen, setIsAddRecipeOpen] = useState(false);
+  const [isAIGeneratorOpen, setIsAIGeneratorOpen] = useState(false);
+  const [isAddInventoryOpen, setIsAddInventoryOpen] = useState(false);
+  const [newInventoryItem, setNewInventoryItem] = useState({ name: "", quantity: "", unit: "", category: "" });
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -82,6 +88,12 @@ export default function Home() {
   // Fetch user preferences
   const { data: preferences } = useQuery<UserPreferences>({
     queryKey: ["/api/preferences"],
+    retry: false,
+  });
+
+  // Fetch user inventory
+  const { data: inventory = [], isLoading: inventoryLoading } = useQuery<UserInventory[]>({
+    queryKey: ["/api/inventory"],
     retry: false,
   });
 
@@ -186,6 +198,73 @@ export default function Home() {
     window.location.href = "/api/logout";
   };
 
+  // Add inventory item mutation
+  const addInventoryMutation = useMutation({
+    mutationFn: async (itemData: { name: string; quantity: string; unit: string; category: string }) => {
+      await apiRequest("POST", "/api/inventory", itemData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
+      setIsAddInventoryOpen(false);
+      setNewInventoryItem({ name: "", quantity: "", unit: "", category: "" });
+      toast({
+        title: "Success",
+        description: "Inventory item added successfully!",
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to add inventory item",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // AI recipe generation mutation
+  const generateAIRecipeMutation = useMutation({
+    mutationFn: async (requestData: { preferences?: UserPreferences; inventory: UserInventory[]; mealType: string }) => {
+      const response = await apiRequest("POST", "/api/recommendations", requestData);
+      return response;
+    },
+    onSuccess: (recommendations) => {
+      toast({
+        title: "Success",
+        description: "AI recipe recommendations generated!",
+      });
+      // You could add logic here to display recommendations in a modal or panel
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized", 
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to generate AI recommendations",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleAddRecipe = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
@@ -245,6 +324,22 @@ export default function Home() {
               >
                 <ChefHat className="h-4 w-4" />
                 Recipes
+              </Button>
+              <Button
+                variant={activeTab === "ai-generator" ? "default" : "ghost"}
+                onClick={() => setActiveTab("ai-generator")}
+                className="flex items-center gap-2"
+              >
+                <Wand2 className="h-4 w-4" />
+                AI Generator
+              </Button>
+              <Button
+                variant={activeTab === "inventory" ? "default" : "ghost"}
+                onClick={() => setActiveTab("inventory")}
+                className="flex items-center gap-2"
+              >
+                <Package className="h-4 w-4" />
+                Inventory
               </Button>
               <Button
                 variant={activeTab === "meal-planner" ? "default" : "ghost"}
@@ -502,6 +597,275 @@ export default function Home() {
                 ))}
               </div>
             )}
+          </TabsContent>
+
+          {/* AI Recipe Generator */}
+          <TabsContent value="ai-generator" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="text-4xl font-bold text-gray-900 mb-2 flex items-center gap-2">
+                  <Wand2 className="h-8 w-8" />
+                  AI Recipe Generator
+                </h1>
+                <p className="text-gray-600">Generate personalized recipes based on your preferences and available ingredients</p>
+              </div>
+            </div>
+
+            {/* AI Generation Form */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5" />
+                  Generate Recipe Recommendations
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="mealType">Meal Type</Label>
+                    <Select>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select meal type..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="breakfast">Breakfast</SelectItem>
+                        <SelectItem value="lunch">Lunch</SelectItem>
+                        <SelectItem value="dinner">Dinner</SelectItem>
+                        <SelectItem value="snack">Snack</SelectItem>
+                        <SelectItem value="dessert">Dessert</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="cuisine">Cuisine Preference</Label>
+                    <Select>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Any cuisine..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="italian">Italian</SelectItem>
+                        <SelectItem value="mexican">Mexican</SelectItem>
+                        <SelectItem value="asian">Asian</SelectItem>
+                        <SelectItem value="indian">Indian</SelectItem>
+                        <SelectItem value="mediterranean">Mediterranean</SelectItem>
+                        <SelectItem value="american">American</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div>
+                  <Label>Available Ingredients</Label>
+                  <div className="mt-2 p-4 bg-gray-50 rounded-lg">
+                    {inventory.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {inventory.map((item) => (
+                          <Badge key={item.id} variant="secondary" className="bg-green-100 text-green-800">
+                            {item.name} ({item.quantity} {item.unit})
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 text-sm">
+                        No ingredients in your inventory. Add items in the Inventory tab to get personalized recommendations.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <Label>Dietary Preferences</Label>
+                  <div className="mt-2 p-4 bg-gray-50 rounded-lg">
+                    {preferences ? (
+                      <div className="space-y-2">
+                        {preferences.dietaryRestrictions && preferences.dietaryRestrictions.length > 0 && (
+                          <div>
+                            <span className="text-sm font-medium text-gray-700">Restrictions: </span>
+                            <span className="text-sm text-gray-600">{preferences.dietaryRestrictions.join(', ')}</span>
+                          </div>
+                        )}
+                        {preferences.allergies && preferences.allergies.length > 0 && (
+                          <div>
+                            <span className="text-sm font-medium text-gray-700">Allergies: </span>
+                            <span className="text-sm text-gray-600">{preferences.allergies.join(', ')}</span>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 text-sm">
+                        Set up your dietary preferences in the Account tab for better recommendations.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <Button 
+                  onClick={() => generateAIRecipeMutation.mutate({ 
+                    preferences, 
+                    inventory, 
+                    mealType: 'dinner' 
+                  })}
+                  disabled={generateAIRecipeMutation.isPending}
+                  className="w-full flex items-center gap-2"
+                >
+                  <Brain className="h-4 w-4" />
+                  {generateAIRecipeMutation.isPending ? 'Generating...' : 'Generate AI Recipes'}
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Household Inventory */}
+          <TabsContent value="inventory" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="text-4xl font-bold text-gray-900 mb-2 flex items-center gap-2">
+                  <Package className="h-8 w-8" />
+                  Household Inventory
+                </h1>
+                <p className="text-gray-600">Manage your pantry and ingredient inventory for better meal planning</p>
+              </div>
+            </div>
+
+            {/* Add Inventory Item */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Plus className="h-5 w-5" />
+                  Add Inventory Item
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    addInventoryMutation.mutate(newInventoryItem);
+                  }}
+                  className="space-y-4"
+                >
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="itemName">Item Name</Label>
+                      <Input
+                        id="itemName"
+                        value={newInventoryItem.name}
+                        onChange={(e) => setNewInventoryItem({...newInventoryItem, name: e.target.value})}
+                        placeholder="e.g., Tomatoes, Chicken Breast"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="category">Category</Label>
+                      <Select value={newInventoryItem.category} onValueChange={(value) => setNewInventoryItem({...newInventoryItem, category: value})}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select category..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="produce">Produce</SelectItem>
+                          <SelectItem value="meat">Meat & Poultry</SelectItem>
+                          <SelectItem value="dairy">Dairy</SelectItem>
+                          <SelectItem value="pantry">Pantry Staples</SelectItem>
+                          <SelectItem value="spices">Spices & Herbs</SelectItem>
+                          <SelectItem value="frozen">Frozen</SelectItem>
+                          <SelectItem value="beverages">Beverages</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="quantity">Quantity</Label>
+                      <Input
+                        id="quantity"
+                        value={newInventoryItem.quantity}
+                        onChange={(e) => setNewInventoryItem({...newInventoryItem, quantity: e.target.value})}
+                        placeholder="e.g., 2, 1.5"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="unit">Unit</Label>
+                      <Select value={newInventoryItem.unit} onValueChange={(value) => setNewInventoryItem({...newInventoryItem, unit: value})}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select unit..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pcs">Pieces</SelectItem>
+                          <SelectItem value="lbs">Pounds</SelectItem>
+                          <SelectItem value="kg">Kilograms</SelectItem>
+                          <SelectItem value="oz">Ounces</SelectItem>
+                          <SelectItem value="cups">Cups</SelectItem>
+                          <SelectItem value="tbsp">Tablespoons</SelectItem>
+                          <SelectItem value="tsp">Teaspoons</SelectItem>
+                          <SelectItem value="ml">Milliliters</SelectItem>
+                          <SelectItem value="l">Liters</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <Button 
+                    type="submit" 
+                    disabled={addInventoryMutation.isPending}
+                    className="w-full flex items-center gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    {addInventoryMutation.isPending ? 'Adding...' : 'Add to Inventory'}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+
+            {/* Current Inventory */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Package className="h-5 w-5" />
+                  Current Inventory
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {inventoryLoading ? (
+                  <div className="text-center py-8">
+                    <Package className="h-12 w-12 animate-pulse mx-auto mb-4 text-gray-400" />
+                    <p className="text-gray-600">Loading inventory...</p>
+                  </div>
+                ) : inventory.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Package className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">Your inventory is empty</h3>
+                    <p className="text-gray-600">Start adding ingredients to get personalized recipe recommendations!</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {['produce', 'meat', 'dairy', 'pantry', 'spices', 'frozen', 'beverages'].map((category) => {
+                      const categoryItems = inventory.filter(item => item.category === category);
+                      if (categoryItems.length === 0) return null;
+                      
+                      return (
+                        <div key={category} className="border-b pb-4 last:border-b-0">
+                          <h4 className="font-semibold text-lg text-gray-900 mb-3 capitalize">
+                            {category === 'meat' ? 'Meat & Poultry' : category === 'spices' ? 'Spices & Herbs' : category}
+                          </h4>
+                          <div className="grid md:grid-cols-3 gap-3">
+                            {categoryItems.map((item) => (
+                              <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                <div>
+                                  <div className="font-medium text-gray-900">{item.name}</div>
+                                  <div className="text-sm text-gray-500">{item.quantity} {item.unit}</div>
+                                </div>
+                                <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-800">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Meal Planning */}
