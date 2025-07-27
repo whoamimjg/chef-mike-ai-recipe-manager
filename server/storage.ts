@@ -25,7 +25,7 @@ import {
   type InsertPurchaseReceipt,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, gte, lte, desc, asc, ilike, isNotNull } from "drizzle-orm";
+import { eq, and, gte, lte, desc, asc, ilike, isNotNull, isNull } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -349,10 +349,14 @@ export class DatabaseStorage implements IStorage {
 
   // User inventory operations
   async getUserInventory(userId: string): Promise<UserInventory[]> {
+    // Only show items that haven't been wasted or used
     return await db
       .select()
       .from(userInventory)
-      .where(eq(userInventory.userId, userId))
+      .where(and(
+        eq(userInventory.userId, userId),
+        isNull(userInventory.wasteDate) // Exclude wasted items from active inventory
+      ))
       .orderBy(asc(userInventory.ingredientName));
   }
 
@@ -381,9 +385,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async markItemAsWasted(id: number, userId: string): Promise<void> {
+    // Mark item as wasted but keep it in inventory for reporting
     await db
       .update(userInventory)
-      .set({ wasteDate: new Date() })
+      .set({ wasteDate: new Date(), updatedAt: new Date() })
       .where(and(eq(userInventory.id, id), eq(userInventory.userId, userId)));
   }
 

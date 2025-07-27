@@ -454,6 +454,74 @@ export default function Home() {
     window.location.href = "/api/logout";
   };
 
+  // Check for missing ingredients and add to shopping list
+  const checkMissingIngredients = async (recipe: any) => {
+    try {
+      if (!recipe.ingredients || !Array.isArray(recipe.ingredients)) return;
+      
+      const missingItems: string[] = [];
+      
+      // Check each recipe ingredient against inventory
+      recipe.ingredients.forEach((ingredient: any) => {
+        const ingredientName = ingredient.item?.toLowerCase() || '';
+        const hasInInventory = inventory?.some(inv => 
+          inv.ingredientName.toLowerCase().includes(ingredientName) ||
+          ingredientName.includes(inv.ingredientName.toLowerCase())
+        );
+        
+        if (!hasInInventory && ingredientName) {
+          missingItems.push(ingredient.item);
+        }
+      });
+      
+      // Add missing items to shopping list if any
+      if (missingItems.length > 0) {
+        const existingList = shoppingLists?.[0];
+        if (existingList) {
+          // Update existing shopping list
+          const currentItems = existingList.items || [];
+          const newItems = missingItems.map(item => ({ 
+            item, 
+            amount: '1', 
+            unit: 'item',
+            notes: `Added from ${recipe.title}`
+          }));
+          
+          await apiRequest("PUT", `/api/shopping-lists/${existingList.id}`, {
+            items: [...currentItems, ...newItems]
+          });
+          
+          queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+          
+          toast({
+            title: "Missing Ingredients Added",
+            description: `${missingItems.length} missing ingredients added to shopping list`,
+          });
+        } else {
+          // Create new shopping list
+          await apiRequest("POST", "/api/shopping-lists", {
+            name: `Ingredients for ${recipe.title}`,
+            items: missingItems.map(item => ({ 
+              item, 
+              amount: '1', 
+              unit: 'item',
+              notes: `From ${recipe.title}`
+            }))
+          });
+          
+          queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+          
+          toast({
+            title: "Shopping List Created",
+            description: `New shopping list created with ${missingItems.length} ingredients`,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error checking missing ingredients:', error);
+    }
+  };
+
   const handleProcessReceipt = async (items: any[]) => {
     // This would process the receipt items and add them to inventory
     setIsReceiptScanning(false);
@@ -2913,6 +2981,10 @@ export default function Home() {
                                       date: date.toISOString().split('T')[0],
                                       mealType: 'breakfast'
                                     });
+                                    
+                                    // Check for missing ingredients and add to shopping list
+                                    checkMissingIngredients(recipe);
+                                    
                                     toast({
                                       title: "Recipe Added",
                                       description: `${recipe.title} added to breakfast on ${date.toLocaleDateString()}`,
@@ -2964,6 +3036,10 @@ export default function Home() {
                                       date: date.toISOString().split('T')[0],
                                       mealType: 'lunch'
                                     });
+                                    
+                                    // Check for missing ingredients and add to shopping list
+                                    checkMissingIngredients(recipe);
+                                    
                                     toast({
                                       title: "Recipe Added",
                                       description: `${recipe.title} added to lunch on ${date.toLocaleDateString()}`,
@@ -3015,6 +3091,10 @@ export default function Home() {
                                       date: date.toISOString().split('T')[0],
                                       mealType: 'dinner'
                                     });
+                                    
+                                    // Check for missing ingredients and add to shopping list
+                                    checkMissingIngredients(recipe);
+                                    
                                     toast({
                                       title: "Recipe Added",
                                       description: `${recipe.title} added to dinner on ${date.toLocaleDateString()}`,
@@ -3066,6 +3146,10 @@ export default function Home() {
                                       date: date.toISOString().split('T')[0],
                                       mealType: 'snack'
                                     });
+                                    
+                                    // Check for missing ingredients and add to shopping list
+                                    checkMissingIngredients(recipe);
+                                    
                                     toast({
                                       title: "Recipe Added",
                                       description: `${recipe.title} added to snacks on ${date.toLocaleDateString()}`,
