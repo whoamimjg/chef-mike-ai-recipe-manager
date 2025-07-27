@@ -43,6 +43,7 @@ import {
   FileText,
   Import,
   Eye,
+  Lightbulb,
   ImageIcon,
   Play,
   ChevronLeft,
@@ -105,6 +106,7 @@ export default function Home() {
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(0);
+  const [aiRecommendations, setAiRecommendations] = useState<any[]>([]);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -448,18 +450,20 @@ export default function Home() {
     },
   });
 
-  // AI recipe generation mutation
+  // Enhanced AI recipe generation mutation
   const generateAIRecipeMutation = useMutation({
-    mutationFn: async (requestData: { preferences?: UserPreferences; inventory: UserInventory[]; mealType: string }) => {
+    mutationFn: async (requestData: { preferences?: UserPreferences; inventory: UserInventory[] }) => {
       const response = await apiRequest("POST", "/api/recommendations", requestData);
       return response;
     },
-    onSuccess: (recommendations) => {
+    onSuccess: (response: any) => {
+      // Display smart recommendations with ingredient matching info
+      const recommendations = response.recommendations || response || [];
+      setAiRecommendations(recommendations);
       toast({
-        title: "Success",
-        description: "AI recipe recommendations generated!",
+        title: "Smart Recommendations Generated!",
+        description: `Found ${recommendations.length} personalized recipes based on your inventory and preferences.`,
       });
-      // You could add logic here to display recommendations in a modal or panel
     },
     onError: (error) => {
       if (isUnauthorizedError(error)) {
@@ -2094,37 +2098,16 @@ export default function Home() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <Label htmlFor="mealType">Meal Type</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select meal type..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="breakfast">Breakfast</SelectItem>
-                        <SelectItem value="lunch">Lunch</SelectItem>
-                        <SelectItem value="dinner">Dinner</SelectItem>
-                        <SelectItem value="snack">Snack</SelectItem>
-                        <SelectItem value="dessert">Dessert</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="cuisine">Cuisine Preference</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Any cuisine..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="italian">Italian</SelectItem>
-                        <SelectItem value="mexican">Mexican</SelectItem>
-                        <SelectItem value="asian">Asian</SelectItem>
-                        <SelectItem value="indian">Indian</SelectItem>
-                        <SelectItem value="mediterranean">Mediterranean</SelectItem>
-                        <SelectItem value="american">American</SelectItem>
-                      </SelectContent>
-                    </Select>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                  <div className="flex items-start gap-3">
+                    <Lightbulb className="h-5 w-5 text-blue-600 mt-0.5" />
+                    <div>
+                      <h4 className="font-medium text-blue-900 mb-1">Smart Recipe Recommendations</h4>
+                      <p className="text-sm text-blue-700">
+                        Our AI will analyze your inventory and preferences to suggest recipes you can make right now, 
+                        plus recipes where you're only missing a few ingredients.
+                      </p>
+                    </div>
                   </div>
                 </div>
 
@@ -2176,17 +2159,185 @@ export default function Home() {
                 <Button 
                   onClick={() => generateAIRecipeMutation.mutate({ 
                     preferences, 
-                    inventory, 
-                    mealType: 'dinner' 
+                    inventory
                   })}
                   disabled={generateAIRecipeMutation.isPending}
                   className="w-full flex items-center gap-2"
                 >
                   <Brain className="h-4 w-4" />
-                  {generateAIRecipeMutation.isPending ? 'Generating...' : 'Generate AI Recipes'}
+                  {generateAIRecipeMutation.isPending ? 'Generating Smart Recommendations...' : 'Generate Smart Recipe Recommendations'}
                 </Button>
               </CardContent>
             </Card>
+
+            {/* AI Recommendations Results */}
+            {aiRecommendations.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5" />
+                    Smart Recipe Recommendations
+                  </CardTitle>
+                  <p className="text-sm text-gray-600">
+                    Recipes tailored to your inventory and preferences, sorted by ingredient match
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    {aiRecommendations.map((recipe, index) => (
+                      <div key={index} className="border rounded-lg p-4 space-y-4">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <h3 className="text-xl font-semibold text-gray-900">{recipe.title}</h3>
+                            <p className="text-gray-600 mt-1">{recipe.description}</p>
+                            
+                            {/* Recipe Info */}
+                            <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-4 w-4" />
+                                {recipe.prepTime + recipe.cookTime}m total
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Users className="h-4 w-4" />
+                                {recipe.servings} servings
+                              </span>
+                              <Badge variant="outline" className="text-xs">
+                                {recipe.difficulty}
+                              </Badge>
+                              <Badge variant="outline" className="text-xs">
+                                {recipe.cuisine}
+                              </Badge>
+                            </div>
+                          </div>
+                          
+                          {/* Ingredient Match Indicator */}
+                          <div className="text-right">
+                            <div className={`text-lg font-bold ${
+                              recipe.inventoryMatch >= 80 ? 'text-green-600' : 
+                              recipe.inventoryMatch >= 50 ? 'text-yellow-600' : 'text-orange-600'
+                            }`}>
+                              {recipe.inventoryMatch}% Match
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {recipe.matchType === 'full' ? 'Ready to cook!' : 'Few items needed'}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Missing Ingredients & Shopping List */}
+                        {recipe.missingIngredients && recipe.missingIngredients.length > 0 && (
+                          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <h4 className="font-medium text-yellow-800 mb-2">Missing Ingredients:</h4>
+                                <div className="flex flex-wrap gap-2">
+                                  {recipe.missingIngredients.map((ingredient: string, idx: number) => (
+                                    <Badge key={idx} variant="secondary" className="bg-yellow-100 text-yellow-800">
+                                      {ingredient}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                className="text-yellow-800 border-yellow-300 hover:bg-yellow-100"
+                                onClick={() => {
+                                  // Add missing ingredients to shopping list
+                                  const shoppingItems = recipe.missingIngredients.map((ingredient: string) => ({
+                                    item: ingredient,
+                                    quantity: "1",
+                                    checked: false
+                                  }));
+                                  
+                                  generateShoppingListMutation.mutate({
+                                    name: `${recipe.title} - Missing Items`,
+                                    startDate: new Date().toISOString(),
+                                    endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+                                  });
+                                }}
+                              >
+                                <ShoppingCart className="h-4 w-4 mr-1" />
+                                Add to Shopping List
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Match Reason */}
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                          <h4 className="font-medium text-blue-800 mb-1">Why this recipe?</h4>
+                          <p className="text-sm text-blue-700">{recipe.matchReason}</p>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-2 pt-3">
+                          <Button 
+                            onClick={() => {
+                              // Convert AI recommendation to recipe format and add to collection
+                              const recipeData = {
+                                title: recipe.title,
+                                description: recipe.description,
+                                ingredients: JSON.stringify(recipe.ingredients.map((ing: string) => ({
+                                  unit: '',
+                                  amount: ing.split(' ')[0] || '1',
+                                  item: ing.split(' ').slice(1).join(' ') || ing,
+                                  notes: ''
+                                }))),
+                                instructions: JSON.stringify(recipe.instructions),
+                                prepTime: recipe.prepTime,
+                                cookTime: recipe.cookTime,
+                                servings: recipe.servings,
+                                cuisine: recipe.cuisine,
+                                mealType: recipe.tags.find((tag: string) => 
+                                  ['breakfast', 'lunch', 'dinner', 'snack'].includes(tag.toLowerCase())
+                                ) || 'dinner',
+                                tags: JSON.stringify(recipe.tags)
+                              };
+                              
+                              const formData = new FormData();
+                              Object.entries(recipeData).forEach(([key, value]) => {
+                                formData.append(key, value.toString());
+                              });
+                              createRecipeMutation.mutate(formData);
+                            }}
+                            className="flex-1"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Save to My Recipes
+                          </Button>
+                          <Button 
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedRecipe({
+                                ...recipe,
+                                id: Date.now(), // Temporary ID for display
+                                userId: user?.id || '',
+                                createdAt: new Date().toISOString(),
+                                updatedAt: new Date().toISOString(),
+                                imageUrl: null,
+                                ingredients: JSON.stringify(recipe.ingredients.map((ing: string) => ({
+                                  unit: '',
+                                  amount: ing.split(' ')[0] || '1',
+                                  item: ing.split(' ').slice(1).join(' ') || ing,
+                                  notes: ''
+                                }))),
+                                instructions: JSON.stringify(recipe.instructions),
+                                tags: JSON.stringify(recipe.tags)
+                              });
+                              setIsRecipeModalOpen(true);
+                            }}
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Full Recipe
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           {/* Household Inventory */}

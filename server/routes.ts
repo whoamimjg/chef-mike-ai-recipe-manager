@@ -894,22 +894,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // AI recommendations route
+  // Enhanced AI recommendations route
   app.post('/api/recommendations', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { preferences, inventory, mealType } = req.body;
+      const { preferences, inventory } = req.body;
       
       const recommendations = await getAIRecipeRecommendations({
         preferences,
-        inventory,
-        mealType,
+        inventory
       });
       
-      res.json(recommendations);
+      res.json({ recommendations });
     } catch (error) {
       console.error("Error getting AI recommendations:", error);
-      res.status(500).json({ message: "Failed to get AI recommendations" });
+      res.status(500).json({ message: "Failed to get AI recommendations: " + (error as Error).message });
     }
   });
 
