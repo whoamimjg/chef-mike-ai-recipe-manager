@@ -365,10 +365,8 @@ function getFallbackRecommendations(request: RecommendationRequest): RecipeRecom
     }
   ];
 
-  // Only add generic recipes if we don't have enough from existing recipes
-  if (recommendations.length < 3) {
-    recommendations.push(...commonRecipes.slice(0, 3 - recommendations.length));
-  }
+  // Don't add generic recipes - only return user's saved recipes
+  console.log(`Found ${recommendations.length} matching recipes from user's collection`);
 
   // Sort by inventory match percentage
   return recommendations.sort((a, b) => b.inventoryMatch - a.inventoryMatch);

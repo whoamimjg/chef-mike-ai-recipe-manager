@@ -2270,19 +2270,34 @@ export default function Home() {
                                 size="sm" 
                                 variant="outline"
                                 className="text-yellow-800 border-yellow-300 hover:bg-yellow-100"
-                                onClick={() => {
-                                  // Add missing ingredients to shopping list
-                                  const shoppingItems = recipe.missingIngredients.map((ingredient: string) => ({
-                                    item: ingredient,
-                                    quantity: "1",
-                                    checked: false
-                                  }));
-                                  
-                                  generateShoppingListMutation.mutate({
-                                    name: `${recipe.title} - Missing Items`,
-                                    startDate: new Date().toISOString(),
-                                    endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-                                  });
+                                onClick={async () => {
+                                  try {
+                                    // Add missing ingredients to shopping list
+                                    const response = await apiRequest("POST", "/api/shopping-lists", {
+                                      name: `${recipe.title} - Missing Items`,
+                                      items: recipe.missingIngredients.map((ingredient: string) => ({
+                                        name: ingredient,
+                                        quantity: 1,
+                                        unit: "item",
+                                        category: "Missing Ingredient",
+                                        purchased: false
+                                      }))
+                                    });
+                                    
+                                    if (response.ok) {
+                                      toast({
+                                        title: "Added to Shopping List",
+                                        description: `Added ${recipe.missingIngredients.length} missing ingredients to your shopping list.`,
+                                      });
+                                      queryClient.invalidateQueries({ queryKey: ["/api/shopping-lists"] });
+                                    }
+                                  } catch (error) {
+                                    toast({
+                                      title: "Error",
+                                      description: "Failed to add items to shopping list.",
+                                      variant: "destructive"
+                                    });
+                                  }
                                 }}
                               >
                                 <ShoppingCart className="h-4 w-4 mr-1" />
