@@ -9,6 +9,7 @@ import {
   boolean,
   index,
   serial,
+  numeric,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -64,9 +65,25 @@ export const recipes = pgTable("recipes", {
   }>(),
   tags: jsonb("tags").$type<string[]>().default([]),
   isPublic: boolean("is_public").default(false),
+  rating: integer("rating"), // User's personal rating 1-10
+  averageRating: numeric("average_rating", { precision: 3, scale: 2 }), // Community average rating
+  ratingCount: integer("rating_count").default(0), // Number of ratings
+  sourceUrl: varchar("source_url"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
+
+// Recipe ratings table for community ratings
+export const recipeRatings = pgTable("recipe_ratings", {
+  id: serial("id").primaryKey(),
+  recipeId: integer("recipe_id").notNull().references(() => recipes.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  rating: integer("rating").notNull(), // 1-10 scale
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("recipe_ratings_recipe_id_idx").on(table.recipeId),
+  index("recipe_ratings_user_id_idx").on(table.userId),
+]);
 
 // Meal plans table
 export const mealPlans = pgTable("meal_plans", {
@@ -143,6 +160,18 @@ export const recipesRelations = relations(recipes, ({ one, many }) => ({
     references: [users.id],
   }),
   mealPlans: many(mealPlans),
+  ratings: many(recipeRatings),
+}));
+
+export const recipeRatingsRelations = relations(recipeRatings, ({ one }) => ({
+  recipe: one(recipes, {
+    fields: [recipeRatings.recipeId],
+    references: [recipes.id],
+  }),
+  user: one(users, {
+    fields: [recipeRatings.userId],
+    references: [users.id],
+  }),
 }));
 
 export const mealPlansRelations = relations(mealPlans, ({ one }) => ({
@@ -213,11 +242,18 @@ export const insertUserInventorySchema = createInsertSchema(userInventory).omit(
   updatedAt: true,
 });
 
+export const insertRecipeRatingSchema = createInsertSchema(recipeRatings).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Export types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 export type InsertRecipe = z.infer<typeof insertRecipeSchema>;
 export type Recipe = typeof recipes.$inferSelect;
+export type InsertRecipeRating = z.infer<typeof insertRecipeRatingSchema>;
+export type RecipeRating = typeof recipeRatings.$inferSelect;
 export type InsertMealPlan = z.infer<typeof insertMealPlanSchema>;
 export type MealPlan = typeof mealPlans.$inferSelect;
 export type InsertShoppingList = z.infer<typeof insertShoppingListSchema>;

@@ -73,6 +73,11 @@ export default function Home() {
   const [filterCuisine, setFilterCuisine] = useState('');
   const [filterMealType, setFilterMealType] = useState('');
   const [imageOption, setImageOption] = useState('upload'); // 'upload' or 'url'
+  const [minRating, setMinRating] = useState<number | undefined>();
+  const [maxRating, setMaxRating] = useState<number | undefined>();
+  const [selectedRecipeRating, setSelectedRecipeRating] = useState<number>(0);
+  const [isRatingDialogOpen, setIsRatingDialogOpen] = useState(false);
+  const [recipeToRate, setRecipeToRate] = useState<Recipe | null>(null);
   const [imageUrl, setImageUrl] = useState('');
   const [isImportUrlOpen, setIsImportUrlOpen] = useState(false);
   const [isImportCsvOpen, setIsImportCsvOpen] = useState(false);
@@ -102,9 +107,29 @@ export default function Home() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  // Fetch recipes
+  // Fetch recipes with search and rating filters
   const { data: recipes = [], isLoading: recipesLoading } = useQuery<Recipe[]>({
-    queryKey: ["/api/recipes"],
+    queryKey: ["/api/recipes", { search: searchQuery, minRating, maxRating }],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (searchQuery) params.append('search', searchQuery);
+      if (minRating) params.append('minRating', minRating.toString());
+      if (maxRating) params.append('maxRating', maxRating.toString());
+      
+      const query = params.toString();
+      const url = query ? `/api/recipes?${query}` : '/api/recipes';
+      
+      const response = await fetch(url, {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`${response.status}: ${error}`);
+      }
+      
+      return response.json();
+    },
     retry: false,
   });
 
@@ -263,6 +288,41 @@ export default function Home() {
       toast({
         title: "Error",
         description: "Failed to add inventory item",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Recipe rating mutation
+  const rateRecipeMutation = useMutation({
+    mutationFn: async ({ recipeId, rating }: { recipeId: number; rating: number }) => {
+      return await apiRequest("POST", `/api/recipes/${recipeId}/rating`, { rating });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/recipes"] });
+      toast({
+        title: "Success",
+        description: "Recipe rated successfully!",
+      });
+      setIsRatingDialogOpen(false);
+      setRecipeToRate(null);
+      setSelectedRecipeRating(0);
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to rate recipe. Please try again.",
         variant: "destructive",
       });
     },
@@ -703,11 +763,37 @@ export default function Home() {
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
                       <Input
-                        placeholder="Search recipes..."
+                        placeholder="Search recipes by title..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="pl-10 w-80"
                       />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm font-medium">Rating:</Label>
+                      <Select value={minRating?.toString() || ""} onValueChange={(value) => setMinRating(value && value !== "none" ? parseInt(value) : undefined)}>
+                        <SelectTrigger className="w-20">
+                          <SelectValue placeholder="Min" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Any</SelectItem>
+                          {[1,2,3,4,5,6,7,8,9,10].map(rating => (
+                            <SelectItem key={rating} value={rating.toString()}>{rating}+</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <span className="text-sm text-gray-500">to</span>
+                      <Select value={maxRating?.toString() || ""} onValueChange={(value) => setMaxRating(value && value !== "none" ? parseInt(value) : undefined)}>
+                        <SelectTrigger className="w-20">
+                          <SelectValue placeholder="Max" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Any</SelectItem>
+                          {[1,2,3,4,5,6,7,8,9,10].map(rating => (
+                            <SelectItem key={rating} value={rating.toString()}>{rating}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="flex gap-2">
                       <Button
@@ -1749,6 +1835,18 @@ export default function Home() {
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
+                            setRecipeToRate(recipe);
+                            setIsRatingDialogOpen(true);
+                          }}
+                          className="h-8 w-8 p-0 bg-white/90 hover:bg-white text-yellow-500 hover:text-yellow-600"
+                        >
+                          <Star className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
                             handleViewRecipe(recipe);
                           }}
                           className="h-8 w-8 p-0 bg-white/90 hover:bg-white"
@@ -1805,6 +1903,25 @@ export default function Home() {
                         )}
                       </div>
                       
+                      {/* Recipe Rating Display */}
+                      {recipe.averageRating && (
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="flex items-center">
+                            {[...Array(10)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`h-3 w-3 ${
+                                  i < recipe.averageRating ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-sm text-gray-600">
+                            {recipe.averageRating.toFixed(1)} ({recipe.ratingCount} rating{recipe.ratingCount !== 1 ? 's' : ''})
+                          </span>
+                        </div>
+                      )}
+
                       <div className="flex items-center justify-between text-sm text-gray-500">
                         <div className="flex items-center gap-4">
                           {recipe.prepTime && (
@@ -2495,6 +2612,77 @@ export default function Home() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Rating Dialog */}
+      <Dialog open={isRatingDialogOpen} onOpenChange={setIsRatingDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Star className="h-5 w-5 text-yellow-500" />
+              Rate Recipe
+            </DialogTitle>
+          </DialogHeader>
+          {recipeToRate && (
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-semibold text-lg">{recipeToRate.title}</h3>
+                <p className="text-sm text-gray-600">How would you rate this recipe?</p>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Label>Rating (1-10):</Label>
+                <div className="flex items-center gap-1">
+                  {[...Array(10)].map((_, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setSelectedRecipeRating(i + 1)}
+                      className={`p-1 rounded transition-colors ${
+                        i < selectedRecipeRating
+                          ? 'text-yellow-400 hover:text-yellow-500'
+                          : 'text-gray-300 hover:text-gray-400'
+                      }`}
+                    >
+                      <Star className={`h-6 w-6 ${i < selectedRecipeRating ? 'fill-current' : ''}`} />
+                    </button>
+                  ))}
+                </div>
+                <span className="text-sm text-gray-600 ml-2">
+                  {selectedRecipeRating > 0 ? `${selectedRecipeRating}/10` : 'Select rating'}
+                </span>
+              </div>
+
+              <div className="flex gap-2 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsRatingDialogOpen(false);
+                    setRecipeToRate(null);
+                    setSelectedRecipeRating(0);
+                  }}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (selectedRecipeRating > 0) {
+                      rateRecipeMutation.mutate({
+                        recipeId: recipeToRate.id,
+                        rating: selectedRecipeRating
+                      });
+                    }
+                  }}
+                  disabled={selectedRecipeRating === 0 || rateRecipeMutation.isPending}
+                  className="flex-1"
+                >
+                  {rateRecipeMutation.isPending ? 'Rating...' : 'Submit Rating'}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

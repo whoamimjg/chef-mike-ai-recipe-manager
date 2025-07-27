@@ -59,7 +59,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/recipes', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const recipes = await storage.getRecipes(userId);
+      const { search, minRating, maxRating } = req.query;
+      
+      const filters: any = {};
+      if (search) filters.search = search as string;
+      if (minRating) filters.minRating = parseInt(minRating as string);
+      if (maxRating) filters.maxRating = parseInt(maxRating as string);
+      
+      const recipes = await storage.getRecipes(userId, Object.keys(filters).length > 0 ? filters : undefined);
       res.json(recipes);
     } catch (error) {
       console.error("Error fetching recipes:", error);
@@ -860,6 +867,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching usage analytics:", error);
       res.status(500).json({ message: "Failed to fetch usage analytics" });
+    }
+  });
+
+  // Recipe rating routes
+  app.get('/api/recipes/:id/rating', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const recipeId = parseInt(req.params.id);
+      
+      const rating = await storage.getRating(recipeId, userId);
+      res.json(rating || null);
+    } catch (error) {
+      console.error("Error fetching rating:", error);
+      res.status(500).json({ message: "Failed to fetch rating" });
+    }
+  });
+
+  app.post('/api/recipes/:id/rating', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const recipeId = parseInt(req.params.id);
+      const { rating } = req.body;
+
+      if (!rating || rating < 1 || rating > 10) {
+        return res.status(400).json({ message: "Rating must be between 1 and 10" });
+      }
+
+      // Verify recipe exists and belongs to user
+      const recipe = await storage.getRecipe(recipeId, userId);
+      if (!recipe) {
+        return res.status(404).json({ message: "Recipe not found" });
+      }
+
+      const newRating = await storage.createOrUpdateRating({
+        recipeId,
+        userId,
+        rating
+      });
+
+      res.json(newRating);
+    } catch (error) {
+      console.error("Error rating recipe:", error);
+      res.status(500).json({ message: "Failed to rate recipe" });
     }
   });
 

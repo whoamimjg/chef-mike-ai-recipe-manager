@@ -1,6 +1,7 @@
 import {
   users,
   recipes,
+  recipeRatings,
   mealPlans,
   shoppingLists,
   userPreferences,
@@ -9,6 +10,8 @@ import {
   type UpsertUser,
   type Recipe,
   type InsertRecipe,
+  type RecipeRating,
+  type InsertRecipeRating,
   type MealPlan,
   type InsertMealPlan,
   type ShoppingList,
@@ -19,7 +22,7 @@ import {
   type InsertUserInventory,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, gte, lte, desc, asc } from "drizzle-orm";
+import { eq, and, gte, lte, desc, asc, ilike } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -28,11 +31,16 @@ export interface IStorage {
   upsertUser(user: UpsertUser): Promise<User>;
   
   // Recipe operations
-  getRecipes(userId: string): Promise<Recipe[]>;
+  getRecipes(userId: string, filters?: { search?: string; minRating?: number; maxRating?: number }): Promise<Recipe[]>;
   getRecipe(id: number, userId: string): Promise<Recipe | undefined>;
   createRecipe(recipe: InsertRecipe): Promise<Recipe>;
   updateRecipe(id: number, recipe: Partial<InsertRecipe>, userId: string): Promise<Recipe | undefined>;
   deleteRecipe(id: number, userId: string): Promise<boolean>;
+  
+  // Recipe rating operations
+  getRating(recipeId: number, userId: string): Promise<RecipeRating | undefined>;
+  createOrUpdateRating(rating: InsertRecipeRating): Promise<RecipeRating>;
+  updateRecipeAverageRating(recipeId: number): Promise<void>;
   
   // Meal plan operations
   getMealPlans(userId: string, startDate?: string, endDate?: string): Promise<MealPlan[]>;
@@ -90,11 +98,25 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Recipe operations
-  async getRecipes(userId: string): Promise<Recipe[]> {
+  async getRecipes(userId: string, filters?: { search?: string; minRating?: number; maxRating?: number }): Promise<Recipe[]> {
+    let conditions = [eq(recipes.userId, userId)];
+    
+    if (filters?.search) {
+      conditions.push(ilike(recipes.title, `%${filters.search}%`));
+    }
+    
+    if (filters?.minRating) {
+      conditions.push(gte(recipes.averageRating, filters.minRating.toString()));
+    }
+    
+    if (filters?.maxRating) {
+      conditions.push(lte(recipes.averageRating, filters.maxRating.toString()));
+    }
+    
     return await db
       .select()
       .from(recipes)
-      .where(eq(recipes.userId, userId))
+      .where(and(...conditions))
       .orderBy(desc(recipes.createdAt));
   }
 
@@ -134,6 +156,58 @@ export class DatabaseStorage implements IStorage {
       .delete(recipes)
       .where(and(eq(recipes.id, id), eq(recipes.userId, userId)));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  // Recipe rating operations
+  async getRating(recipeId: number, userId: string): Promise<RecipeRating | undefined> {
+    const [rating] = await db
+      .select()
+      .from(recipeRatings)
+      .where(and(eq(recipeRatings.recipeId, recipeId), eq(recipeRatings.userId, userId)));
+    return rating;
+  }
+
+  async createOrUpdateRating(rating: InsertRecipeRating): Promise<RecipeRating> {
+    // First check if rating exists
+    const existingRating = await this.getRating(rating.recipeId, rating.userId);
+    
+    let result: RecipeRating;
+    if (existingRating) {
+      // Update existing rating
+      const [updatedRating] = await db
+        .update(recipeRatings)
+        .set({ rating: rating.rating })
+        .where(and(eq(recipeRatings.recipeId, rating.recipeId), eq(recipeRatings.userId, rating.userId)))
+        .returning();
+      result = updatedRating;
+    } else {
+      // Create new rating
+      const [newRating] = await db.insert(recipeRatings).values(rating).returning();
+      result = newRating;
+    }
+
+    // Update recipe average rating
+    await this.updateRecipeAverageRating(rating.recipeId);
+    
+    return result;
+  }
+
+  async updateRecipeAverageRating(recipeId: number): Promise<void> {
+    const ratings = await db
+      .select()
+      .from(recipeRatings)
+      .where(eq(recipeRatings.recipeId, recipeId));
+
+    if (ratings.length > 0) {
+      const avgRating = ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length;
+      await db
+        .update(recipes)
+        .set({ 
+          averageRating: avgRating.toFixed(2),
+          ratingCount: ratings.length
+        })
+        .where(eq(recipes.id, recipeId));
+    }
   }
 
   // Meal plan operations
