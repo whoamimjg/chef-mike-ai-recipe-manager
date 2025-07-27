@@ -68,6 +68,7 @@ export interface IStorage {
   updateInventoryItem(id: number, item: Partial<InsertUserInventory>, userId: string): Promise<UserInventory | undefined>;
   deleteInventoryItem(id: number, userId: string): Promise<boolean>;
   markItemAsWasted(id: number, userId: string): Promise<void>;
+  markItemAsUsed(id: number, userId: string): Promise<void>;
   getInventoryByBarcode(userId: string, barcode: string): Promise<UserInventory | undefined>;
   
   // Receipt operations
@@ -383,6 +384,13 @@ export class DatabaseStorage implements IStorage {
     await db
       .update(userInventory)
       .set({ wasteDate: new Date() })
+      .where(and(eq(userInventory.id, id), eq(userInventory.userId, userId)));
+  }
+
+  async markItemAsUsed(id: number, userId: string): Promise<void> {
+    // Remove the item from inventory since it's been consumed
+    await db
+      .delete(userInventory)
       .where(and(eq(userInventory.id, id), eq(userInventory.userId, userId)));
   }
 

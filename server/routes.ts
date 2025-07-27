@@ -820,6 +820,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch('/api/inventory/:id/used', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const itemId = parseInt(req.params.id);
+      await storage.markItemAsUsed(itemId, userId);
+      res.json({ message: "Item marked as used" });
+    } catch (error) {
+      console.error("Error marking item as used:", error);
+      res.status(500).json({ message: "Failed to mark item as used" });
+    }
+  });
+
   app.get('/api/inventory/barcode/:barcode', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

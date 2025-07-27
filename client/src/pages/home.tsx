@@ -386,6 +386,70 @@ export default function Home() {
     }
   });
 
+  // Mark item as used mutation
+  const markUsedMutation = useMutation({
+    mutationFn: async (itemId: number) => {
+      return await apiRequest("PATCH", `/api/inventory/${itemId}/used`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
+      toast({
+        title: "Item Marked as Used",
+        description: "Item has been removed from inventory",
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to mark item as used",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete inventory item mutation
+  const deleteInventoryMutation = useMutation({
+    mutationFn: async (itemId: number) => {
+      return await apiRequest("DELETE", `/api/inventory/${itemId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
+      toast({
+        title: "Item Deleted",
+        description: "Item has been removed from inventory",
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to delete item",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleLogout = () => {
     window.location.href = "/api/logout";
   };
@@ -2605,6 +2669,15 @@ export default function Home() {
                                     <Button 
                                       variant="ghost" 
                                       size="sm" 
+                                      onClick={() => markUsedMutation.mutate(item.id)}
+                                      className="text-green-600 hover:text-green-800"
+                                      title="Mark as used (consumed)"
+                                    >
+                                      <CheckCircle className="h-4 w-4" />
+                                    </Button>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
                                       onClick={() => markWastedMutation.mutate(item.id)}
                                       className="text-orange-600 hover:text-orange-800"
                                       title="Mark as wasted"
@@ -2614,6 +2687,7 @@ export default function Home() {
                                     <Button 
                                       variant="ghost" 
                                       size="sm" 
+                                      onClick={() => deleteInventoryMutation.mutate(item.id)}
                                       className="text-red-600 hover:text-red-800"
                                       title="Delete item"
                                     >
