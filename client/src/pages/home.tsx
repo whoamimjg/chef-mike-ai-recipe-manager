@@ -51,7 +51,8 @@ import {
   CheckCircle,
   Timer,
   Pause,
-  RotateCcw
+  RotateCcw,
+  Menu
 } from "lucide-react";
 import type { Recipe, MealPlan, ShoppingList, UserPreferences, UserInventory } from "@shared/schema";
 
@@ -117,6 +118,27 @@ export default function Home() {
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [aiRecommendations, setAiRecommendations] = useState<any[]>([]);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Close mobile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isMobileMenuOpen) {
+        const target = event.target as Element;
+        const mobileMenu = document.querySelector('[data-mobile-menu]');
+        const hamburgerButton = document.querySelector('[data-hamburger-button]');
+        
+        if (mobileMenu && hamburgerButton && 
+            !mobileMenu.contains(target) && 
+            !hamburgerButton.contains(target)) {
+          setIsMobileMenuOpen(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isMobileMenuOpen]);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -1062,9 +1084,10 @@ export default function Home() {
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center gap-3">
               <ChefHat className="h-8 w-8 text-primary-600" />
-              <h1 className="text-2xl font-bold text-gray-900">Chef Mike's Culinary Classroom</h1>
+              <h1 className="text-xl md:text-2xl font-bold text-gray-900">Chef Mike's Culinary Classroom</h1>
             </div>
             
+            {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-2">
               <Button
                 variant={activeTab === "recipes" ? "default" : "ghost"}
@@ -1116,7 +1139,8 @@ export default function Home() {
               </Button>
             </div>
 
-            <div className="flex items-center gap-3">
+            {/* Desktop User Menu */}
+            <div className="hidden md:flex items-center gap-3">
               <span className="text-gray-600">Welcome, {user?.firstName || 'Chef'}!</span>
               <Avatar>
                 <AvatarImage src={user?.profileImageUrl || undefined} />
@@ -1126,7 +1150,113 @@ export default function Home() {
                 Logout
               </Button>
             </div>
+
+            {/* Mobile Hamburger Menu */}
+            <div className="md:hidden flex items-center gap-2">
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={user?.profileImageUrl || undefined} />
+                <AvatarFallback>{user?.firstName?.[0] || 'C'}</AvatarFallback>
+              </Avatar>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="p-2"
+                data-hamburger-button
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
+
+          {/* Mobile Menu Overlay */}
+          {isMobileMenuOpen && (
+            <div className="md:hidden border-t border-gray-200 bg-white shadow-lg" data-mobile-menu>
+              <div className="px-4 py-3 space-y-2">
+                <Button
+                  variant={activeTab === "recipes" ? "default" : "ghost"}
+                  onClick={() => {
+                    setActiveTab("recipes");
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="w-full justify-start gap-2"
+                >
+                  <ChefHat className="h-4 w-4" />
+                  Recipes
+                </Button>
+                <Button
+                  variant={activeTab === "ai-generator" ? "default" : "ghost"}
+                  onClick={() => {
+                    setActiveTab("ai-generator");
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="w-full justify-start gap-2"
+                >
+                  <Wand2 className="h-4 w-4" />
+                  AI Generator
+                </Button>
+                <Button
+                  variant={activeTab === "inventory" ? "default" : "ghost"}
+                  onClick={() => {
+                    setActiveTab("inventory");
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="w-full justify-start gap-2"
+                >
+                  <Package className="h-4 w-4" />
+                  Inventory
+                </Button>
+                <Button
+                  variant={activeTab === "meal-planner" ? "default" : "ghost"}
+                  onClick={() => {
+                    setActiveTab("meal-planner");
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="w-full justify-start gap-2"
+                >
+                  <CalendarIcon className="h-4 w-4" />
+                  Meal Planner
+                </Button>
+                <Button
+                  variant={activeTab === "shopping-list" ? "default" : "ghost"}
+                  onClick={() => {
+                    setActiveTab("shopping-list");
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="w-full justify-start gap-2"
+                >
+                  <ShoppingCart className="h-4 w-4" />
+                  Shopping List
+                </Button>
+                <Button
+                  variant={activeTab === "account" ? "default" : "ghost"}
+                  onClick={() => {
+                    setActiveTab("account");
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="w-full justify-start gap-2"
+                >
+                  <User className="h-4 w-4" />
+                  Account
+                </Button>
+                <div className="border-t border-gray-200 pt-2 mt-2">
+                  <div className="text-sm text-gray-600 px-3 py-1">
+                    Welcome, {user?.firstName || 'Chef'}!
+                  </div>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      handleLogout();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full justify-start text-red-600"
+                  >
+                    Logout
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </nav>
 

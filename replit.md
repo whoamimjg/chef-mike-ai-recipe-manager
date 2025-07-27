@@ -49,6 +49,8 @@ Preferred communication style: Simple, everyday language.
 - **Shopping List Generation**: Automatic list creation from planned meals
 - **User Preferences**: Dietary restrictions and allergy management
 - **AI Recommendations**: OpenAI-powered recipe suggestions based on preferences and inventory
+- **Mobile Optimization**: Responsive design with hamburger menu for mobile-only navigation
+- **Cost Tracking**: Real-time food waste and usage cost analytics with proper financial reporting
 
 ### Authentication & Authorization
 - **Replit Auth**: Integrated authentication system with session management
