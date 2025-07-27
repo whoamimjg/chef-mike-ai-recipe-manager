@@ -309,7 +309,7 @@ function getFallbackRecommendations(request: RecommendationRequest): RecipeRecom
             ),
             instructions: ["Follow your saved recipe instructions"],
             tags: ["saved recipe", "personal collection"],
-            matchReason: `This is one of your saved recipes. You have ${matchPercentage}% of the ingredients needed. Perfect match for using your ${inventory.map(i => i.ingredientName).join(', ')}.`,
+            matchReason: `This is one of your saved recipes. You have ${matchPercentage}% of the ingredients needed.${matchedIngredients.length > 0 ? ` You can use your: ${matchedIngredients.join(', ')}.` : ''}`,
             matchType: matchPercentage >= 80 ? 'full' : 'partial',
             missingIngredients,
             inventoryMatch: matchPercentage

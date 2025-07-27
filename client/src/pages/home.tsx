@@ -2318,15 +2318,23 @@ export default function Home() {
                           <Button 
                             variant="outline"
                             onClick={() => {
-                              // Since this is from your saved recipes, find the actual recipe
-                              const actualRecipe = recipes?.find(r => r.title.includes(recipe.title.replace(' (Your Recipe)', '')));
+                              console.log("Looking for recipe:", recipe.title);
+                              console.log("Available recipes:", recipes?.map(r => r.title));
+                              
+                              // Remove "(Your Recipe)" suffix and find exact match
+                              const cleanTitle = recipe.title.replace(' (Your Recipe)', '');
+                              const actualRecipe = recipes?.find(r => r.title === cleanTitle);
+                              
+                              console.log("Clean title:", cleanTitle);
+                              console.log("Found recipe:", actualRecipe);
+                              
                               if (actualRecipe) {
                                 setSelectedRecipe(actualRecipe);
                                 setIsRecipeModalOpen(true);
                               } else {
                                 toast({
                                   title: "Recipe Not Found",
-                                  description: "Unable to find the full recipe details.",
+                                  description: `Unable to find recipe "${cleanTitle}" in your collection.`,
                                   variant: "destructive"
                                 });
                               }
