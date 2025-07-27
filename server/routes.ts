@@ -909,6 +909,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         existingRecipes
       });
       
+      console.log("Backend sending recommendations:", recommendations);
+      console.log("Recommendations count:", recommendations?.length || 0);
+      
       res.json({ recommendations });
     } catch (error) {
       console.error("Error getting AI recommendations:", error);

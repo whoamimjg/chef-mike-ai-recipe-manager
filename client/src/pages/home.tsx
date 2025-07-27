@@ -454,20 +454,43 @@ export default function Home() {
   const generateAIRecipeMutation = useMutation({
     mutationFn: async (requestData: { preferences?: UserPreferences; inventory: UserInventory[] }) => {
       const response = await apiRequest("POST", "/api/recommendations", requestData);
-      return response;
+      return await response.json();
     },
     onSuccess: (response: any) => {
       // Display smart recommendations with ingredient matching info
       console.log("AI Response received:", response);
-      const recommendations = response.recommendations || response || [];
-      console.log("Processed recommendations:", recommendations);
+      console.log("Response keys:", Object.keys(response || {}));
+      
+      // Handle different response structures
+      let recommendations = [];
+      if (response?.recommendations && Array.isArray(response.recommendations)) {
+        recommendations = response.recommendations;
+      } else if (Array.isArray(response)) {
+        recommendations = response;
+      } else if (response && typeof response === 'object') {
+        // Try to find an array in the response object
+        const possibleArrays = Object.values(response).filter(val => Array.isArray(val));
+        if (possibleArrays.length > 0) {
+          recommendations = possibleArrays[0] as any[];
+        }
+      }
+      
+      console.log("Final processed recommendations:", recommendations);
       console.log("Recommendations length:", recommendations.length);
-      console.log("Type of recommendations:", typeof recommendations);
-      setAiRecommendations(recommendations);
-      toast({
-        title: "Smart Recommendations Generated!",
-        description: `Found ${recommendations.length} personalized recipes based on your inventory and preferences.`,
-      });
+      
+      if (recommendations.length > 0) {
+        setAiRecommendations(recommendations);
+        toast({
+          title: "Smart Recommendations Generated!",
+          description: `Found ${recommendations.length} personalized recipes based on your inventory and preferences.`,
+        });
+      } else {
+        toast({
+          title: "No Recommendations Found",
+          description: "Unable to generate recommendations. Try adding more inventory items or check your preferences.",
+          variant: "destructive"
+        });
+      }
     },
     onError: (error) => {
       if (isUnauthorizedError(error)) {
@@ -2176,7 +2199,7 @@ export default function Home() {
 
             {/* AI Recommendations Results */}
             {console.log("Current aiRecommendations state:", aiRecommendations)}
-            {aiRecommendations.length > 0 && (
+            {Array.isArray(aiRecommendations) && aiRecommendations.length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
