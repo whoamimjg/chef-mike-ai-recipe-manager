@@ -47,7 +47,10 @@ import {
   Play,
   ChevronLeft,
   ChevronRight,
-  CheckCircle
+  CheckCircle,
+  Timer,
+  Pause,
+  RotateCcw
 } from "lucide-react";
 import type { Recipe, MealPlan, ShoppingList, UserPreferences, UserInventory } from "@shared/schema";
 
@@ -79,6 +82,10 @@ export default function Home() {
   const [isRecipeModalOpen, setIsRecipeModalOpen] = useState(false);
   const [isCookingModeOpen, setIsCookingModeOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
+  const [timerMinutes, setTimerMinutes] = useState(0);
+  const [timerSeconds, setTimerSeconds] = useState(0);
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState(0);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -475,6 +482,98 @@ export default function Home() {
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
     }
+  };
+
+  // Timer functionality
+  const startTimer = () => {
+    if (timerMinutes > 0 || timerSeconds > 0) {
+      const totalSeconds = timerMinutes * 60 + timerSeconds;
+      setTimeRemaining(totalSeconds);
+      setIsTimerRunning(true);
+    }
+  };
+
+  const pauseTimer = () => {
+    setIsTimerRunning(false);
+  };
+
+  const resetTimer = () => {
+    setIsTimerRunning(false);
+    setTimeRemaining(0);
+    setTimerMinutes(0);
+    setTimerSeconds(0);
+  };
+
+  const playTimerSound = () => {
+    // Create audio notification
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + 0.5);
+    
+    // Repeat the sound 3 times
+    setTimeout(() => {
+      const osc2 = audioContext.createOscillator();
+      const gain2 = audioContext.createGain();
+      osc2.connect(gain2);
+      gain2.connect(audioContext.destination);
+      osc2.frequency.setValueAtTime(800, audioContext.currentTime);
+      gain2.gain.setValueAtTime(0.3, audioContext.currentTime);
+      osc2.start();
+      osc2.stop(audioContext.currentTime + 0.5);
+    }, 600);
+    
+    setTimeout(() => {
+      const osc3 = audioContext.createOscillator();
+      const gain3 = audioContext.createGain();
+      osc3.connect(gain3);
+      gain3.connect(audioContext.destination);
+      osc3.frequency.setValueAtTime(800, audioContext.currentTime);
+      gain3.gain.setValueAtTime(0.3, audioContext.currentTime);
+      osc3.start();
+      osc3.stop(audioContext.currentTime + 0.5);
+    }, 1200);
+  };
+
+  // Timer countdown effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (isTimerRunning && timeRemaining > 0) {
+      interval = setInterval(() => {
+        setTimeRemaining((prev) => {
+          if (prev <= 1) {
+            setIsTimerRunning(false);
+            playTimerSound();
+            toast({
+              title: "Timer Complete!",
+              description: "Your cooking timer has finished.",
+              duration: 5000,
+            });
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isTimerRunning, timeRemaining, toast]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
   const handleDeleteRecipe = (recipeId: number) => {
@@ -1213,6 +1312,90 @@ export default function Home() {
                           </div>
                         )}
 
+                        {/* Kitchen Timer */}
+                        <Card className="bg-gray-50 border-2 border-dashed border-gray-300">
+                          <CardContent className="p-4">
+                            <h4 className="font-semibold mb-3 flex items-center gap-2">
+                              <Timer className="h-4 w-4" />
+                              Kitchen Timer
+                            </h4>
+                            
+                            {!isTimerRunning && timeRemaining === 0 ? (
+                              <div className="space-y-3">
+                                <div className="flex gap-2 items-center">
+                                  <div className="flex items-center gap-1">
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      max="99"
+                                      value={timerMinutes || ''}
+                                      onChange={(e) => setTimerMinutes(parseInt(e.target.value) || 0)}
+                                      placeholder="0"
+                                      className="w-16 text-center"
+                                    />
+                                    <span className="text-sm text-gray-600">min</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      max="59"
+                                      value={timerSeconds || ''}
+                                      onChange={(e) => setTimerSeconds(parseInt(e.target.value) || 0)}
+                                      placeholder="0"
+                                      className="w-16 text-center"
+                                    />
+                                    <span className="text-sm text-gray-600">sec</span>
+                                  </div>
+                                  <Button 
+                                    onClick={startTimer}
+                                    disabled={timerMinutes === 0 && timerSeconds === 0}
+                                    size="sm"
+                                  >
+                                    Start
+                                  </Button>
+                                </div>
+                                
+                                {/* Quick Timer Buttons */}
+                                <div className="flex gap-1 flex-wrap">
+                                  {[1, 5, 10, 15, 20, 30].map((mins) => (
+                                    <Button
+                                      key={mins}
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        setTimerMinutes(mins);
+                                        setTimerSeconds(0);
+                                      }}
+                                      className="text-xs"
+                                    >
+                                      {mins}m
+                                    </Button>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="text-center space-y-3">
+                                <div className="text-3xl font-mono font-bold text-blue-600">
+                                  {formatTime(timeRemaining)}
+                                </div>
+                                <div className="flex gap-2 justify-center">
+                                  <Button
+                                    onClick={isTimerRunning ? pauseTimer : startTimer}
+                                    variant={isTimerRunning ? "outline" : "default"}
+                                    size="sm"
+                                  >
+                                    {isTimerRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                                  </Button>
+                                  <Button onClick={resetTimer} variant="outline" size="sm">
+                                    <RotateCcw className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+
                         {/* Action Buttons */}
                         <div className="flex gap-2 pt-4 border-t">
                           <Button 
@@ -1307,8 +1490,8 @@ export default function Home() {
                           </div>
                         </Card>
 
-                        {/* Recipe Info */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        {/* Recipe Info and Timer Row */}
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
                           {selectedRecipe.prepTime && (
                             <div className="bg-gray-50 p-3 rounded-lg text-center">
                               <Clock className="h-4 w-4 mx-auto mb-1 text-gray-600" />
@@ -1330,6 +1513,37 @@ export default function Home() {
                               <div className="text-gray-600">{selectedRecipe.servings}</div>
                             </div>
                           )}
+                          
+                          {/* Compact Timer */}
+                          <div className="bg-blue-50 p-3 rounded-lg">
+                            <div className="text-center">
+                              <Timer className="h-4 w-4 mx-auto mb-1 text-blue-600" />
+                              <div className="font-medium text-blue-800">Kitchen Timer</div>
+                              {isTimerRunning || timeRemaining > 0 ? (
+                                <div className="text-lg font-mono font-bold text-blue-600">
+                                  {formatTime(timeRemaining)}
+                                </div>
+                              ) : (
+                                <div className="flex gap-1 mt-1">
+                                  {[5, 10, 15].map((mins) => (
+                                    <Button
+                                      key={mins}
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        setTimerMinutes(mins);
+                                        setTimerSeconds(0);
+                                        startTimer();
+                                      }}
+                                      className="text-xs h-6 px-2"
+                                    >
+                                      {mins}m
+                                    </Button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </div>
 
                         {/* Navigation Buttons */}
@@ -1364,12 +1578,32 @@ export default function Home() {
                             )}
                           </div>
 
-                          <Button 
-                            variant="outline"
-                            onClick={() => setIsCookingModeOpen(false)}
-                          >
-                            Exit Cooking Mode
-                          </Button>
+                          <div className="flex flex-col items-end gap-2">
+                            {/* Cooking Mode Timer */}
+                            {isTimerRunning || timeRemaining > 0 ? (
+                              <div className="bg-blue-100 px-3 py-2 rounded-lg flex items-center gap-2">
+                                <Timer className="h-4 w-4 text-blue-600" />
+                                <span className="font-mono font-bold text-blue-600">
+                                  {formatTime(timeRemaining)}
+                                </span>
+                                <Button
+                                  onClick={isTimerRunning ? pauseTimer : startTimer}
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-6 w-6 p-0"
+                                >
+                                  {isTimerRunning ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
+                                </Button>
+                              </div>
+                            ) : null}
+                            
+                            <Button 
+                              variant="outline"
+                              onClick={() => setIsCookingModeOpen(false)}
+                            >
+                              Exit Cooking Mode
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     )}
