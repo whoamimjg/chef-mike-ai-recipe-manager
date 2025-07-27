@@ -172,13 +172,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (jsonLdMatch) {
         try {
-          const structuredData = JSON.parse(jsonLdMatch[1]);
+          let structuredData = JSON.parse(jsonLdMatch[1]);
+          
+          // Handle arrays of structured data - look for Recipe type
+          if (Array.isArray(structuredData)) {
+            structuredData = structuredData.find(item => item['@type'] === 'Recipe') || structuredData[0];
+          }
+          
+          // Handle nested @graph structures
+          if (structuredData['@graph']) {
+            const recipeInGraph = structuredData['@graph'].find((item: any) => item['@type'] === 'Recipe');
+            if (recipeInGraph) {
+              structuredData = recipeInGraph;
+            }
+          }
+          
           if (structuredData['@type'] === 'Recipe' || structuredData.name) {
             // Parse ingredients more intelligently
-            const ingredients = Array.isArray(structuredData.recipeIngredient) 
+            const ingredients = Array.isArray(structuredData.recipeIngredient) && structuredData.recipeIngredient.length > 0
               ? structuredData.recipeIngredient.map((ing: string) => {
+                  // Clean up the ingredient text
+                  const cleanIng = typeof ing === 'string' ? ing.trim() : String(ing || '').trim();
+                  if (!cleanIng) return { unit: '', amount: '', item: '', notes: '' };
+                  
                   // Try to parse amount, unit, and item from ingredient string
-                  const match = ing.match(/^(\d+(?:\/\d+)?(?:\.\d+)?)\s*(\w+)?\s+(.+)$/);
+                  const match = cleanIng.match(/^(\d+(?:\/\d+)?(?:\.\d+)?)\s*(\w+)?\s+(.+)$/);
                   if (match) {
                     return {
                       amount: match[1],
@@ -187,19 +205,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
                       notes: ''
                     };
                   }
-                  return { unit: '', amount: '', item: ing, notes: '' };
-                })
-              : [{ unit: '', amount: '', item: 'See original recipe', notes: '' }];
+                  return { unit: '', amount: '', item: cleanIng, notes: '' };
+                }).filter(ing => ing.item.length > 0)
+              : [];
 
             // Parse instructions more intelligently
-            const instructions = Array.isArray(structuredData.recipeInstructions)
+            const instructions = Array.isArray(structuredData.recipeInstructions) && structuredData.recipeInstructions.length > 0
               ? structuredData.recipeInstructions.map((inst: any) => {
-                  if (typeof inst === 'string') return inst;
-                  if (inst.text) return inst.text;
-                  if (inst.name) return inst.name;
-                  return 'See original recipe';
-                })
-              : ['See original recipe for instructions'];
+                  if (typeof inst === 'string') return inst.trim();
+                  if (inst.text) return inst.text.trim();
+                  if (inst.name) return inst.name.trim();
+                  return '';
+                }).filter(inst => inst.length > 10)
+              : [];
 
             // Parse nutrition info if available
             let nutritionInfo = null;
@@ -239,23 +257,138 @@ export async function registerRoutes(app: Express): Promise<Server> {
               nutritionInfo,
               sourceUrl: url
             };
+            
+            console.log(`Extracted ${ingredients.length} ingredients and ${instructions.length} instructions from JSON-LD`);
+            
+            // If we didn't get enough data from JSON-LD, clear it to trigger fallback
+            if (ingredients.length === 0 && instructions.length === 0) {
+              recipeData = {};
+            }
           }
         } catch (parseError) {
           console.log('Failed to parse JSON-LD, using basic extraction');
         }
       }
       
-      // Fallback to basic extraction if no structured data
-      if (!recipeData.title) {
+      // Fallback to enhanced HTML parsing if no structured data found
+      if (!recipeData.title || recipeData.ingredients?.length === 0 || recipeData.ingredients?.[0]?.item === 'See original recipe') {
+        console.log('Using enhanced HTML parsing fallback...');
+        
+        // Enhanced ingredient extraction patterns
+        const ingredientSelectors = [
+          /<li[^>]*class[^>]*ingredient[^>]*>([^<]+)<\/li>/gi,
+          /<div[^>]*class[^>]*ingredient[^>]*>([^<]+)<\/div>/gi,
+          /<p[^>]*class[^>]*ingredient[^>]*>([^<]+)<\/p>/gi,
+          /<li[^>]*data-ingredient[^>]*>([^<]+)<\/li>/gi,
+          /<span[^>]*class[^>]*ingredient[^>]*>([^<]+)<\/span>/gi,
+          // Common recipe site patterns
+          /<li[^>]*class="recipe-ingredient[^"]*"[^>]*>([^<]+)<\/li>/gi,
+          /<div[^>]*class="ingredient[^"]*"[^>]*>([^<]+)<\/div>/gi,
+          // Allrecipes specific patterns
+          /<span[^>]*class="recipe-summary__item[^"]*"[^>]*>([^<]+)<\/span>/gi,
+          /<li[^>]*class="mntl-structured-ingredients__list-item[^"]*"[^>]*>([^<]+)<\/li>/gi,
+        ];
+        
+        let ingredientMatches: string[] = [];
+        for (const selector of ingredientSelectors) {
+          const matches = html.match(selector);
+          if (matches && matches.length > 0) {
+            ingredientMatches = matches;
+            console.log(`Found ${matches.length} ingredients with pattern: ${selector}`);
+            break;
+          }
+        }
+
+        // Enhanced instruction extraction patterns
+        const instructionSelectors = [
+          /<li[^>]*class[^>]*instruction[^>]*>([^<]+)<\/li>/gi,
+          /<div[^>]*class[^>]*instruction[^>]*>([^<]+)<\/div>/gi,
+          /<p[^>]*class[^>]*instruction[^>]*>([^<]+)<\/p>/gi,
+          /<li[^>]*class="recipe-instruction[^"]*"[^>]*>([^<]+)<\/li>/gi,
+          /<div[^>]*class="instruction[^"]*"[^>]*>([^<]+)<\/div>/gi,
+          /<ol[^>]*class[^>]*instruction[^>]*>[\s\S]*?<\/ol>/gi,
+          /<div[^>]*class="directions[^"]*"[^>]*>[\s\S]*?<\/div>/gi,
+          // Allrecipes specific patterns
+          /<li[^>]*class="mntl-sc-block-group--LI[^"]*"[^>]*>([^<]+)<\/li>/gi,
+          /<p[^>]*class="comp[^"]*mntl-sc-block[^"]*"[^>]*>([^<]+)<\/p>/gi,
+        ];
+
+        let instructionMatches: string[] = [];
+        for (const selector of instructionSelectors) {
+          const matches = html.match(selector);
+          if (matches && matches.length > 0) {
+            // If we found an ol or div container, extract li items from it
+            if (selector.includes('ol') || selector.includes('directions')) {
+              const liMatches = matches[0].match(/<li[^>]*>([^<]+)<\/li>/gi);
+              if (liMatches) {
+                instructionMatches = liMatches;
+              }
+            } else {
+              instructionMatches = matches;
+            }
+            console.log(`Found ${instructionMatches.length} instructions with pattern: ${selector}`);
+            break;
+          }
+        }
+
+        // Enhanced image extraction
+        const imageSelectors = [
+          /<img[^>]*class[^>]*recipe[^>]*[^>]*src=["']([^"']+)["']/gi,
+          /<img[^>]*src=["']([^"']*recipe[^"']*)[^>]*>/gi,
+          /<img[^>]*src=["']([^"']*food[^"']*)[^>]*>/gi,
+          /<img[^>]*alt=["'][^"']*recipe[^"']*[^>]*src=["']([^"']+)["']/gi,
+          /<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/gi,
+          // Try any high-resolution image
+          /<img[^>]*src=["']([^"']*\d{3,4}x\d{3,4}[^"']*)[^>]*>/gi,
+        ];
+
+        let imageUrl = '';
+        for (const selector of imageSelectors) {
+          const match = html.match(selector);
+          if (match && match[1]) {
+            imageUrl = match[1];
+            // Make sure it's a full URL
+            if (imageUrl.startsWith('//')) {
+              imageUrl = 'https:' + imageUrl;
+            } else if (imageUrl.startsWith('/')) {
+              imageUrl = new URL(url).origin + imageUrl;
+            }
+            console.log(`Found image: ${imageUrl}`);
+            break;
+          }
+        }
+
+        // Try to extract time information
+        const prepTimeMatch = html.match(/prep[^:]*:?\s*(\d+)\s*min/i) || html.match(/preparation[^:]*:?\s*(\d+)\s*min/i);
+        const cookTimeMatch = html.match(/cook[^:]*:?\s*(\d+)\s*min/i) || html.match(/bake[^:]*:?\s*(\d+)\s*min/i);
+        const servingsMatch = html.match(/serves?\s*(\d+)/i) || html.match(/yield[^:]*:?\s*(\d+)/i);
+
         recipeData = {
-          title: title,
+          title: title || 'Imported Recipe',
           description: `Recipe imported from ${new URL(url).hostname}`,
-          ingredients: [{ unit: '', amount: '', item: 'See original recipe', notes: '' }],
-          instructions: ['See original recipe for full instructions'],
-          prepTime: null,
-          cookTime: null,
-          servings: null,
-          imageUrl: '',
+          ingredients: ingredientMatches && ingredientMatches.length > 0 ? 
+            ingredientMatches.map((match: string) => {
+              const cleanText = match.replace(/<[^>]*>/g, '').trim();
+              // Try to parse amount, unit, and item
+              const parseMatch = cleanText.match(/^(\d+(?:\/\d+)?(?:\.\d+)?)\s*(\w+)?\s+(.+)$/);
+              if (parseMatch) {
+                return {
+                  amount: parseMatch[1],
+                  unit: parseMatch[2] || '',
+                  item: parseMatch[3],
+                  notes: ''
+                };
+              }
+              return { unit: '', amount: '', item: cleanText, notes: '' };
+            }) : 
+            [{ unit: '', amount: '', item: 'See original recipe', notes: '' }],
+          instructions: instructionMatches && instructionMatches.length > 0 ? 
+            instructionMatches.map((match: string) => match.replace(/<[^>]*>/g, '').trim()).filter(inst => inst.length > 10) : 
+            ['See original recipe for instructions'],
+          prepTime: prepTimeMatch ? parseInt(prepTimeMatch[1]) : null,
+          cookTime: cookTimeMatch ? parseInt(cookTimeMatch[1]) : null,
+          servings: servingsMatch ? parseInt(servingsMatch[1]) : null,
+          imageUrl,
           cuisine: '',
           mealType: '',
           tags: [],
