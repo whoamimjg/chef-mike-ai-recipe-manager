@@ -48,8 +48,14 @@ export const recipes = pgTable("recipes", {
   servings: integer("servings"),
   difficulty: varchar("difficulty"), // easy, medium, hard
   cuisine: varchar("cuisine"),
-  ingredients: jsonb("ingredients").notNull().$type<string[]>(),
+  ingredients: jsonb("ingredients").notNull().$type<{
+    unit?: string;
+    amount?: string;
+    item: string;
+    notes?: string;
+  }[]>(),
   instructions: jsonb("instructions").notNull().$type<string[]>(),
+  mealType: varchar("meal_type"), // breakfast, lunch, dinner, snack
   nutritionInfo: jsonb("nutrition_info").$type<{
     calories?: number;
     protein?: number;

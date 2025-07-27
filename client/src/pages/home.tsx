@@ -35,7 +35,9 @@ import {
   Upload,
   Package,
   Sparkles,
-  Wand2
+  Wand2,
+  Filter,
+  X
 } from "lucide-react";
 import type { Recipe, MealPlan, ShoppingList, UserPreferences, UserInventory } from "@shared/schema";
 
@@ -51,6 +53,14 @@ export default function Home() {
   const [isAIGeneratorOpen, setIsAIGeneratorOpen] = useState(false);
   const [isAddInventoryOpen, setIsAddInventoryOpen] = useState(false);
   const [newInventoryItem, setNewInventoryItem] = useState({ name: "", quantity: "", unit: "", category: "" });
+  const [recipeIngredients, setRecipeIngredients] = useState([{ unit: '', amount: '', item: '', notes: '' }]);
+  const [recipeInstructions, setRecipeInstructions] = useState(['']);
+  const [selectedCuisine, setSelectedCuisine] = useState('');
+  const [selectedMealType, setSelectedMealType] = useState('');
+  const [filterCuisine, setFilterCuisine] = useState('');
+  const [filterMealType, setFilterMealType] = useState('');
+  const [imageOption, setImageOption] = useState('upload'); // 'upload' or 'url'
+  const [imageUrl, setImageUrl] = useState('');
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -105,6 +115,7 @@ export default function Home() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/recipes"] });
       setIsAddRecipeOpen(false);
+      resetRecipeForm();
       toast({
         title: "Success",
         description: "Recipe created successfully!",
@@ -265,20 +276,65 @@ export default function Home() {
     },
   });
 
+  const addIngredient = () => {
+    setRecipeIngredients([...recipeIngredients, { unit: '', amount: '', item: '', notes: '' }]);
+  };
+
+  const removeIngredient = (index: number) => {
+    if (recipeIngredients.length > 1) {
+      setRecipeIngredients(recipeIngredients.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateIngredient = (index: number, field: string, value: string) => {
+    const updated = [...recipeIngredients];
+    updated[index] = { ...updated[index], [field]: value };
+    setRecipeIngredients(updated);
+  };
+
+  const addInstruction = () => {
+    setRecipeInstructions([...recipeInstructions, '']);
+  };
+
+  const removeInstruction = (index: number) => {
+    if (recipeInstructions.length > 1) {
+      setRecipeInstructions(recipeInstructions.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateInstruction = (index: number, value: string) => {
+    const updated = [...recipeInstructions];
+    updated[index] = value;
+    setRecipeInstructions(updated);
+  };
+
+  const resetRecipeForm = () => {
+    setRecipeIngredients([{ unit: '', amount: '', item: '', notes: '' }]);
+    setRecipeInstructions(['']);
+    setSelectedCuisine('');
+    setSelectedMealType('');
+    setImageOption('upload');
+    setImageUrl('');
+  };
+
   const handleAddRecipe = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     
-    // Parse ingredients and instructions from textarea
-    const ingredientsText = formData.get("ingredients") as string;
-    const instructionsText = formData.get("instructions") as string;
+    // Filter out empty ingredients and instructions
+    const validIngredients = recipeIngredients.filter(ing => ing.item.trim());
+    const validInstructions = recipeInstructions.filter(inst => inst.trim());
     
-    const ingredients = ingredientsText.split('\n').filter(item => item.trim());
-    const instructions = instructionsText.split('\n').filter(item => item.trim());
-    
-    formData.set("ingredients", JSON.stringify(ingredients));
-    formData.set("instructions", JSON.stringify(instructions));
+    formData.set("ingredients", JSON.stringify(validIngredients));
+    formData.set("instructions", JSON.stringify(validInstructions));
+    formData.set("cuisine", selectedCuisine);
+    formData.set("mealType", selectedMealType);
     formData.set("tags", JSON.stringify([]));
+
+    // Handle image URL if selected
+    if (imageOption === 'url' && imageUrl.trim()) {
+      formData.set("imageUrl", imageUrl);
+    }
 
     createRecipeMutation.mutate(formData);
   };
@@ -289,10 +345,15 @@ export default function Home() {
     }
   };
 
-  const filteredRecipes = recipes.filter((recipe: Recipe) =>
-    recipe.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    recipe.description?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredRecipes = recipes.filter((recipe: Recipe) => {
+    const matchesSearch = recipe.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      recipe.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesCuisine = !filterCuisine || recipe.cuisine === filterCuisine;
+    const matchesMealType = !filterMealType || recipe.mealType === filterMealType;
+    
+    return matchesSearch && matchesCuisine && matchesMealType;
+  });
 
   if (isLoading) {
     return (
@@ -436,75 +497,271 @@ export default function Home() {
                         Add Recipe
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
+                    <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                       <DialogHeader>
-                        <DialogTitle>Add New Recipe</DialogTitle>
+                        <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+                          <ChefHat className="h-6 w-6" />
+                          Create New Recipe
+                        </DialogTitle>
                       </DialogHeader>
-                      <form onSubmit={handleAddRecipe} className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor="title">Recipe Title</Label>
-                            <Input id="title" name="title" required />
+                      <form onSubmit={handleAddRecipe} className="space-y-6">
+                        {/* Basic Information */}
+                        <div className="bg-gray-50 p-4 rounded-lg space-y-4">
+                          <h3 className="text-lg font-semibold text-gray-900">Basic Information</h3>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label htmlFor="title">Recipe Title *</Label>
+                              <Input id="title" name="title" placeholder="e.g., Grandma's Chocolate Chip Cookies" required />
+                            </div>
+                            <div>
+                              <Label htmlFor="cuisine">Cuisine Type</Label>
+                              <Select value={selectedCuisine} onValueChange={setSelectedCuisine}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select cuisine..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="italian">Italian</SelectItem>
+                                  <SelectItem value="mexican">Mexican</SelectItem>
+                                  <SelectItem value="chinese">Chinese</SelectItem>
+                                  <SelectItem value="indian">Indian</SelectItem>
+                                  <SelectItem value="mediterranean">Mediterranean</SelectItem>
+                                  <SelectItem value="american">American</SelectItem>
+                                  <SelectItem value="french">French</SelectItem>
+                                  <SelectItem value="japanese">Japanese</SelectItem>
+                                  <SelectItem value="thai">Thai</SelectItem>
+                                  <SelectItem value="korean">Korean</SelectItem>
+                                  <SelectItem value="middle-eastern">Middle Eastern</SelectItem>
+                                  <SelectItem value="fusion">Fusion</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
                           </div>
-                          <div>
-                            <Label htmlFor="cuisine">Cuisine</Label>
-                            <Input id="cuisine" name="cuisine" />
+                          
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label htmlFor="mealType">Meal Type</Label>
+                              <Select value={selectedMealType} onValueChange={setSelectedMealType}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select meal type..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="breakfast">Breakfast</SelectItem>
+                                  <SelectItem value="lunch">Lunch</SelectItem>
+                                  <SelectItem value="dinner">Dinner</SelectItem>
+                                  <SelectItem value="snack">Snack</SelectItem>
+                                  <SelectItem value="dessert">Dessert</SelectItem>
+                                  <SelectItem value="appetizer">Appetizer</SelectItem>
+                                  <SelectItem value="side-dish">Side Dish</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <Label htmlFor="difficulty">Difficulty</Label>
+                              <Select>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select difficulty..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="easy">Easy</SelectItem>
+                                  <SelectItem value="medium">Medium</SelectItem>
+                                  <SelectItem value="hard">Hard</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
                           </div>
-                        </div>
-                        
-                        <div>
-                          <Label htmlFor="description">Description</Label>
-                          <Textarea id="description" name="description" />
+                          
+                          <div>
+                            <Label htmlFor="description">Description</Label>
+                            <Textarea 
+                              id="description" 
+                              name="description" 
+                              placeholder="Brief description of your recipe..."
+                              rows={3}
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-4">
+                            <div>
+                              <Label htmlFor="prepTime">Prep Time (min)</Label>
+                              <Input id="prepTime" name="prepTime" type="number" placeholder="15" />
+                            </div>
+                            <div>
+                              <Label htmlFor="cookTime">Cook Time (min)</Label>
+                              <Input id="cookTime" name="cookTime" type="number" placeholder="30" />
+                            </div>
+                            <div>
+                              <Label htmlFor="servings">Servings</Label>
+                              <Input id="servings" name="servings" type="number" placeholder="4" />
+                            </div>
+                          </div>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-4">
-                          <div>
-                            <Label htmlFor="prepTime">Prep Time (min)</Label>
-                            <Input id="prepTime" name="prepTime" type="number" />
+                        {/* Ingredients Section */}
+                        <div className="bg-green-50 p-4 rounded-lg space-y-4">
+                          <div className="flex justify-between items-center">
+                            <h3 className="text-lg font-semibold text-gray-900">Ingredients</h3>
+                            <Button type="button" onClick={addIngredient} variant="outline" size="sm">
+                              <Plus className="h-4 w-4 mr-2" />
+                              Add Ingredient
+                            </Button>
                           </div>
-                          <div>
-                            <Label htmlFor="cookTime">Cook Time (min)</Label>
-                            <Input id="cookTime" name="cookTime" type="number" />
+                          {recipeIngredients.map((ingredient, index) => (
+                            <div key={index} className="grid grid-cols-12 gap-2 items-end">
+                              <div className="col-span-2">
+                                <Label htmlFor={`amount-${index}`}>Amount</Label>
+                                <Input 
+                                  id={`amount-${index}`}
+                                  placeholder="1"
+                                  value={ingredient.amount}
+                                  onChange={(e) => updateIngredient(index, 'amount', e.target.value)}
+                                />
+                              </div>
+                              <div className="col-span-2">
+                                <Label htmlFor={`unit-${index}`}>Unit</Label>
+                                <Select value={ingredient.unit} onValueChange={(value) => updateIngredient(index, 'unit', value)}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Unit" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="cup">Cup</SelectItem>
+                                    <SelectItem value="tbsp">Tablespoon</SelectItem>
+                                    <SelectItem value="tsp">Teaspoon</SelectItem>
+                                    <SelectItem value="oz">Ounce</SelectItem>
+                                    <SelectItem value="lb">Pound</SelectItem>
+                                    <SelectItem value="gram">Gram</SelectItem>
+                                    <SelectItem value="kg">Kilogram</SelectItem>
+                                    <SelectItem value="ml">Milliliter</SelectItem>
+                                    <SelectItem value="liter">Liter</SelectItem>
+                                    <SelectItem value="piece">Piece</SelectItem>
+                                    <SelectItem value="clove">Clove</SelectItem>
+                                    <SelectItem value="pinch">Pinch</SelectItem>
+                                    <SelectItem value="dash">Dash</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="col-span-4">
+                                <Label htmlFor={`item-${index}`}>Ingredient *</Label>
+                                <Input 
+                                  id={`item-${index}`}
+                                  placeholder="flour, eggs, milk..."
+                                  value={ingredient.item}
+                                  onChange={(e) => updateIngredient(index, 'item', e.target.value)}
+                                  required={index === 0}
+                                />
+                              </div>
+                              <div className="col-span-3">
+                                <Label htmlFor={`notes-${index}`}>Notes</Label>
+                                <Input 
+                                  id={`notes-${index}`}
+                                  placeholder="optional notes..."
+                                  value={ingredient.notes}
+                                  onChange={(e) => updateIngredient(index, 'notes', e.target.value)}
+                                />
+                              </div>
+                              <div className="col-span-1">
+                                <Button 
+                                  type="button" 
+                                  onClick={() => removeIngredient(index)}
+                                  variant="outline" 
+                                  size="sm"
+                                  disabled={recipeIngredients.length === 1}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Instructions Section */}
+                        <div className="bg-blue-50 p-4 rounded-lg space-y-4">
+                          <div className="flex justify-between items-center">
+                            <h3 className="text-lg font-semibold text-gray-900">Instructions</h3>
+                            <Button type="button" onClick={addInstruction} variant="outline" size="sm">
+                              <Plus className="h-4 w-4 mr-2" />
+                              Add Step
+                            </Button>
                           </div>
-                          <div>
-                            <Label htmlFor="servings">Servings</Label>
-                            <Input id="servings" name="servings" type="number" />
+                          {recipeInstructions.map((instruction, index) => (
+                            <div key={index} className="flex gap-2 items-start">
+                              <div className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mt-1 flex-shrink-0">
+                                {index + 1}
+                              </div>
+                              <Textarea 
+                                placeholder={`Step ${index + 1}: Describe what to do...`}
+                                value={instruction}
+                                onChange={(e) => updateInstruction(index, e.target.value)}
+                                rows={2}
+                                className="flex-1"
+                                required={index === 0}
+                              />
+                              <Button 
+                                type="button" 
+                                onClick={() => removeInstruction(index)}
+                                variant="outline" 
+                                size="sm"
+                                disabled={recipeInstructions.length === 1}
+                                className="mt-1"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Image Section */}
+                        <div className="bg-purple-50 p-4 rounded-lg space-y-4">
+                          <h3 className="text-lg font-semibold text-gray-900">Recipe Image</h3>
+                          <div className="space-y-3">
+                            <div className="flex gap-4">
+                              <Button 
+                                type="button"
+                                variant={imageOption === 'upload' ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => setImageOption('upload')}
+                              >
+                                Upload Image
+                              </Button>
+                              <Button 
+                                type="button"
+                                variant={imageOption === 'url' ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => setImageOption('url')}
+                              >
+                                Image URL
+                              </Button>
+                            </div>
+                            {imageOption === 'upload' ? (
+                              <Input id="image" name="image" type="file" accept="image/*" />
+                            ) : (
+                              <Input 
+                                placeholder="https://example.com/recipe-image.jpg"
+                                value={imageUrl}
+                                onChange={(e) => setImageUrl(e.target.value)}
+                              />
+                            )}
                           </div>
                         </div>
 
-                        <div>
-                          <Label htmlFor="ingredients">Ingredients (one per line)</Label>
-                          <Textarea 
-                            id="ingredients" 
-                            name="ingredients" 
-                            placeholder="1 cup flour&#10;2 eggs&#10;1/2 cup milk"
-                            rows={6}
-                            required
-                          />
-                        </div>
-
-                        <div>
-                          <Label htmlFor="instructions">Instructions (one per line)</Label>
-                          <Textarea 
-                            id="instructions" 
-                            name="instructions" 
-                            placeholder="Mix dry ingredients&#10;Add wet ingredients&#10;Bake for 30 minutes"
-                            rows={6}
-                            required
-                          />
-                        </div>
-
-                        <div>
-                          <Label htmlFor="image">Recipe Image</Label>
-                          <Input id="image" name="image" type="file" accept="image/*" />
-                        </div>
-
-                        <div className="flex justify-end gap-2">
-                          <Button type="button" variant="outline" onClick={() => setIsAddRecipeOpen(false)}>
+                        <div className="flex justify-end gap-3 pt-4 border-t">
+                          <Button type="button" variant="outline" onClick={() => {
+                            setIsAddRecipeOpen(false);
+                            resetRecipeForm();
+                          }}>
                             Cancel
                           </Button>
-                          <Button type="submit" disabled={createRecipeMutation.isPending}>
-                            {createRecipeMutation.isPending ? "Creating..." : "Create Recipe"}
+                          <Button type="submit" disabled={createRecipeMutation.isPending} className="min-w-32">
+                            {createRecipeMutation.isPending ? (
+                              <>
+                                <ChefHat className="h-4 w-4 mr-2 animate-spin" />
+                                Adding...
+                              </>
+                            ) : (
+                              <>
+                                <Plus className="h-4 w-4 mr-2" />
+                                Create Recipe
+                              </>
+                            )}
                           </Button>
                         </div>
                       </form>
@@ -520,27 +777,109 @@ export default function Home() {
               </CardContent>
             </Card>
 
-            {/* Recipe Grid */}
-            {recipesLoading ? (
-              <div className="text-center py-12">
-                <ChefHat className="h-12 w-12 animate-spin mx-auto mb-4 text-primary-600" />
-                <p className="text-gray-600">Loading recipes...</p>
+            {/* Recipe Grid with Sidebar */}
+            <div className="flex gap-6">
+              {/* Left Sidebar - Filters */}
+              <div className="w-64 flex-shrink-0">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Filter className="h-5 w-5" />
+                      Filter Recipes
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {/* Cuisine Filter */}
+                    <div>
+                      <Label className="text-sm font-medium">Cuisine Type</Label>
+                      <Select value={filterCuisine} onValueChange={setFilterCuisine}>
+                        <SelectTrigger className="mt-2">
+                          <SelectValue placeholder="All cuisines" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">All Cuisines</SelectItem>
+                          <SelectItem value="italian">Italian</SelectItem>
+                          <SelectItem value="mexican">Mexican</SelectItem>
+                          <SelectItem value="chinese">Chinese</SelectItem>
+                          <SelectItem value="indian">Indian</SelectItem>
+                          <SelectItem value="mediterranean">Mediterranean</SelectItem>
+                          <SelectItem value="american">American</SelectItem>
+                          <SelectItem value="french">French</SelectItem>
+                          <SelectItem value="japanese">Japanese</SelectItem>
+                          <SelectItem value="thai">Thai</SelectItem>
+                          <SelectItem value="korean">Korean</SelectItem>
+                          <SelectItem value="middle-eastern">Middle Eastern</SelectItem>
+                          <SelectItem value="fusion">Fusion</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Meal Type Filter */}
+                    <div>
+                      <Label className="text-sm font-medium">Meal Time</Label>
+                      <Select value={filterMealType} onValueChange={setFilterMealType}>
+                        <SelectTrigger className="mt-2">
+                          <SelectValue placeholder="All meal times" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">All Meal Times</SelectItem>
+                          <SelectItem value="breakfast">🌅 Breakfast</SelectItem>
+                          <SelectItem value="lunch">☀️ Lunch</SelectItem>
+                          <SelectItem value="dinner">🌙 Dinner</SelectItem>
+                          <SelectItem value="snack">🍎 Snacks</SelectItem>
+                          <SelectItem value="dessert">🍰 Dessert</SelectItem>
+                          <SelectItem value="appetizer">🥗 Appetizer</SelectItem>
+                          <SelectItem value="side-dish">🥘 Side Dish</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Clear Filters */}
+                    {(filterCuisine || filterMealType) && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => {
+                          setFilterCuisine('');
+                          setFilterMealType('');
+                        }}
+                        className="w-full"
+                      >
+                        <X className="h-4 w-4 mr-2" />
+                        Clear Filters
+                      </Button>
+                    )}
+
+                    {/* Recipe Count */}
+                    <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+                      <span className="font-medium">{filteredRecipes.length}</span> recipe{filteredRecipes.length !== 1 ? 's' : ''} found
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
-            ) : filteredRecipes.length === 0 ? (
-              <Card>
-                <CardContent className="text-center py-12">
-                  <ChefHat className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">No recipes found</h3>
-                  <p className="text-gray-600 mb-4">
-                    {searchQuery ? "Try adjusting your search terms" : "Start building your recipe collection"}
-                  </p>
-                  <Button onClick={() => setIsAddRecipeOpen(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Your First Recipe
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
+
+              {/* Main Content Area */}
+              <div className="flex-1">
+                {recipesLoading ? (
+                  <div className="text-center py-12">
+                    <ChefHat className="h-12 w-12 animate-spin mx-auto mb-4 text-primary-600" />
+                    <p className="text-gray-600">Loading recipes...</p>
+                  </div>
+                ) : filteredRecipes.length === 0 ? (
+                  <Card>
+                    <CardContent className="text-center py-12">
+                      <ChefHat className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                      <h3 className="text-xl font-semibold text-gray-900 mb-2">No recipes found</h3>
+                      <p className="text-gray-600 mb-4">
+                        {searchQuery || filterCuisine || filterMealType ? "Try adjusting your search or filters" : "Start building your recipe collection"}
+                      </p>
+                      <Button onClick={() => setIsAddRecipeOpen(true)} className="flex items-center gap-2">
+                        <Plus className="h-4 w-4" />
+                        Add Your First Recipe
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ) : (
               <div className={viewMode === "grid" ? "grid md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"}>
                 {filteredRecipes.map((recipe: Recipe) => (
                   <Card key={recipe.id} className="hover:shadow-lg transition-shadow duration-300">
@@ -595,8 +934,10 @@ export default function Home() {
                     </CardContent>
                   </Card>
                 ))}
+                </div>
+                )}
               </div>
-            )}
+            </div>
           </TabsContent>
 
           {/* AI Recipe Generator */}
