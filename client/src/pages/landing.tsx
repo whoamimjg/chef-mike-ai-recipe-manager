@@ -130,17 +130,25 @@ export default function Landing() {
                 </div>
                 <p className="text-gray-600 mb-6">Store, organize, and discover recipes with AI-powered tagging and smart search. Import from any website or create your own.</p>
                 <ul className="space-y-2 text-sm text-gray-600">
-                  <li className="flex items-center gap-2">
-                    <div className="w-1 h-1 bg-green-500 rounded-full"></div>
-                    One-click recipe imports
+                  <li className="flex items-center gap-2 flex-shrink-0">
+                    <div className="w-1 h-1 bg-green-500 rounded-full flex-shrink-0"></div>
+                    <span>One-click recipe imports from any website</span>
                   </li>
-                  <li className="flex items-center gap-2">
-                    <div className="w-1 h-1 bg-green-500 rounded-full"></div>
-                    Smart categorization
+                  <li className="flex items-center gap-2 flex-shrink-0">
+                    <div className="w-1 h-1 bg-green-500 rounded-full flex-shrink-0"></div>
+                    <span>AI-powered smart categorization and tagging</span>
                   </li>
-                  <li className="flex items-center gap-2">
-                    <div className="w-1 h-1 bg-green-500 rounded-full"></div>
-                    Nutritional analysis
+                  <li className="flex items-center gap-2 flex-shrink-0">
+                    <div className="w-1 h-1 bg-green-500 rounded-full flex-shrink-0"></div>
+                    <span>Automatic nutritional analysis and dietary info</span>
+                  </li>
+                  <li className="flex items-center gap-2 flex-shrink-0">
+                    <div className="w-1 h-1 bg-green-500 rounded-full flex-shrink-0"></div>
+                    <span>Recipe scaling for any serving size</span>
+                  </li>
+                  <li className="flex items-center gap-2 flex-shrink-0">
+                    <div className="w-1 h-1 bg-green-500 rounded-full flex-shrink-0"></div>
+                    <span>Image uploads with auto-optimization</span>
                   </li>
                 </ul>
               </CardContent>
@@ -160,17 +168,25 @@ export default function Landing() {
                 </div>
                 <p className="text-gray-600 mb-6">Drag-and-drop meal planning with calendar integration. Plan weeks in advance and never wonder "what's for dinner" again.</p>
                 <ul className="space-y-2 text-sm text-gray-600">
-                  <li className="flex items-center gap-2">
-                    <div className="w-1 h-1 bg-green-500 rounded-full"></div>
-                    Drag & drop interface
+                  <li className="flex items-center gap-2 flex-shrink-0">
+                    <div className="w-1 h-1 bg-green-500 rounded-full flex-shrink-0"></div>
+                    <span>Interactive drag & drop meal planning interface</span>
                   </li>
-                  <li className="flex items-center gap-2">
-                    <div className="w-1 h-1 bg-green-500 rounded-full"></div>
-                    Leftover tracking
+                  <li className="flex items-center gap-2 flex-shrink-0">
+                    <div className="w-1 h-1 bg-green-500 rounded-full flex-shrink-0"></div>
+                    <span>Leftover tracking and meal rotation planning</span>
                   </li>
-                  <li className="flex items-center gap-2">
-                    <div className="w-1 h-1 bg-green-500 rounded-full"></div>
-                    Calendar sync
+                  <li className="flex items-center gap-2 flex-shrink-0">
+                    <div className="w-1 h-1 bg-green-500 rounded-full flex-shrink-0"></div>
+                    <span>Calendar sync with Google Calendar and Apple</span>
+                  </li>
+                  <li className="flex items-center gap-2 flex-shrink-0">
+                    <div className="w-1 h-1 bg-green-500 rounded-full flex-shrink-0"></div>
+                    <span>Batch cooking and meal prep scheduling</span>
+                  </li>
+                  <li className="flex items-center gap-2 flex-shrink-0">
+                    <div className="w-1 h-1 bg-green-500 rounded-full flex-shrink-0"></div>
+                    <span>Family meal coordination and preferences</span>
                   </li>
                 </ul>
               </CardContent>
@@ -190,17 +206,25 @@ export default function Landing() {
                 </div>
                 <p className="text-gray-600 mb-6">Auto-generated shopping lists organized by store layout. Check off items as you shop and track your grocery budget.</p>
                 <ul className="space-y-2 text-sm text-gray-600">
-                  <li className="flex items-center gap-2">
-                    <div className="w-1 h-1 bg-green-500 rounded-full"></div>
-                    Store aisle organization
+                  <li className="flex items-center gap-2 flex-shrink-0">
+                    <div className="w-1 h-1 bg-green-500 rounded-full flex-shrink-0"></div>
+                    <span>Smart organization by grocery store aisle layout</span>
                   </li>
-                  <li className="flex items-center gap-2">
-                    <div className="w-1 h-1 bg-green-500 rounded-full"></div>
-                    Price tracking
+                  <li className="flex items-center gap-2 flex-shrink-0">
+                    <div className="w-1 h-1 bg-green-500 rounded-full flex-shrink-0"></div>
+                    <span>Price tracking and budget management tools</span>
                   </li>
-                  <li className="flex items-center gap-2">
-                    <div className="w-1 h-1 bg-green-500 rounded-full"></div>
-                    Mobile grocery mode
+                  <li className="flex items-center gap-2 flex-shrink-0">
+                    <div className="w-1 h-1 bg-green-500 rounded-full flex-shrink-0"></div>
+                    <span>Mobile-optimized grocery shopping mode</span>
+                  </li>
+                  <li className="flex items-center gap-2 flex-shrink-0">
+                    <div className="w-1 h-1 bg-green-500 rounded-full flex-shrink-0"></div>
+                    <span>Automatic quantity consolidation and scaling</span>
+                  </li>
+                  <li className="flex items-center gap-2 flex-shrink-0">
+                    <div className="w-1 h-1 bg-green-500 rounded-full flex-shrink-0"></div>
+                    <span>Share lists with family members in real-time</span>
                   </li>
                 </ul>
               </CardContent>
@@ -220,17 +244,25 @@ export default function Landing() {
                 </div>
                 <p className="text-gray-600 mb-6">Get personalized recipe recommendations based on your inventory, dietary preferences, and cooking history. Our AI learns from your preferences to suggest perfect meals.</p>
                 <ul className="space-y-2 text-sm text-gray-600">
-                  <li className="flex items-center gap-2">
-                    <div className="w-1 h-1 bg-green-500 rounded-full"></div>
-                    Inventory-based suggestions
+                  <li className="flex items-center gap-2 flex-shrink-0">
+                    <div className="w-1 h-1 bg-green-500 rounded-full flex-shrink-0"></div>
+                    <span>Smart inventory-based recipe suggestions</span>
                   </li>
-                  <li className="flex items-center gap-2">
-                    <div className="w-1 h-1 bg-green-500 rounded-full"></div>
-                    Dietary restriction aware
+                  <li className="flex items-center gap-2 flex-shrink-0">
+                    <div className="w-1 h-1 bg-green-500 rounded-full flex-shrink-0"></div>
+                    <span>Dietary restriction and allergy awareness</span>
                   </li>
-                  <li className="flex items-center gap-2">
-                    <div className="w-1 h-1 bg-green-500 rounded-full"></div>
-                    Learning preferences
+                  <li className="flex items-center gap-2 flex-shrink-0">
+                    <div className="w-1 h-1 bg-green-500 rounded-full flex-shrink-0"></div>
+                    <span>Machine learning-powered preference adaptation</span>
+                  </li>
+                  <li className="flex items-center gap-2 flex-shrink-0">
+                    <div className="w-1 h-1 bg-green-500 rounded-full flex-shrink-0"></div>
+                    <span>Seasonal ingredient recommendations</span>
+                  </li>
+                  <li className="flex items-center gap-2 flex-shrink-0">
+                    <div className="w-1 h-1 bg-green-500 rounded-full flex-shrink-0"></div>
+                    <span>Nutritional goal optimization</span>
                   </li>
                 </ul>
               </CardContent>
@@ -250,17 +282,25 @@ export default function Landing() {
                 </div>
                 <p className="text-gray-600 mb-6">Step-by-step guided cooking with built-in timers, video tutorials, and voice commands for hands-free operation. Perfect for learning new techniques.</p>
                 <ul className="space-y-2 text-sm text-gray-600">
-                  <li className="flex items-center gap-2">
-                    <div className="w-1 h-1 bg-green-500 rounded-full"></div>
-                    Voice control
+                  <li className="flex items-center gap-2 flex-shrink-0">
+                    <div className="w-1 h-1 bg-green-500 rounded-full flex-shrink-0"></div>
+                    <span>Hands-free voice control for cooking</span>
                   </li>
-                  <li className="flex items-center gap-2">
-                    <div className="w-1 h-1 bg-green-500 rounded-full"></div>
-                    Built-in timers
+                  <li className="flex items-center gap-2 flex-shrink-0">
+                    <div className="w-1 h-1 bg-green-500 rounded-full flex-shrink-0"></div>
+                    <span>Multiple built-in cooking timers</span>
                   </li>
-                  <li className="flex items-center gap-2">
-                    <div className="w-1 h-1 bg-green-500 rounded-full"></div>
-                    Video tutorials
+                  <li className="flex items-center gap-2 flex-shrink-0">
+                    <div className="w-1 h-1 bg-green-500 rounded-full flex-shrink-0"></div>
+                    <span>Integrated video tutorial library</span>
+                  </li>
+                  <li className="flex items-center gap-2 flex-shrink-0">
+                    <div className="w-1 h-1 bg-green-500 rounded-full flex-shrink-0"></div>
+                    <span>Step-by-step cooking guidance</span>
+                  </li>
+                  <li className="flex items-center gap-2 flex-shrink-0">
+                    <div className="w-1 h-1 bg-green-500 rounded-full flex-shrink-0"></div>
+                    <span>Temperature and doneness alerts</span>
                   </li>
                 </ul>
               </CardContent>
@@ -280,17 +320,25 @@ export default function Landing() {
                 </div>
                 <p className="text-gray-600 mb-6">Share recipes and meal plans with family members. Collaborative planning makes cooking together easier than ever. Build family traditions around food.</p>
                 <ul className="space-y-2 text-sm text-gray-600">
-                  <li className="flex items-center gap-2">
-                    <div className="w-1 h-1 bg-green-500 rounded-full"></div>
-                    Family recipe sharing
+                  <li className="flex items-center gap-2 flex-shrink-0">
+                    <div className="w-1 h-1 bg-green-500 rounded-full flex-shrink-0"></div>
+                    <span>Family recipe sharing and collaboration</span>
                   </li>
-                  <li className="flex items-center gap-2">
-                    <div className="w-1 h-1 bg-green-500 rounded-full"></div>
-                    Collaborative planning
+                  <li className="flex items-center gap-2 flex-shrink-0">
+                    <div className="w-1 h-1 bg-green-500 rounded-full flex-shrink-0"></div>
+                    <span>Collaborative meal planning calendars</span>
                   </li>
-                  <li className="flex items-center gap-2">
-                    <div className="w-1 h-1 bg-green-500 rounded-full"></div>
-                    Kids cooking mode
+                  <li className="flex items-center gap-2 flex-shrink-0">
+                    <div className="w-1 h-1 bg-green-500 rounded-full flex-shrink-0"></div>
+                    <span>Kid-friendly cooking mode with safety tips</span>
+                  </li>
+                  <li className="flex items-center gap-2 flex-shrink-0">
+                    <div className="w-1 h-1 bg-green-500 rounded-full flex-shrink-0"></div>
+                    <span>Shared grocery lists and task assignments</span>
+                  </li>
+                  <li className="flex items-center gap-2 flex-shrink-0">
+                    <div className="w-1 h-1 bg-green-500 rounded-full flex-shrink-0"></div>
+                    <span>Family cooking challenges and achievements</span>
                   </li>
                 </ul>
               </CardContent>
