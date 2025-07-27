@@ -356,20 +356,6 @@ export default function Home() {
     window.location.href = "/api/logout";
   };
 
-  const handleAddInventoryItem = (e: React.FormEvent) => {
-    e.preventDefault();
-    addInventoryMutation.mutate({
-      ingredientName: newInventoryItem.name,
-      quantity: newInventoryItem.quantity,
-      unit: newInventoryItem.unit,
-      category: newInventoryItem.category,
-      upcBarcode: newInventoryItem.upcBarcode || undefined,
-      pricePerUnit: newInventoryItem.pricePerUnit || undefined,
-      totalCost: newInventoryItem.totalCost || undefined,
-      expiryDate: newInventoryItem.expiryDate || undefined,
-    });
-  };
-
   const handleProcessReceipt = async (items: any[]) => {
     // This would process the receipt items and add them to inventory
     setIsReceiptScanning(false);
@@ -2237,7 +2223,16 @@ export default function Home() {
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
-                    addInventoryMutation.mutate(newInventoryItem);
+                    addInventoryMutation.mutate({
+                      ingredientName: newInventoryItem.name,
+                      quantity: newInventoryItem.quantity,
+                      unit: newInventoryItem.unit,
+                      category: newInventoryItem.category,
+                      upcBarcode: newInventoryItem.upcBarcode,
+                      pricePerUnit: newInventoryItem.pricePerUnit,
+                      totalCost: newInventoryItem.totalCost,
+                      expiryDate: newInventoryItem.expiryDate
+                    });
                   }}
                   className="space-y-4"
                 >
@@ -2261,6 +2256,7 @@ export default function Home() {
                         <SelectContent>
                           <SelectItem value="produce">Produce</SelectItem>
                           <SelectItem value="meat">Meat & Poultry</SelectItem>
+                          <SelectItem value="seafood">Seafood</SelectItem>
                           <SelectItem value="dairy">Dairy</SelectItem>
                           <SelectItem value="pantry">Pantry Staples</SelectItem>
                           <SelectItem value="spices">Spices & Herbs</SelectItem>
@@ -2384,14 +2380,14 @@ export default function Home() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {['produce', 'meat', 'dairy', 'pantry', 'spices', 'frozen', 'beverages'].map((category) => {
+                    {['produce', 'meat', 'seafood', 'dairy', 'pantry', 'spices', 'frozen', 'beverages'].map((category) => {
                       const categoryItems = inventory.filter(item => item.category === category);
                       if (categoryItems.length === 0) return null;
                       
                       return (
                         <div key={category} className="border-b pb-4 last:border-b-0">
                           <h4 className="font-semibold text-lg text-gray-900 mb-3 capitalize">
-                            {category === 'meat' ? 'Meat & Poultry' : category === 'spices' ? 'Spices & Herbs' : category}
+                            {category === 'meat' ? 'Meat & Poultry' : category === 'spices' ? 'Spices & Herbs' : category === 'seafood' ? 'Seafood' : category}
                           </h4>
                           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
                             {categoryItems.map((item) => (
