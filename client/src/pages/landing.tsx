@@ -218,7 +218,7 @@ export default function Landing() {
                   <Brain className="h-6 w-6 text-primary-600" />
                   <h3 className="text-2xl font-bold text-gray-900">AI Chef Assistant</h3>
                 </div>
-                <p className="text-gray-600 mb-6">Get personalized recipe recommendations based on your inventory, dietary preferences, and cooking history.</p>
+                <p className="text-gray-600 mb-6">Get personalized recipe recommendations based on your inventory, dietary preferences, and cooking history. Our AI learns from your preferences to suggest perfect meals.</p>
                 <ul className="space-y-2 text-sm text-gray-600">
                   <li className="flex items-center gap-2">
                     <div className="w-1 h-1 bg-green-500 rounded-full"></div>
@@ -248,7 +248,7 @@ export default function Landing() {
                   <Clock className="h-6 w-6 text-primary-600" />
                   <h3 className="text-2xl font-bold text-gray-900">Interactive Cooking Mode</h3>
                 </div>
-                <p className="text-gray-600 mb-6">Step-by-step guided cooking with built-in timers, video tutorials, and voice commands for hands-free operation.</p>
+                <p className="text-gray-600 mb-6">Step-by-step guided cooking with built-in timers, video tutorials, and voice commands for hands-free operation. Perfect for learning new techniques.</p>
                 <ul className="space-y-2 text-sm text-gray-600">
                   <li className="flex items-center gap-2">
                     <div className="w-1 h-1 bg-green-500 rounded-full"></div>
@@ -278,7 +278,7 @@ export default function Landing() {
                   <Users className="h-6 w-6 text-primary-600" />
                   <h3 className="text-2xl font-bold text-gray-900">Family Sharing</h3>
                 </div>
-                <p className="text-gray-600 mb-6">Share recipes and meal plans with family members. Collaborative planning makes cooking together easier than ever.</p>
+                <p className="text-gray-600 mb-6">Share recipes and meal plans with family members. Collaborative planning makes cooking together easier than ever. Build family traditions around food.</p>
                 <ul className="space-y-2 text-sm text-gray-600">
                   <li className="flex items-center gap-2">
                     <div className="w-1 h-1 bg-green-500 rounded-full"></div>
@@ -346,41 +346,43 @@ export default function Landing() {
               <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-yellow-400 text-black">
                 Most Popular
               </Badge>
-              <CardContent className="p-8 bg-gradient-to-br from-primary-500 to-primary-600 text-white">
-                <h3 className="text-2xl font-bold mb-2">Chef Pro</h3>
-                <div className="text-4xl font-bold mb-6">$9<span className="text-lg">/month</span></div>
-                <ul className="space-y-4 mb-8">
-                  <li className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-green-300 rounded-full"></div>
-                    <span>Unlimited recipes</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-green-300 rounded-full"></div>
-                    <span>AI recipe recommendations</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-green-300 rounded-full"></div>
-                    <span>Advanced meal planning</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-green-300 rounded-full"></div>
-                    <span>Nutritional analysis</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-green-300 rounded-full"></div>
-                    <span>Recipe import from web</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-green-300 rounded-full"></div>
-                    <span>Family sharing (4 members)</span>
-                  </li>
-                </ul>
-                <Button 
-                  onClick={handleSignIn}
-                  className="w-full bg-white text-primary-600 hover:bg-gray-100"
-                >
-                  Start Free Trial
-                </Button>
+              <CardContent className="p-8">
+                <div className="bg-gradient-to-br from-primary-500 to-primary-600 text-white p-8 rounded-lg">
+                  <h3 className="text-2xl font-bold mb-2">Chef Pro</h3>
+                  <div className="text-4xl font-bold mb-6">$9<span className="text-lg">/month</span></div>
+                  <ul className="space-y-4 mb-8">
+                    <li className="flex items-center gap-3">
+                      <div className="w-2 h-2 bg-green-300 rounded-full flex-shrink-0"></div>
+                      <span className="text-white">Unlimited recipes</span>
+                    </li>
+                    <li className="flex items-center gap-3">
+                      <div className="w-2 h-2 bg-green-300 rounded-full flex-shrink-0"></div>
+                      <span className="text-white">AI recipe recommendations</span>
+                    </li>
+                    <li className="flex items-center gap-3">
+                      <div className="w-2 h-2 bg-green-300 rounded-full flex-shrink-0"></div>
+                      <span className="text-white">Advanced meal planning</span>
+                    </li>
+                    <li className="flex items-center gap-3">
+                      <div className="w-2 h-2 bg-green-300 rounded-full flex-shrink-0"></div>
+                      <span className="text-white">Nutritional analysis</span>
+                    </li>
+                    <li className="flex items-center gap-3">
+                      <div className="w-2 h-2 bg-green-300 rounded-full flex-shrink-0"></div>
+                      <span className="text-white">Recipe import from web</span>
+                    </li>
+                    <li className="flex items-center gap-3">
+                      <div className="w-2 h-2 bg-green-300 rounded-full flex-shrink-0"></div>
+                      <span className="text-white">Family sharing (4 members)</span>
+                    </li>
+                  </ul>
+                  <Button 
+                    onClick={handleSignIn}
+                    className="w-full bg-white text-primary-600 hover:bg-gray-100"
+                  >
+                    Start Free Trial
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 
