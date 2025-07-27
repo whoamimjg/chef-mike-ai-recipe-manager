@@ -7,6 +7,7 @@ import {
   userPreferences,
   userInventory,
   purchaseReceipts,
+  wastedItems,
   type User,
   type UpsertUser,
   type Recipe,
@@ -23,6 +24,8 @@ import {
   type InsertUserInventory,
   type PurchaseReceipt,
   type InsertPurchaseReceipt,
+  type WastedItem,
+  type InsertWastedItem,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gte, lte, desc, asc, ilike, isNotNull, isNull } from "drizzle-orm";
@@ -349,14 +352,11 @@ export class DatabaseStorage implements IStorage {
 
   // User inventory operations
   async getUserInventory(userId: string): Promise<UserInventory[]> {
-    // Only show items that haven't been wasted or used
+    // Show all active inventory items
     return await db
       .select()
       .from(userInventory)
-      .where(and(
-        eq(userInventory.userId, userId),
-        isNull(userInventory.wasteDate) // Exclude wasted items from active inventory
-      ))
+      .where(eq(userInventory.userId, userId))
       .orderBy(asc(userInventory.ingredientName));
   }
 
@@ -385,11 +385,31 @@ export class DatabaseStorage implements IStorage {
   }
 
   async markItemAsWasted(id: number, userId: string): Promise<void> {
-    // Mark item as wasted but keep it in inventory for reporting
-    await db
-      .update(userInventory)
-      .set({ wasteDate: new Date(), updatedAt: new Date() })
+    // Get the item first
+    const [item] = await db
+      .select()
+      .from(userInventory)
       .where(and(eq(userInventory.id, id), eq(userInventory.userId, userId)));
+    
+    if (item) {
+      // Add to wasted items table
+      await db
+        .insert(wastedItems)
+        .values({
+          userId: item.userId,
+          ingredientName: item.ingredientName,
+          quantity: item.quantity,
+          unit: item.unit,
+          category: item.category,
+          totalCost: item.totalCost,
+          wasteReason: 'marked_by_user'
+        });
+      
+      // Remove from inventory
+      await db
+        .delete(userInventory)
+        .where(and(eq(userInventory.id, id), eq(userInventory.userId, userId)));
+    }
   }
 
   async markItemAsUsed(id: number, userId: string): Promise<void> {
@@ -468,14 +488,21 @@ export class DatabaseStorage implements IStorage {
       .sort((a, b) => b.count - a.count)
       .slice(0, 10);
 
-    // Get most wasted items
+    // Get most wasted items from dedicated wasted items table
+    const wasteDateFilters = [];
+    if (startDate) {
+      wasteDateFilters.push(gte(wastedItems.wasteDate, startDate));
+    }
+    if (endDate) {
+      wasteDateFilters.push(lte(wastedItems.wasteDate, endDate));
+    }
+
     const wastedData = await db
       .select()
-      .from(userInventory)
+      .from(wastedItems)
       .where(and(
-        eq(userInventory.userId, userId),
-        isNotNull(userInventory.wasteDate), // Items that have been marked as wasted
-        ...dateFilters
+        eq(wastedItems.userId, userId),
+        ...wasteDateFilters
       ));
 
     const wastedItemsMap = new Map<string, { count: number; totalWasted: number }>();

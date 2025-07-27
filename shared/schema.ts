@@ -169,6 +169,20 @@ export const purchaseReceipts = pgTable("purchase_receipts", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Wasted items table for tracking food waste separately
+export const wastedItems = pgTable("wasted_items", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  ingredientName: varchar("ingredient_name").notNull(),
+  quantity: varchar("quantity"),
+  unit: varchar("unit"),
+  category: varchar("category"),
+  totalCost: decimal("total_cost", { precision: 10, scale: 2 }),
+  wasteDate: timestamp("waste_date").defaultNow(),
+  wasteReason: varchar("waste_reason"), // expired, spoiled, etc.
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Define relations
 export const usersRelations = relations(users, ({ many, one }) => ({
   recipes: many(recipes),
@@ -287,6 +301,8 @@ export const insertPurchaseReceiptSchema = createInsertSchema(purchaseReceipts).
 // Export types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
+export type WastedItem = typeof wastedItems.$inferSelect;
+export type InsertWastedItem = typeof wastedItems.$inferInsert;
 export type InsertRecipe = z.infer<typeof insertRecipeSchema>;
 export type Recipe = typeof recipes.$inferSelect;
 export type InsertRecipeRating = z.infer<typeof insertRecipeRatingSchema>;

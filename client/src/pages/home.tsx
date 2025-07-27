@@ -3184,21 +3184,358 @@ export default function Home() {
 
                     {/* Day View */}
                     {mealPlannerView === 'day' && (
-                      <div className="p-6 space-y-6">
-                        <h3 className="text-xl font-semibold">Meals for {selectedDate.toLocaleDateString()}</h3>
-                        {/* Day view content would go here */}
-                        <div className="text-gray-500 text-center py-12">
-                          Day view coming soon - use the calendar to select a date
+                      <div className="p-4">
+                        <div className="grid grid-cols-1 gap-4">
+                          {/* Day View - Single Day Layout */}
+                          {(() => {
+                            const dayMealPlans = mealPlans?.filter(plan => plan.date === selectedDate.toISOString().split('T')[0]) || [];
+                            const breakfastPlans = dayMealPlans.filter(plan => plan.mealType === 'breakfast');
+                            const lunchPlans = dayMealPlans.filter(plan => plan.mealType === 'lunch');
+                            const dinnerPlans = dayMealPlans.filter(plan => plan.mealType === 'dinner');
+                            const snackPlans = dayMealPlans.filter(plan => plan.mealType === 'snack');
+
+                            return (
+                              <>
+                                {/* Breakfast */}
+                                <div className="border rounded p-4">
+                                  <h3 className="font-semibold text-lg mb-3 text-orange-600">🌅 Breakfast</h3>
+                                  <div 
+                                    className="min-h-[120px] border-2 border-dashed border-gray-200 rounded p-3"
+                                    onDragOver={(e) => {
+                                      e.preventDefault();
+                                      e.currentTarget.classList.add('bg-blue-50', 'border-blue-300');
+                                    }}
+                                    onDragLeave={(e) => {
+                                      e.preventDefault();
+                                      e.currentTarget.classList.remove('bg-blue-50', 'border-blue-300');
+                                    }}
+                                    onDrop={(e) => {
+                                      e.preventDefault();
+                                      e.currentTarget.classList.remove('bg-blue-50', 'border-blue-300');
+                                      try {
+                                        const recipe = JSON.parse(e.dataTransfer.getData('application/json'));
+                                        addMealPlanMutation.mutate({
+                                          recipeId: recipe.id,
+                                          date: selectedDate.toISOString().split('T')[0],
+                                          mealType: 'breakfast'
+                                        });
+                                        checkMissingIngredients(recipe);
+                                        toast({
+                                          title: "Recipe Added",
+                                          description: `${recipe.title} added to breakfast`,
+                                        });
+                                      } catch (error) {
+                                        console.error('Error parsing dropped recipe:', error);
+                                      }
+                                    }}
+                                  >
+                                    {breakfastPlans.length === 0 ? (
+                                      <p className="text-gray-400 text-center">Drop recipes here for breakfast</p>
+                                    ) : (
+                                      <div className="space-y-2">
+                                        {breakfastPlans.map(plan => {
+                                          const recipe = recipes?.find(r => r.id === plan.recipeId);
+                                          return recipe ? (
+                                            <div key={plan.id} className="bg-orange-50 p-2 rounded flex justify-between items-center">
+                                              <span className="font-medium">{recipe.title}</span>
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => deleteMealPlanMutation.mutate(plan.id)}
+                                                className="text-red-600 hover:text-red-800"
+                                              >
+                                                <Trash2 className="h-4 w-4" />
+                                              </Button>
+                                            </div>
+                                          ) : null;
+                                        })}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Lunch */}
+                                <div className="border rounded p-4">
+                                  <h3 className="font-semibold text-lg mb-3 text-blue-600">☀️ Lunch</h3>
+                                  <div 
+                                    className="min-h-[120px] border-2 border-dashed border-gray-200 rounded p-3"
+                                    onDragOver={(e) => {
+                                      e.preventDefault();
+                                      e.currentTarget.classList.add('bg-blue-50', 'border-blue-300');
+                                    }}
+                                    onDragLeave={(e) => {
+                                      e.preventDefault();
+                                      e.currentTarget.classList.remove('bg-blue-50', 'border-blue-300');
+                                    }}
+                                    onDrop={(e) => {
+                                      e.preventDefault();
+                                      e.currentTarget.classList.remove('bg-blue-50', 'border-blue-300');
+                                      try {
+                                        const recipe = JSON.parse(e.dataTransfer.getData('application/json'));
+                                        addMealPlanMutation.mutate({
+                                          recipeId: recipe.id,
+                                          date: selectedDate.toISOString().split('T')[0],
+                                          mealType: 'lunch'
+                                        });
+                                        checkMissingIngredients(recipe);
+                                        toast({
+                                          title: "Recipe Added",
+                                          description: `${recipe.title} added to lunch`,
+                                        });
+                                      } catch (error) {
+                                        console.error('Error parsing dropped recipe:', error);
+                                      }
+                                    }}
+                                  >
+                                    {lunchPlans.length === 0 ? (
+                                      <p className="text-gray-400 text-center">Drop recipes here for lunch</p>
+                                    ) : (
+                                      <div className="space-y-2">
+                                        {lunchPlans.map(plan => {
+                                          const recipe = recipes?.find(r => r.id === plan.recipeId);
+                                          return recipe ? (
+                                            <div key={plan.id} className="bg-blue-50 p-2 rounded flex justify-between items-center">
+                                              <span className="font-medium">{recipe.title}</span>
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => deleteMealPlanMutation.mutate(plan.id)}
+                                                className="text-red-600 hover:text-red-800"
+                                              >
+                                                <Trash2 className="h-4 w-4" />
+                                              </Button>
+                                            </div>
+                                          ) : null;
+                                        })}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Dinner */}
+                                <div className="border rounded p-4">
+                                  <h3 className="font-semibold text-lg mb-3 text-purple-600">🌙 Dinner</h3>
+                                  <div 
+                                    className="min-h-[120px] border-2 border-dashed border-gray-200 rounded p-3"
+                                    onDragOver={(e) => {
+                                      e.preventDefault();
+                                      e.currentTarget.classList.add('bg-blue-50', 'border-blue-300');
+                                    }}
+                                    onDragLeave={(e) => {
+                                      e.preventDefault();
+                                      e.currentTarget.classList.remove('bg-blue-50', 'border-blue-300');
+                                    }}
+                                    onDrop={(e) => {
+                                      e.preventDefault();
+                                      e.currentTarget.classList.remove('bg-blue-50', 'border-blue-300');
+                                      try {
+                                        const recipe = JSON.parse(e.dataTransfer.getData('application/json'));
+                                        addMealPlanMutation.mutate({
+                                          recipeId: recipe.id,
+                                          date: selectedDate.toISOString().split('T')[0],
+                                          mealType: 'dinner'
+                                        });
+                                        checkMissingIngredients(recipe);
+                                        toast({
+                                          title: "Recipe Added",
+                                          description: `${recipe.title} added to dinner`,
+                                        });
+                                      } catch (error) {
+                                        console.error('Error parsing dropped recipe:', error);
+                                      }
+                                    }}
+                                  >
+                                    {dinnerPlans.length === 0 ? (
+                                      <p className="text-gray-400 text-center">Drop recipes here for dinner</p>
+                                    ) : (
+                                      <div className="space-y-2">
+                                        {dinnerPlans.map(plan => {
+                                          const recipe = recipes?.find(r => r.id === plan.recipeId);
+                                          return recipe ? (
+                                            <div key={plan.id} className="bg-purple-50 p-2 rounded flex justify-between items-center">
+                                              <span className="font-medium">{recipe.title}</span>
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => deleteMealPlanMutation.mutate(plan.id)}
+                                                className="text-red-600 hover:text-red-800"
+                                              >
+                                                <Trash2 className="h-4 w-4" />
+                                              </Button>
+                                            </div>
+                                          ) : null;
+                                        })}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Snacks */}
+                                <div className="border rounded p-4">
+                                  <h3 className="font-semibold text-lg mb-3 text-green-600">🍿 Snacks</h3>
+                                  <div 
+                                    className="min-h-[120px] border-2 border-dashed border-gray-200 rounded p-3"
+                                    onDragOver={(e) => {
+                                      e.preventDefault();
+                                      e.currentTarget.classList.add('bg-blue-50', 'border-blue-300');
+                                    }}
+                                    onDragLeave={(e) => {
+                                      e.preventDefault();
+                                      e.currentTarget.classList.remove('bg-blue-50', 'border-blue-300');
+                                    }}
+                                    onDrop={(e) => {
+                                      e.preventDefault();
+                                      e.currentTarget.classList.remove('bg-blue-50', 'border-blue-300');
+                                      try {
+                                        const recipe = JSON.parse(e.dataTransfer.getData('application/json'));
+                                        addMealPlanMutation.mutate({
+                                          recipeId: recipe.id,
+                                          date: selectedDate.toISOString().split('T')[0],
+                                          mealType: 'snack'
+                                        });
+                                        checkMissingIngredients(recipe);
+                                        toast({
+                                          title: "Recipe Added",
+                                          description: `${recipe.title} added to snacks`,
+                                        });
+                                      } catch (error) {
+                                        console.error('Error parsing dropped recipe:', error);
+                                      }
+                                    }}
+                                  >
+                                    {snackPlans.length === 0 ? (
+                                      <p className="text-gray-400 text-center">Drop recipes here for snacks</p>
+                                    ) : (
+                                      <div className="space-y-2">
+                                        {snackPlans.map(plan => {
+                                          const recipe = recipes?.find(r => r.id === plan.recipeId);
+                                          return recipe ? (
+                                            <div key={plan.id} className="bg-green-50 p-2 rounded flex justify-between items-center">
+                                              <span className="font-medium">{recipe.title}</span>
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => deleteMealPlanMutation.mutate(plan.id)}
+                                                className="text-red-600 hover:text-red-800"
+                                              >
+                                                <Trash2 className="h-4 w-4" />
+                                              </Button>
+                                            </div>
+                                          ) : null;
+                                        })}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </>
+                            );
+                          })()}
                         </div>
                       </div>
                     )}
 
                     {/* Month View */}
                     {mealPlannerView === 'month' && (
-                      <div className="p-6">
-                        <div className="text-gray-500 text-center py-12">
-                          Month view coming soon - showing condensed calendar view
-                        </div>
+                      <div className="p-4">
+                        {(() => {
+                          const today = new Date();
+                          const currentMonth = today.getMonth();
+                          const currentYear = today.getFullYear();
+                          const firstDay = new Date(currentYear, currentMonth, 1);
+                          const lastDay = new Date(currentYear, currentMonth + 1, 0);
+                          const startDate = new Date(firstDay);
+                          startDate.setDate(startDate.getDate() - firstDay.getDay());
+                          
+                          const days = [];
+                          const current = new Date(startDate);
+                          
+                          for (let i = 0; i < 42; i++) {
+                            days.push(new Date(current));
+                            current.setDate(current.getDate() + 1);
+                          }
+
+                          return (
+                            <div className="grid grid-cols-7 gap-1 h-[600px]">
+                              {/* Week headers */}
+                              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                                <div key={day} className="p-2 text-center font-semibold text-gray-700 bg-gray-100">
+                                  {day}
+                                </div>
+                              ))}
+                              
+                              {/* Calendar days */}
+                              {days.map((date, index) => {
+                                const isCurrentMonth = date.getMonth() === currentMonth;
+                                const isToday = date.toDateString() === today.toDateString();
+                                const dateStr = date.toISOString().split('T')[0];
+                                const dayMealPlans = mealPlans?.filter(plan => plan.date === dateStr) || [];
+                                
+                                return (
+                                  <div
+                                    key={index}
+                                    className={`border p-1 min-h-[80px] ${
+                                      !isCurrentMonth ? 'bg-gray-50 text-gray-400' : 'bg-white'
+                                    } ${isToday ? 'bg-blue-50 border-blue-300' : 'border-gray-200'}`}
+                                    onDragOver={(e) => {
+                                      e.preventDefault();
+                                      if (isCurrentMonth) {
+                                        e.currentTarget.classList.add('bg-blue-50', 'border-blue-300');
+                                      }
+                                    }}
+                                    onDragLeave={(e) => {
+                                      e.preventDefault();
+                                      e.currentTarget.classList.remove('bg-blue-50', 'border-blue-300');
+                                    }}
+                                    onDrop={(e) => {
+                                      e.preventDefault();
+                                      e.currentTarget.classList.remove('bg-blue-50', 'border-blue-300');
+                                      if (!isCurrentMonth) return;
+                                      
+                                      try {
+                                        const recipe = JSON.parse(e.dataTransfer.getData('application/json'));
+                                        addMealPlanMutation.mutate({
+                                          recipeId: recipe.id,
+                                          date: dateStr,
+                                          mealType: 'dinner' // Default to dinner for month view
+                                        });
+                                        checkMissingIngredients(recipe);
+                                        toast({
+                                          title: "Recipe Added",
+                                          description: `${recipe.title} added to ${date.toLocaleDateString()}`,
+                                        });
+                                      } catch (error) {
+                                        console.error('Error parsing dropped recipe:', error);
+                                      }
+                                    }}
+                                  >
+                                    <div className="text-sm font-medium mb-1">
+                                      {date.getDate()}
+                                    </div>
+                                    <div className="space-y-1">
+                                      {dayMealPlans.slice(0, 2).map(plan => {
+                                        const recipe = recipes?.find(r => r.id === plan.recipeId);
+                                        return recipe ? (
+                                          <div
+                                            key={plan.id}
+                                            className="text-xs bg-orange-100 text-orange-800 rounded px-1 py-0.5 truncate"
+                                            title={recipe.title}
+                                          >
+                                            {recipe.title}
+                                          </div>
+                                        ) : null;
+                                      })}
+                                      {dayMealPlans.length > 2 && (
+                                        <div className="text-xs text-gray-500">
+                                          +{dayMealPlans.length - 2} more
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        })()}
                       </div>
                     )}
                   </CardContent>
