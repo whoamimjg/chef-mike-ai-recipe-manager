@@ -2,8 +2,12 @@ import OpenAI from "openai";
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const openai = new OpenAI({ 
-  apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY_ENV_VAR || "default_key"
+  apiKey: process.env.OPENAI_API_KEY
 });
+
+// Debug API key access
+console.log("OpenAI API Key available:", process.env.OPENAI_API_KEY ? "YES" : "NO");
+console.log("OpenAI API Key length:", process.env.OPENAI_API_KEY?.length || 0);
 
 interface RecommendationRequest {
   preferences?: {
@@ -50,6 +54,12 @@ interface RecipeRecommendation {
 export async function getAIRecipeRecommendations(
   request: RecommendationRequest
 ): Promise<RecipeRecommendation[]> {
+  // Check if OpenAI API key is available
+  if (!process.env.OPENAI_API_KEY) {
+    console.warn("No OpenAI API key available, returning fallback recommendations");
+    return getFallbackRecommendations(request);
+  }
+
   try {
     const { preferences, inventory, existingRecipes } = request;
 
@@ -175,8 +185,121 @@ Ensure recipes respect dietary restrictions and allergies. Prioritize ingredient
     }
   } catch (error) {
     console.error("Error getting AI recommendations:", error);
-    throw new Error("Failed to get AI recommendations: " + (error as Error).message);
+    // Fallback to rule-based recommendations if AI fails
+    console.warn("AI failed, falling back to rule-based recommendations");
+    return getFallbackRecommendations(request);
   }
+}
+
+// Fallback function for when OpenAI is not available
+function getFallbackRecommendations(request: RecommendationRequest): RecipeRecommendation[] {
+  const { inventory, existingRecipes } = request;
+  const recommendations: RecipeRecommendation[] = [];
+
+  // Analyze existing recipes against inventory
+  if (existingRecipes?.length && inventory?.length) {
+    const inventoryItems = inventory.map(item => item.ingredientName.toLowerCase());
+    
+    existingRecipes.forEach(recipe => {
+      let ingredients = [];
+      try {
+        ingredients = JSON.parse(recipe.ingredients);
+      } catch {
+        ingredients = [];
+      }
+
+      if (ingredients.length > 0) {
+        const requiredIngredients = ingredients.map((ing: any) => 
+          (typeof ing === 'string' ? ing : ing.item || ing).toLowerCase()
+        );
+        
+        const matchedIngredients = requiredIngredients.filter((reqIng: string) =>
+          inventoryItems.some(invIng => invIng.includes(reqIng) || reqIng.includes(invIng))
+        );
+        
+        const matchPercentage = Math.round((matchedIngredients.length / requiredIngredients.length) * 100);
+        
+        if (matchPercentage >= 40) { // Include recipes with 40%+ match
+          const missingIngredients = requiredIngredients.filter((reqIng: string) =>
+            !inventoryItems.some(invIng => invIng.includes(reqIng) || reqIng.includes(invIng))
+          );
+
+          recommendations.push({
+            title: recipe.title,
+            description: recipe.description || "One of your saved recipes that matches your current inventory",
+            prepTime: recipe.prepTime || 15,
+            cookTime: recipe.cookTime || 30,
+            servings: 4,
+            difficulty: matchPercentage >= 80 ? "easy" : "medium",
+            cuisine: "Your Recipe",
+            ingredients: ingredients.map((ing: any) => 
+              typeof ing === 'string' ? ing : `${ing.amount || '1'} ${ing.unit || ''} ${ing.item || ing}`.trim()
+            ),
+            instructions: ["Follow your saved recipe instructions"],
+            tags: ["saved recipe", "personal collection"],
+            matchReason: `This is one of your saved recipes. You have ${matchPercentage}% of the ingredients needed.`,
+            matchType: matchPercentage >= 80 ? 'full' : 'partial',
+            missingIngredients,
+            inventoryMatch: matchPercentage
+          });
+        }
+      }
+    });
+  }
+
+  // Add some generic recipe suggestions based on common inventory items
+  const commonRecipes = [
+    {
+      title: "Simple Grilled Fish",
+      description: "A healthy and quick meal perfect for any white fish or salmon you have on hand.",
+      prepTime: 10,
+      cookTime: 15,
+      servings: 4,
+      difficulty: "easy",
+      cuisine: "American",
+      ingredients: ["1 lb fish fillet", "2 tbsp olive oil", "1 lemon", "salt", "pepper", "herbs"],
+      instructions: [
+        "Preheat grill or pan to medium-high heat",
+        "Brush fish with olive oil and season with salt and pepper",
+        "Cook fish 3-4 minutes per side until flaky",
+        "Serve with lemon and fresh herbs"
+      ],
+      tags: ["quick", "healthy", "protein"],
+      matchReason: "Simple recipe that works with most fish and basic seasonings",
+      matchType: "partial" as const,
+      missingIngredients: ["lemon", "herbs"],
+      inventoryMatch: 60
+    },
+    {
+      title: "Basic Stir Fry",
+      description: "Versatile stir fry that can use whatever vegetables and protein you have available.",
+      prepTime: 10,
+      cookTime: 10,
+      servings: 4,
+      difficulty: "easy",
+      cuisine: "Asian",
+      ingredients: ["2 cups mixed vegetables", "1 lb protein", "2 tbsp oil", "soy sauce", "garlic"],
+      instructions: [
+        "Heat oil in a large pan or wok",
+        "Add protein and cook until done",
+        "Add vegetables and stir fry 3-5 minutes",
+        "Season with soy sauce and garlic"
+      ],
+      tags: ["quick", "versatile", "one-pan"],
+      matchReason: "Flexible recipe that adapts to whatever ingredients you have",
+      matchType: "partial" as const,
+      missingIngredients: ["soy sauce", "garlic"],
+      inventoryMatch: 50
+    }
+  ];
+
+  // Only add generic recipes if we don't have enough from existing recipes
+  if (recommendations.length < 3) {
+    recommendations.push(...commonRecipes.slice(0, 3 - recommendations.length));
+  }
+
+  // Sort by inventory match percentage
+  return recommendations.sort((a, b) => b.inventoryMatch - a.inventoryMatch);
 }
 
 export async function analyzeRecipeImage(base64Image: string): Promise<{
