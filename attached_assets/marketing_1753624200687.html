@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chef Mike's Culinary Classroom - Master Your Kitchen</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            padding: 80px 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="2" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
+            background-size: 50px 50px;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        .hero p {
+            font-size: 1.3rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background: #f093fb;
+            background: linear-gradient(45deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 15px 40px;
+            text-decoration: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 15px rgba(240, 147, 251, 0.4);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(240, 147, 251, 0.6);
+        }
+
+        .features {
+            padding: 80px 20px;
+            background: #f8f9fa;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .features h2 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+            color: #333;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.4rem;
+            margin-bottom: 1rem;
+            color: #667eea;
+        }
+
+        .feature-card p {
+            color: #666;
+        }
+
+        .benefits {
+            padding: 80px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+        }
+
+        .benefits h2 {
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .benefits-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .benefit-item {
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+
+        .benefit-item h3 {
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .signup-section {
+            padding: 80px 20px;
+            background: white;
+            text-align: center;
+        }
+
+        .signup-form {
+            max-width: 400px;
+            margin: 0 auto;
+            background: #f8f9fa;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .signup-form h3 {
+            margin-bottom: 1.5rem;
+            color: #333;
+            font-size: 1.8rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .signup-btn {
+            width: 100%;
+            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.3s ease;
+        }
+
+        .signup-btn:hover {
+            opacity: 0.9;
+        }
+
+        .signup-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .login-link {
+            margin-top: 1rem;
+            text-align: center;
+        }
+
+        .login-link a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c53030;
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .success-message {
+            background: #f0fff4;
+            color: #38a169;
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .footer {
+            background: #333;
+            color: white;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero p {
+                font-size: 1.1rem;
+            }
+
+            .features h2,
+            .benefits h2 {
+                font-size: 2rem;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .benefits-list {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>🍳 Chef Mike's Culinary Classroom</h1>
+            <p>Transform your kitchen into a culinary masterpiece with AI-powered recipe management, smart meal planning, and personalized cooking guidance.</p>
+            <a href="#signup" class="cta-button">Start Cooking Smarter Today</a>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features">
+        <div class="container">
+            <h2>Everything You Need to Master Your Kitchen</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">📚</div>
+                    <h3>Recipe Management</h3>
+                    <p>Store, organize, and search through your recipe collection with ease. Import from websites, upload images, and add detailed nutrition information.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📅</div>
+                    <h3>Smart Meal Planning</h3>
+                    <p>Plan your meals with our intuitive calendar interface. Drag and drop recipes, add notes, and generate shopping lists automatically.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🛒</div>
+                    <h3>Shopping Lists</h3>
+                    <p>Never forget an ingredient again. Our smart shopping lists organize by grocery store aisles and sync with your meal plans.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🤖</div>
+                    <h3>AI-Powered Suggestions</h3>
+                    <p>Get personalized recipe recommendations based on your available ingredients, dietary preferences, and cooking style.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">👨‍🍳</div>
+                    <h3>Interactive Cooking Mode</h3>
+                    <p>Step-by-step cooking instructions with ingredient checklists and built-in timers to guide you through every recipe.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📱</div>
+                    <h3>Mobile Optimized</h3>
+                    <p>Access your recipes and meal plans from any device. Perfect for cooking in the kitchen or shopping at the store.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benefits Section -->
+    <section class="benefits">
+        <div class="container">
+            <h2>Why Choose Chef Mike's Culinary Classroom?</h2>
+            <div class="benefits-list">
+                <div class="benefit-item">
+                    <h3>Save Time</h3>
+                    <p>Streamlined meal planning reduces grocery trips and kitchen stress</p>
+                </div>
+                <div class="benefit-item">
+                    <h3>Reduce Waste</h3>
+                    <p>Smart inventory tracking helps you use ingredients before they expire</p>
+                </div>
+                <div class="benefit-item">
+                    <h3>Eat Better</h3>
+                    <p>Plan nutritious meals that fit your dietary goals and restrictions</p>
+                </div>
+                <div class="benefit-item">
+                    <h3>Learn & Grow</h3>
+                    <p>Discover new recipes and cooking techniques tailored to your skill level</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Signup Section -->
+    <section class="signup-section" id="signup">
+        <div class="container">
+            <h2>Ready to Transform Your Kitchen?</h2>
+            <p style="margin-bottom: 2rem; font-size: 1.1rem; color: #666;">Join thousands of home cooks who have revolutionized their meal planning</p>
+            
+            <div class="signup-form">
+                <h3>Create Your Free Account</h3>
+                <div id="messageContainer"></div>
+                <form id="signupForm">
+                    <div class="form-group">
+                        <label for="name">Full Name</label>
+                        <input type="text" id="name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" required minlength="6">
+                    </div>
+                    <button type="submit" class="signup-btn" id="signupBtn">Create Account & Start Cooking</button>
+                </form>
+                <div class="login-link">
+                    <p>Already have an account? <a href="/app">Go to Recipe App →</a></p>
+                </div>
+            </div>
+
+            <!-- Login Form (Hidden by default) -->
+            <div class="signup-form" id="loginForm" style="display: none;">
+                <h3>Welcome Back!</h3>
+                <div id="loginMessageContainer"></div>
+                <form id="loginFormElement">
+                    <div class="form-group">
+                        <label for="loginEmail">Email Address</label>
+                        <input type="email" id="loginEmail" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" name="password" required>
+                    </div>
+                    <button type="submit" class="signup-btn" id="loginBtn">Sign In</button>
+                </form>
+                <div class="login-link">
+                    <p>Don't have an account? <a href="#signup">Create one here</a></p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Chef Mike's Culinary Classroom. All rights reserved.</p>
+            <p>Transform your kitchen, one recipe at a time.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Show/hide forms
+        function showLoginForm() {
+            document.getElementById('signupForm').parentElement.style.display = 'none';
+            document.getElementById('loginForm').style.display = 'block';
+        }
+
+        function showSignupForm() {
+            document.getElementById('signupForm').parentElement.style.display = 'block';
+            document.getElementById('loginForm').style.display = 'none';
+        }
+
+        // Show message
+        function showMessage(containerId, message, isError = false) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = `<div class="${isError ? 'error-message' : 'success-message'}">${message}</div>`;
+        }
+
+        // Clear messages
+        function clearMessages() {
+            document.getElementById('messageContainer').innerHTML = '';
+            document.getElementById('loginMessageContainer').innerHTML = '';
+        }
+
+        // Signup form submission
+        document.getElementById('signupForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearMessages();
+            
+            const btn = document.getElementById('signupBtn');
+            btn.disabled = true;
+            btn.textContent = 'Creating Account...';
+
+            const formData = new FormData(e.target);
+            const data = {
+                name: formData.get('name'),
+                email: formData.get('email'),
+                password: formData.get('password')
+            };
+
+            try {
+                const response = await fetch('/api/auth/signup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    // Store auth info
+                    localStorage.setItem('auth_token', result.token);
+                    localStorage.setItem('user', JSON.stringify(result.user));
+                    
+                    showMessage('messageContainer', 'Account created successfully! Redirecting to your recipe app...', false);
+                    
+                    // Redirect to recipe app after 2 seconds
+                    setTimeout(() => {
+                        window.location.href = '/app';
+                    }, 2000);
+                } else {
+                    showMessage('messageContainer', result.error, true);
+                }
+            } catch (error) {
+                showMessage('messageContainer', 'Network error. Please try again.', true);
+            }
+
+            btn.disabled = false;
+            btn.textContent = 'Create Account & Start Cooking';
+        });
+
+        // Login form submission
+        document.getElementById('loginFormElement').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearMessages();
+            
+            const btn = document.getElementById('loginBtn');
+            btn.disabled = true;
+            btn.textContent = 'Signing In...';
+
+            const formData = new FormData(e.target);
+            const data = {
+                email: formData.get('email'),
+                password: formData.get('password')
+            };
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    // Store auth info
+                    localStorage.setItem('auth_token', result.token);
+                    localStorage.setItem('user', JSON.stringify(result.user));
+                    
+                    showMessage('loginMessageContainer', 'Welcome back! Redirecting to your recipe app...', false);
+                    
+                    // Redirect to recipe app after 2 seconds
+                    setTimeout(() => {
+                        window.location.href = '/app';
+                    }, 2000);
+                } else {
+                    showMessage('loginMessageContainer', result.error, true);
+                }
+            } catch (error) {
+                showMessage('loginMessageContainer', 'Network error. Please try again.', true);
+            }
+
+            btn.disabled = false;
+            btn.textContent = 'Sign In';
+        });
+
+        // Smooth scrolling for CTA button
+        document.querySelector('.cta-button').addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('signup').scrollIntoView({
+                behavior: 'smooth'
+            });
+        });
+    </script>
+</body>
+</html>
