@@ -1,0 +1,8 @@
+[project]
+name = "chef-mikes-culinary-classroom"
+version = "0.1.0"
+description = "Chef Mike's Culinary Classroom - Recipe planning and meal management platform"
+requires-python = ">=3.11"
+dependencies = [
+    "streamlit>=1.47.1",
+]
