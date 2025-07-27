@@ -8,6 +8,7 @@ import {
   userInventory,
   purchaseReceipts,
   wastedItems,
+  usedItems,
   type User,
   type UpsertUser,
   type Recipe,
@@ -26,6 +27,8 @@ import {
   type InsertPurchaseReceipt,
   type WastedItem,
   type InsertWastedItem,
+  type UsedItem,
+  type InsertUsedItem,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gte, lte, desc, asc, ilike, isNotNull, isNull } from "drizzle-orm";
@@ -83,6 +86,7 @@ export interface IStorage {
     totalSpent: number;
     mostFrequentItems: Array<{ name: string; count: number; totalSpent: number }>;
     mostWastedItems: Array<{ name: string; count: number; totalWasted: number }>;
+    mostUsedItems: Array<{ name: string; count: number; totalUsed: number }>;
     categoryBreakdown: Array<{ category: string; totalSpent: number }>;
   }>;
   
@@ -413,10 +417,30 @@ export class DatabaseStorage implements IStorage {
   }
 
   async markItemAsUsed(id: number, userId: string): Promise<void> {
-    // Remove the item from inventory since it's been consumed
-    await db
-      .delete(userInventory)
+    // Get the item first
+    const [item] = await db
+      .select()
+      .from(userInventory)
       .where(and(eq(userInventory.id, id), eq(userInventory.userId, userId)));
+    
+    if (item) {
+      // Add to used items table
+      await db
+        .insert(usedItems)
+        .values({
+          userId: item.userId,
+          ingredientName: item.ingredientName,
+          quantity: item.quantity,
+          unit: item.unit,
+          category: item.category,
+          totalCost: item.totalCost,
+        });
+      
+      // Remove from inventory
+      await db
+        .delete(userInventory)
+        .where(and(eq(userInventory.id, id), eq(userInventory.userId, userId)));
+    }
   }
 
   async getInventoryByBarcode(userId: string, barcode: string): Promise<UserInventory | undefined> {
@@ -518,6 +542,36 @@ export class DatabaseStorage implements IStorage {
       .sort((a, b) => b.totalWasted - a.totalWasted)
       .slice(0, 10);
 
+    // Get most used items from dedicated used items table
+    const usedDateFilters = [];
+    if (startDate) {
+      usedDateFilters.push(gte(usedItems.usedDate, startDate));
+    }
+    if (endDate) {
+      usedDateFilters.push(lte(usedItems.usedDate, endDate));
+    }
+
+    const usedData = await db
+      .select()
+      .from(usedItems)
+      .where(and(
+        eq(usedItems.userId, userId),
+        ...usedDateFilters
+      ));
+
+    const usedItemsMap = new Map<string, { count: number; totalUsed: number }>();
+    usedData.forEach(item => {
+      const existing = usedItemsMap.get(item.ingredientName) || { count: 0, totalUsed: 0 };
+      existing.count += 1;
+      existing.totalUsed += item.totalCost ? parseFloat(item.totalCost) : 0;
+      usedItemsMap.set(item.ingredientName, existing);
+    });
+
+    const mostUsedItems = Array.from(usedItemsMap.entries())
+      .map(([name, data]) => ({ name, ...data }))
+      .sort((a, b) => b.totalUsed - a.totalUsed)
+      .slice(0, 10);
+
     // Category breakdown
     const categoryMap = new Map<string, number>();
     spendingData.forEach(item => {
@@ -534,6 +588,7 @@ export class DatabaseStorage implements IStorage {
       totalSpent,
       mostFrequentItems,
       mostWastedItems,
+      mostUsedItems,
       categoryBreakdown,
     };
   }

@@ -4002,49 +4002,55 @@ export default function Home() {
             <div className="grid md:grid-cols-3 gap-4">
               <Card>
                 <CardContent className="p-4">
-                  <div className="text-2xl font-bold text-green-600">$127.43</div>
-                  <div className="text-sm text-gray-600">This Month's Spending</div>
+                  <div className="text-2xl font-bold text-green-600">
+                    ${reports?.totalSpent?.toFixed(2) || '0.00'}
+                  </div>
+                  <div className="text-sm text-gray-600">Total Spending</div>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4">
-                  <div className="text-2xl font-bold text-orange-600">$23.89</div>
+                  <div className="text-2xl font-bold text-orange-600">
+                    ${reports?.mostWastedItems?.reduce((sum, item) => sum + item.totalWasted, 0)?.toFixed(2) || '0.00'}
+                  </div>
                   <div className="text-sm text-gray-600">Food Waste Cost</div>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4">
-                  <div className="text-2xl font-bold text-blue-600">$3.21</div>
-                  <div className="text-sm text-gray-600">Avg Cost Per Meal</div>
+                  <div className="text-2xl font-bold text-blue-600">
+                    ${reports?.mostUsedItems?.reduce((sum, item) => sum + item.totalUsed, 0)?.toFixed(2) || '0.00'}
+                  </div>
+                  <div className="text-sm text-gray-600">Used Items Cost</div>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Charts Section */}
-            <div className="grid md:grid-cols-2 gap-6">
+            {/* Detailed Breakdown */}
+            <div className="grid md:grid-cols-3 gap-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Spending by Category</CardTitle>
+                  <CardTitle className="text-lg">Top Purchased Items</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {[
-                      { category: 'Produce', amount: 45.23, percentage: 35 },
-                      { category: 'Meat & Poultry', amount: 38.67, percentage: 30 },
-                      { category: 'Dairy', amount: 25.44, percentage: 20 },
-                      { category: 'Pantry', amount: 18.09, percentage: 15 }
-                    ].map((item) => (
-                      <div key={item.category} className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                          <span className="text-sm">{item.category}</span>
+                    {reports?.mostFrequentItems?.length > 0 ? (
+                      reports.mostFrequentItems.slice(0, 5).map((item) => (
+                        <div key={item.name} className="flex items-center justify-between">
+                          <div>
+                            <div className="text-sm font-medium">{item.name}</div>
+                            <div className="text-xs text-gray-500">{item.count} purchases</div>
+                          </div>
+                          <div className="text-sm text-blue-600 font-medium">
+                            ${item.totalSpent.toFixed(2)}
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <div className="text-sm font-medium">${item.amount}</div>
-                          <div className="text-xs text-gray-500">{item.percentage}%</div>
-                        </div>
+                      ))
+                    ) : (
+                      <div className="text-sm text-gray-500 text-center py-4">
+                        No purchase data available
                       </div>
-                    ))}
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -4055,26 +4061,87 @@ export default function Home() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {[
-                      { item: 'Lettuce', waste: 6, cost: 12.34 },
-                      { item: 'Bananas', waste: 4, cost: 8.99 },
-                      { item: 'Bread', waste: 2, cost: 7.48 },
-                      { item: 'Yogurt', waste: 3, cost: 5.67 }
-                    ].map((item) => (
-                      <div key={item.item} className="flex items-center justify-between">
-                        <div>
-                          <div className="text-sm font-medium">{item.item}</div>
-                          <div className="text-xs text-gray-500">{item.waste} times wasted</div>
+                    {reports?.mostWastedItems?.length > 0 ? (
+                      reports.mostWastedItems.slice(0, 5).map((item) => (
+                        <div key={item.name} className="flex items-center justify-between">
+                          <div>
+                            <div className="text-sm font-medium">{item.name}</div>
+                            <div className="text-xs text-gray-500">{item.count} times wasted</div>
+                          </div>
+                          <div className="text-sm text-red-600 font-medium">
+                            ${item.totalWasted.toFixed(2)}
+                          </div>
                         </div>
-                        <div className="text-sm text-red-600 font-medium">
-                          ${item.cost}
-                        </div>
+                      ))
+                    ) : (
+                      <div className="text-sm text-gray-500 text-center py-4">
+                        No waste data available
                       </div>
-                    ))}
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Most Used Items</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {reports?.mostUsedItems?.length > 0 ? (
+                      reports.mostUsedItems.slice(0, 5).map((item) => (
+                        <div key={item.name} className="flex items-center justify-between">
+                          <div>
+                            <div className="text-sm font-medium">{item.name}</div>
+                            <div className="text-xs text-gray-500">{item.count} times used</div>
+                          </div>
+                          <div className="text-sm text-green-600 font-medium">
+                            ${item.totalUsed.toFixed(2)}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-sm text-gray-500 text-center py-4">
+                        No usage data available
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
             </div>
+
+            {/* Category Breakdown */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Spending by Category</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {reports?.categoryBreakdown?.length > 0 ? (
+                    reports.categoryBreakdown.map((item) => {
+                      const totalSpent = reports.totalSpent || 1;
+                      const percentage = ((item.totalSpent / totalSpent) * 100).toFixed(1);
+                      return (
+                        <div key={item.category} className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                            <span className="text-sm capitalize">{item.category}</span>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-medium">${item.totalSpent.toFixed(2)}</div>
+                            <div className="text-xs text-gray-500">{percentage}%</div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="text-sm text-gray-500 text-center py-4">
+                      No category data available
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Monthly Trend */}
             <Card>
