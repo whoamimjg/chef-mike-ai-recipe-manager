@@ -2316,60 +2316,22 @@ export default function Home() {
                         {/* Action Buttons */}
                         <div className="flex gap-2 pt-3">
                           <Button 
-                            onClick={() => {
-                              // Convert AI recommendation to recipe format and add to collection
-                              const recipeData = {
-                                title: recipe.title,
-                                description: recipe.description,
-                                ingredients: JSON.stringify(recipe.ingredients.map((ing: string) => ({
-                                  unit: '',
-                                  amount: ing.split(' ')[0] || '1',
-                                  item: ing.split(' ').slice(1).join(' ') || ing,
-                                  notes: ''
-                                }))),
-                                instructions: JSON.stringify(recipe.instructions),
-                                prepTime: recipe.prepTime,
-                                cookTime: recipe.cookTime,
-                                servings: recipe.servings,
-                                cuisine: recipe.cuisine,
-                                mealType: recipe.tags.find((tag: string) => 
-                                  ['breakfast', 'lunch', 'dinner', 'snack'].includes(tag.toLowerCase())
-                                ) || 'dinner',
-                                tags: JSON.stringify(recipe.tags)
-                              };
-                              
-                              const formData = new FormData();
-                              Object.entries(recipeData).forEach(([key, value]) => {
-                                formData.append(key, value.toString());
-                              });
-                              createRecipeMutation.mutate(formData);
-                            }}
-                            className="flex-1"
-                          >
-                            <Plus className="h-4 w-4 mr-2" />
-                            Save to My Recipes
-                          </Button>
-                          <Button 
                             variant="outline"
                             onClick={() => {
-                              setSelectedRecipe({
-                                ...recipe,
-                                id: Date.now(), // Temporary ID for display
-                                userId: user?.id || '',
-                                createdAt: new Date().toISOString(),
-                                updatedAt: new Date().toISOString(),
-                                imageUrl: null,
-                                ingredients: JSON.stringify(recipe.ingredients.map((ing: string) => ({
-                                  unit: '',
-                                  amount: ing.split(' ')[0] || '1',
-                                  item: ing.split(' ').slice(1).join(' ') || ing,
-                                  notes: ''
-                                }))),
-                                instructions: JSON.stringify(recipe.instructions),
-                                tags: JSON.stringify(recipe.tags)
-                              });
-                              setIsRecipeModalOpen(true);
+                              // Since this is from your saved recipes, find the actual recipe
+                              const actualRecipe = recipes?.find(r => r.title.includes(recipe.title.replace(' (Your Recipe)', '')));
+                              if (actualRecipe) {
+                                setSelectedRecipe(actualRecipe);
+                                setIsRecipeModalOpen(true);
+                              } else {
+                                toast({
+                                  title: "Recipe Not Found",
+                                  description: "Unable to find the full recipe details.",
+                                  variant: "destructive"
+                                });
+                              }
                             }}
+                            className="flex-1"
                           >
                             <Eye className="h-4 w-4 mr-2" />
                             View Full Recipe
