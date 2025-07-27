@@ -349,8 +349,8 @@ export default function Home() {
     const matchesSearch = recipe.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       recipe.description?.toLowerCase().includes(searchQuery.toLowerCase());
     
-    const matchesCuisine = !filterCuisine || recipe.cuisine === filterCuisine;
-    const matchesMealType = !filterMealType || recipe.mealType === filterMealType;
+    const matchesCuisine = !filterCuisine || filterCuisine === 'all' || recipe.cuisine === filterCuisine;
+    const matchesMealType = !filterMealType || filterMealType === 'all' || recipe.mealType === filterMealType;
     
     return matchesSearch && matchesCuisine && matchesMealType;
   });
@@ -797,7 +797,7 @@ export default function Home() {
                           <SelectValue placeholder="All cuisines" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">All Cuisines</SelectItem>
+                          <SelectItem value="all">All Cuisines</SelectItem>
                           <SelectItem value="italian">Italian</SelectItem>
                           <SelectItem value="mexican">Mexican</SelectItem>
                           <SelectItem value="chinese">Chinese</SelectItem>
@@ -822,7 +822,7 @@ export default function Home() {
                           <SelectValue placeholder="All meal times" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">All Meal Times</SelectItem>
+                          <SelectItem value="all">All Meal Times</SelectItem>
                           <SelectItem value="breakfast">🌅 Breakfast</SelectItem>
                           <SelectItem value="lunch">☀️ Lunch</SelectItem>
                           <SelectItem value="dinner">🌙 Dinner</SelectItem>
@@ -835,20 +835,20 @@ export default function Home() {
                     </div>
 
                     {/* Clear Filters */}
-                    {(filterCuisine || filterMealType) && (
+                    {(filterCuisine && filterCuisine !== 'all') || (filterMealType && filterMealType !== 'all') ? (
                       <Button 
                         variant="outline" 
                         size="sm" 
                         onClick={() => {
-                          setFilterCuisine('');
-                          setFilterMealType('');
+                          setFilterCuisine('all');
+                          setFilterMealType('all');
                         }}
                         className="w-full"
                       >
                         <X className="h-4 w-4 mr-2" />
                         Clear Filters
                       </Button>
-                    )}
+                    ) : null}
 
                     {/* Recipe Count */}
                     <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
