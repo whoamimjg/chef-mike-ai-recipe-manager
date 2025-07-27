@@ -2606,126 +2606,224 @@ export default function Home() {
 
           {/* Meal Planning */}
           <TabsContent value="meal-planner" className="space-y-6">
-            <h1 className="text-4xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-              <CalendarIcon className="h-8 w-8" />
-              Meal Planner
-            </h1>
-            
-            <div className="grid lg:grid-cols-3 gap-6">
-              {/* Calendar */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <CalendarIcon className="h-5 w-5" />
-                    Select Date
-                  </CardTitle>
+            <div className="flex justify-between items-center mb-6">
+              <h1 className="text-4xl font-bold text-gray-900 flex items-center gap-2">
+                <CalendarIcon className="h-8 w-8" />
+                Meal Planner
+              </h1>
+              <div className="flex items-center gap-4">
+                {/* View Toggle */}
+                <div className="flex items-center gap-2">
+                  <Label>View:</Label>
+                  <Select defaultValue="week">
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="day">Day</SelectItem>
+                      <SelectItem value="week">Week</SelectItem>
+                      <SelectItem value="month">Month</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {/* Calendar Integration */}
+                <Button variant="outline" size="sm">
+                  <CalendarIcon className="h-4 w-4 mr-2" />
+                  Sync with Google Calendar
+                </Button>
+                <Button variant="outline" size="sm">
+                  <CalendarIcon className="h-4 w-4 mr-2" />
+                  Sync with Outlook
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex gap-6 h-[800px]">
+              {/* Left Sidebar - Recipe Library */}
+              <Card className="w-80 flex-shrink-0">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">Recipe Library</CardTitle>
+                  <div className="space-y-3">
+                    {/* Search */}
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input 
+                        placeholder="Search recipes..." 
+                        className="pl-10"
+                      />
+                    </div>
+                    
+                    {/* Category Filter */}
+                    <Select defaultValue="all">
+                      <SelectTrigger>
+                        <SelectValue placeholder="Category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Categories</SelectItem>
+                        <SelectItem value="breakfast">Breakfast</SelectItem>
+                        <SelectItem value="lunch">Lunch</SelectItem>
+                        <SelectItem value="dinner">Dinner</SelectItem>
+                        <SelectItem value="snack">Snacks</SelectItem>
+                        <SelectItem value="dessert">Desserts</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </CardHeader>
-                <CardContent>
-                  <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={(date) => date && setSelectedDate(date)}
-                    className="rounded-md border"
-                  />
+                <CardContent className="p-0">
+                  <div className="max-h-[650px] overflow-y-auto">
+                    {recipes?.map((recipe: Recipe) => (
+                      <div
+                        key={recipe.id}
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData('application/json', JSON.stringify(recipe));
+                        }}
+                        className="p-3 border-b border-gray-100 hover:bg-gray-50 cursor-grab active:cursor-grabbing transition-colors"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center text-xs">
+                            {recipe.imageUrl ? (
+                              <img src={recipe.imageUrl} alt={recipe.title} className="w-full h-full object-cover rounded-lg" />
+                            ) : (
+                              <ChefHat className="h-6 w-6 text-gray-400" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-sm text-gray-900 truncate">{recipe.title}</h4>
+                            <p className="text-xs text-gray-500 mt-1 line-clamp-2">{recipe.description}</p>
+                            <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
+                              <Clock className="h-3 w-3" />
+                              {recipe.prepTime + recipe.cookTime}m
+                              <Users className="h-3 w-3 ml-1" />
+                              {recipe.servings}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </CardContent>
               </Card>
 
-              {/* Daily Meal Plan */}
-              <div className="lg:col-span-2">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <ChefHat className="h-5 w-5" />
-                      Meals for {selectedDate.toLocaleDateString()}
-                    </CardTitle>
+              {/* Main Calendar Area */}
+              <div className="flex-1 min-w-0">
+                <Card className="h-full">
+                  <CardHeader className="pb-3">
+                    <div className="flex justify-between items-center">
+                      <CardTitle>Week View - {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</CardTitle>
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm">
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          Today
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
                   </CardHeader>
-                  <CardContent className="space-y-6">
-                    {/* Breakfast */}
-                    <div>
-                      <div className="flex justify-between items-center mb-3">
-                        <h4 className="text-lg font-semibold text-gray-900">🌅 Breakfast</h4>
-                        <Select>
-                          <SelectTrigger className="w-48">
-                            <SelectValue placeholder="Add recipe..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {recipes.map((recipe: Recipe) => (
-                              <SelectItem key={recipe.id} value={recipe.id.toString()}>
-                                {recipe.title}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="bg-gray-50 rounded-lg p-4 text-center text-gray-500">
-                        No breakfast planned
-                      </div>
-                    </div>
-
-                    {/* Lunch */}
-                    <div>
-                      <div className="flex justify-between items-center mb-3">
-                        <h4 className="text-lg font-semibold text-gray-900">☀️ Lunch</h4>
-                        <Select>
-                          <SelectTrigger className="w-48">
-                            <SelectValue placeholder="Add recipe..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {recipes.map((recipe: Recipe) => (
-                              <SelectItem key={recipe.id} value={recipe.id.toString()}>
-                                {recipe.title}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="bg-gray-50 rounded-lg p-4 text-center text-gray-500">
-                        No lunch planned
-                      </div>
-                    </div>
-
-                    {/* Dinner */}
-                    <div>
-                      <div className="flex justify-between items-center mb-3">
-                        <h4 className="text-lg font-semibold text-gray-900">🌙 Dinner</h4>
-                        <Select>
-                          <SelectTrigger className="w-48">
-                            <SelectValue placeholder="Add recipe..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {recipes.map((recipe: Recipe) => (
-                              <SelectItem key={recipe.id} value={recipe.id.toString()}>
-                                {recipe.title}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="bg-gray-50 rounded-lg p-4 text-center text-gray-500">
-                        No dinner planned
-                      </div>
-                    </div>
-
-                    {/* Snacks */}
-                    <div>
-                      <div className="flex justify-between items-center mb-3">
-                        <h4 className="text-lg font-semibold text-gray-900">🍎 Snacks</h4>
-                        <Select>
-                          <SelectTrigger className="w-48">
-                            <SelectValue placeholder="Add recipe..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {recipes.map((recipe: Recipe) => (
-                              <SelectItem key={recipe.id} value={recipe.id.toString()}>
-                                {recipe.title}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="bg-gray-50 rounded-lg p-4 text-center text-gray-500">
-                        No snacks planned
-                      </div>
+                  <CardContent className="p-0">
+                    {/* Week View Grid */}
+                    <div className="grid grid-cols-7 h-[680px]">
+                      {/* Day Headers */}
+                      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => {
+                        const date = new Date();
+                        date.setDate(date.getDate() - date.getDay() + index);
+                        const isToday = date.toDateString() === new Date().toDateString();
+                        
+                        return (
+                          <div key={day} className="border-r border-gray-200 last:border-r-0">
+                            <div className={`p-3 text-center border-b border-gray-200 ${isToday ? 'bg-blue-50' : 'bg-gray-50'}`}>
+                              <div className="text-sm font-medium text-gray-900">{day}</div>
+                              <div className={`text-xs mt-1 ${isToday ? 'text-blue-600 font-semibold' : 'text-gray-500'}`}>
+                                {date.getDate()}
+                              </div>
+                            </div>
+                            
+                            {/* Meal Slots */}
+                            <div className="h-[600px] flex flex-col">
+                              {/* Breakfast */}
+                              <div 
+                                className="flex-1 border-b border-gray-100 p-2"
+                                onDragOver={(e) => e.preventDefault()}
+                                onDrop={(e) => {
+                                  e.preventDefault();
+                                  const recipe = JSON.parse(e.dataTransfer.getData('application/json'));
+                                  toast({
+                                    title: "Recipe Added",
+                                    description: `${recipe.title} added to breakfast on ${date.toLocaleDateString()}`,
+                                  });
+                                }}
+                              >
+                                <div className="text-xs text-gray-500 mb-1">🌅 Breakfast</div>
+                                <div className="min-h-[40px] bg-gray-50 rounded border-2 border-dashed border-gray-200 flex items-center justify-center text-xs text-gray-400 hover:border-blue-300 hover:bg-blue-50 transition-colors">
+                                  Drop recipe here
+                                </div>
+                              </div>
+                              
+                              {/* Lunch */}
+                              <div 
+                                className="flex-1 border-b border-gray-100 p-2"
+                                onDragOver={(e) => e.preventDefault()}
+                                onDrop={(e) => {
+                                  e.preventDefault();
+                                  const recipe = JSON.parse(e.dataTransfer.getData('application/json'));
+                                  toast({
+                                    title: "Recipe Added",
+                                    description: `${recipe.title} added to lunch on ${date.toLocaleDateString()}`,
+                                  });
+                                }}
+                              >
+                                <div className="text-xs text-gray-500 mb-1">☀️ Lunch</div>
+                                <div className="min-h-[40px] bg-gray-50 rounded border-2 border-dashed border-gray-200 flex items-center justify-center text-xs text-gray-400 hover:border-blue-300 hover:bg-blue-50 transition-colors">
+                                  Drop recipe here
+                                </div>
+                              </div>
+                              
+                              {/* Dinner */}
+                              <div 
+                                className="flex-1 border-b border-gray-100 p-2"
+                                onDragOver={(e) => e.preventDefault()}
+                                onDrop={(e) => {
+                                  e.preventDefault();
+                                  const recipe = JSON.parse(e.dataTransfer.getData('application/json'));
+                                  toast({
+                                    title: "Recipe Added",
+                                    description: `${recipe.title} added to dinner on ${date.toLocaleDateString()}`,
+                                  });
+                                }}
+                              >
+                                <div className="text-xs text-gray-500 mb-1">🌙 Dinner</div>
+                                <div className="min-h-[40px] bg-gray-50 rounded border-2 border-dashed border-gray-200 flex items-center justify-center text-xs text-gray-400 hover:border-blue-300 hover:bg-blue-50 transition-colors">
+                                  Drop recipe here
+                                </div>
+                              </div>
+                              
+                              {/* Snacks */}
+                              <div 
+                                className="flex-1 p-2"
+                                onDragOver={(e) => e.preventDefault()}
+                                onDrop={(e) => {
+                                  e.preventDefault();
+                                  const recipe = JSON.parse(e.dataTransfer.getData('application/json'));
+                                  toast({
+                                    title: "Recipe Added",
+                                    description: `${recipe.title} added to snacks on ${date.toLocaleDateString()}`,
+                                  });
+                                }}
+                              >
+                                <div className="text-xs text-gray-500 mb-1">🍎 Snacks</div>
+                                <div className="min-h-[40px] bg-gray-50 rounded border-2 border-dashed border-gray-200 flex items-center justify-center text-xs text-gray-400 hover:border-blue-300 hover:bg-blue-50 transition-colors">
+                                  Drop recipe here
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </CardContent>
                 </Card>
