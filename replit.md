@@ -51,11 +51,12 @@ Preferred communication style: Simple, everyday language.
 - **Shopping List Generation**: Automatic list creation from planned meals organized by grocery store categories
 - **User Preferences**: Dietary restrictions and allergy management
 - **AI Recommendations**: Enhanced OpenAI-powered recipe suggestions with personalized dietary learning
-- **Kitchen Timer**: Multi-timer functionality with audio notifications for cooking assistance
 - **Mobile Optimization**: Responsive design with hamburger menu for mobile-only navigation
 - **Cost Tracking**: Real-time food waste and usage cost analytics with proper financial reporting
 - **AI Learning System**: Tracks user interactions, preferences, and ratings for personalized meal suggestions
 - **Smart Meal Suggestions**: AI-powered daily meal recommendations based on user's saved recipes and learning history
+- **Dietary Warning System**: Comprehensive recipe warning system that checks for conflicts with user's dietary restrictions and allergies
+- **Dropdown-based Preferences**: Predefined dropdown selections for dietary restrictions and allergies for consistency
 
 ### Authentication & Authorization
 - **Replit Auth**: Integrated authentication system with session management

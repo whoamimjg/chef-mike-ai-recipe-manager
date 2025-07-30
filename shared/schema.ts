@@ -121,12 +121,49 @@ export const shoppingLists = pgTable("shopping_lists", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Predefined dietary restrictions and allergies for dropdown selection
+export const DIETARY_RESTRICTIONS = [
+  'vegetarian',
+  'vegan', 
+  'gluten-free',
+  'dairy-free',
+  'keto',
+  'paleo',
+  'low-carb',
+  'low-fat',
+  'low-sodium',
+  'sugar-free',
+  'kosher',
+  'halal',
+  'pescatarian',
+  'raw-food',
+  'whole30'
+] as const;
+
+export const COMMON_ALLERGIES = [
+  'peanuts',
+  'tree-nuts',
+  'milk',
+  'eggs', 
+  'wheat',
+  'soy',
+  'fish',
+  'shellfish',
+  'sesame',
+  'mustard',
+  'celery',
+  'lupin',
+  'sulfites',
+  'corn',
+  'coconut'
+] as const;
+
 // User preferences table
 export const userPreferences = pgTable("user_preferences", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }).unique(),
-  dietaryRestrictions: jsonb("dietary_restrictions").$type<string[]>().default([]),
-  allergies: jsonb("allergies").$type<string[]>().default([]),
+  dietaryRestrictions: jsonb("dietary_restrictions").$type<(typeof DIETARY_RESTRICTIONS[number])[]>().default([]),
+  allergies: jsonb("allergies").$type<(typeof COMMON_ALLERGIES[number])[]>().default([]),
   favoriteCuisines: jsonb("favorite_cuisines").$type<string[]>().default([]),
   cookingSkillLevel: varchar("cooking_skill_level").default("beginner"), // beginner, intermediate, advanced
   preferences: jsonb("preferences").$type<{

@@ -52,7 +52,8 @@ import {
   Timer,
   Pause,
   RotateCcw,
-  Menu
+  Menu,
+  AlertTriangle
 } from "lucide-react";
 import type { Recipe, MealPlan, ShoppingList, UserPreferences, UserInventory } from "@shared/schema";
 import KitchenTimer from '@/components/KitchenTimer';
@@ -117,10 +118,7 @@ export default function Home() {
   const [isRecipeModalOpen, setIsRecipeModalOpen] = useState(false);
   const [isCookingModeOpen, setIsCookingModeOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
-  const [timerMinutes, setTimerMinutes] = useState(0);
-  const [timerSeconds, setTimerSeconds] = useState(0);
-  const [isTimerRunning, setIsTimerRunning] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(0);
+
   const [aiRecommendations, setAiRecommendations] = useState<any[]>([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [shoppingListStartDate, setShoppingListStartDate] = useState(() => {
@@ -1038,102 +1036,103 @@ export default function Home() {
     }
   };
 
-  // Timer functionality
-  const startTimer = () => {
-    if (timerMinutes > 0 || timerSeconds > 0) {
-      const totalSeconds = timerMinutes * 60 + timerSeconds;
-      setTimeRemaining(totalSeconds);
-      setIsTimerRunning(true);
-    }
-  };
 
-  const pauseTimer = () => {
-    setIsTimerRunning(false);
-  };
 
-  const resetTimer = () => {
-    setIsTimerRunning(false);
-    setTimeRemaining(0);
-    setTimerMinutes(0);
-    setTimerSeconds(0);
-  };
 
-  const playTimerSound = () => {
-    // Create audio notification
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    
-    oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-    
-    oscillator.start();
-    oscillator.stop(audioContext.currentTime + 0.5);
-    
-    // Repeat the sound 3 times
-    setTimeout(() => {
-      const osc2 = audioContext.createOscillator();
-      const gain2 = audioContext.createGain();
-      osc2.connect(gain2);
-      gain2.connect(audioContext.destination);
-      osc2.frequency.setValueAtTime(800, audioContext.currentTime);
-      gain2.gain.setValueAtTime(0.3, audioContext.currentTime);
-      osc2.start();
-      osc2.stop(audioContext.currentTime + 0.5);
-    }, 600);
-    
-    setTimeout(() => {
-      const osc3 = audioContext.createOscillator();
-      const gain3 = audioContext.createGain();
-      osc3.connect(gain3);
-      gain3.connect(audioContext.destination);
-      osc3.frequency.setValueAtTime(800, audioContext.currentTime);
-      gain3.gain.setValueAtTime(0.3, audioContext.currentTime);
-      osc3.start();
-      osc3.stop(audioContext.currentTime + 0.5);
-    }, 1200);
-  };
-
-  // Timer countdown effect
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    
-    if (isTimerRunning && timeRemaining > 0) {
-      interval = setInterval(() => {
-        setTimeRemaining((prev) => {
-          if (prev <= 1) {
-            setIsTimerRunning(false);
-            playTimerSound();
-            toast({
-              title: "Timer Complete!",
-              description: "Your cooking timer has finished.",
-              duration: 5000,
-            });
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isTimerRunning, timeRemaining, toast]);
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
 
   const handleDeleteRecipe = (recipeId: number) => {
     if (confirm("Are you sure you want to delete this recipe?")) {
       deleteRecipeMutation.mutate(recipeId);
     }
+  };
+
+  // Recipe dietary warnings function
+  const checkRecipeWarnings = (recipe: Recipe) => {
+    if (!preferences) return { hasWarnings: false, warnings: [] };
+    
+    const warnings: string[] = [];
+    const ingredients = recipe.ingredients?.map(ing => ing.item.toLowerCase()) || [];
+    const recipeTitle = recipe.title.toLowerCase();
+    const recipeDescription = recipe.description?.toLowerCase() || '';
+    
+    // Check allergies
+    preferences.allergies?.forEach(allergy => {
+      const allergyLower = allergy.toLowerCase();
+      
+      // Common allergen checks
+      if (allergyLower.includes('peanut') && ingredients.some(ing => ing.includes('peanut'))) {
+        warnings.push(`Contains peanuts (${allergy} allergy)`);
+      }
+      if (allergyLower.includes('nuts') && ingredients.some(ing => 
+        ing.includes('nuts') || ing.includes('almond') || ing.includes('walnut') || 
+        ing.includes('cashew') || ing.includes('pecan') || ing.includes('hazelnut'))) {
+        warnings.push(`Contains tree nuts (${allergy} allergy)`);
+      }
+      if (allergyLower.includes('milk') && ingredients.some(ing => 
+        ing.includes('milk') || ing.includes('cream') || ing.includes('butter') || 
+        ing.includes('cheese') || ing.includes('yogurt'))) {
+        warnings.push(`Contains dairy (${allergy} allergy)`);
+      }
+      if (allergyLower.includes('eggs') && ingredients.some(ing => ing.includes('egg'))) {
+        warnings.push(`Contains eggs (${allergy} allergy)`);
+      }
+      if (allergyLower.includes('wheat') && ingredients.some(ing => 
+        ing.includes('wheat') || ing.includes('flour') || ing.includes('bread'))) {
+        warnings.push(`Contains wheat (${allergy} allergy)`);
+      }
+      if (allergyLower.includes('soy') && ingredients.some(ing => ing.includes('soy'))) {
+        warnings.push(`Contains soy (${allergy} allergy)`);
+      }
+      if (allergyLower.includes('fish') && ingredients.some(ing => 
+        ing.includes('fish') || ing.includes('salmon') || ing.includes('tuna') || 
+        ing.includes('cod') || ing.includes('tilapia'))) {
+        warnings.push(`Contains fish (${allergy} allergy)`);
+      }
+      if (allergyLower.includes('shellfish') && ingredients.some(ing => 
+        ing.includes('shrimp') || ing.includes('crab') || ing.includes('lobster') || 
+        ing.includes('clam') || ing.includes('oyster'))) {
+        warnings.push(`Contains shellfish (${allergy} allergy)`);
+      }
+    });
+    
+    // Check dietary restrictions
+    preferences.dietaryRestrictions?.forEach(restriction => {
+      const restrictionLower = restriction.toLowerCase();
+      
+      if (restrictionLower.includes('vegetarian') && ingredients.some(ing => 
+        ing.includes('meat') || ing.includes('chicken') || ing.includes('beef') || 
+        ing.includes('pork') || ing.includes('fish') || ing.includes('seafood'))) {
+        warnings.push(`Contains meat (conflicts with ${restriction})`);
+      }
+      if (restrictionLower.includes('vegan') && ingredients.some(ing => 
+        ing.includes('meat') || ing.includes('chicken') || ing.includes('beef') || 
+        ing.includes('pork') || ing.includes('fish') || ing.includes('seafood') || 
+        ing.includes('milk') || ing.includes('cream') || ing.includes('butter') || 
+        ing.includes('cheese') || ing.includes('yogurt') || ing.includes('egg') || 
+        ing.includes('honey'))) {
+        warnings.push(`Contains animal products (conflicts with ${restriction})`);
+      }
+      if (restrictionLower.includes('gluten-free') && ingredients.some(ing => 
+        ing.includes('wheat') || ing.includes('flour') || ing.includes('bread') || 
+        ing.includes('pasta') || ing.includes('barley') || ing.includes('rye'))) {
+        warnings.push(`Contains gluten (conflicts with ${restriction})`);
+      }
+      if (restrictionLower.includes('dairy-free') && ingredients.some(ing => 
+        ing.includes('milk') || ing.includes('cream') || ing.includes('butter') || 
+        ing.includes('cheese') || ing.includes('yogurt'))) {
+        warnings.push(`Contains dairy (conflicts with ${restriction})`);
+      }
+      if (restrictionLower.includes('keto') && ingredients.some(ing => 
+        ing.includes('rice') || ing.includes('pasta') || ing.includes('bread') || 
+        ing.includes('potato') || ing.includes('sugar') || ing.includes('flour'))) {
+        warnings.push(`Contains high-carb ingredients (conflicts with ${restriction})`);
+      }
+    });
+    
+    return {
+      hasWarnings: warnings.length > 0,
+      warnings: warnings
+    };
   };
 
   const filteredRecipes = recipes.filter((recipe: Recipe) => {
@@ -1857,6 +1856,31 @@ export default function Home() {
                     
                     {selectedRecipe && (
                       <div className="space-y-6">
+                        {/* Dietary Warnings */}
+                        {(() => {
+                          const warnings = checkRecipeWarnings(selectedRecipe);
+                          return warnings.hasWarnings ? (
+                            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                              <div className="flex items-start gap-3">
+                                <AlertTriangle className="h-5 w-5 text-orange-500 mt-0.5 flex-shrink-0" />
+                                <div>
+                                  <h4 className="font-semibold text-orange-800 mb-2">Dietary Warnings</h4>
+                                  <ul className="space-y-1">
+                                    {warnings.warnings.map((warning, index) => (
+                                      <li key={index} className="text-sm text-orange-700">
+                                        • {warning}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                  <p className="text-xs text-orange-600 mt-2">
+                                    Please review the ingredients carefully if you have dietary restrictions or allergies.
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ) : null;
+                        })()}
+
                         {/* Recipe Image */}
                         {selectedRecipe.imageUrl && (
                           <div className="w-full h-64 bg-gray-100 rounded-lg overflow-hidden">
@@ -2138,37 +2162,7 @@ export default function Home() {
                               <div className="text-gray-600">{selectedRecipe.servings}</div>
                             </div>
                           )}
-                          
-                          {/* Compact Timer */}
-                          <div className="bg-blue-50 p-3 rounded-lg">
-                            <div className="text-center">
-                              <Timer className="h-4 w-4 mx-auto mb-1 text-blue-600" />
-                              <div className="font-medium text-blue-800">Kitchen Timer</div>
-                              {isTimerRunning || timeRemaining > 0 ? (
-                                <div className="text-lg font-mono font-bold text-blue-600">
-                                  {formatTime(timeRemaining)}
-                                </div>
-                              ) : (
-                                <div className="flex gap-1 mt-1">
-                                  {[5, 10, 15].map((mins) => (
-                                    <Button
-                                      key={mins}
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => {
-                                        setTimerMinutes(mins);
-                                        setTimerSeconds(0);
-                                        startTimer();
-                                      }}
-                                      className="text-xs h-6 px-2"
-                                    >
-                                      {mins}m
-                                    </Button>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          </div>
+
                         </div>
 
                         {/* Navigation Buttons */}
@@ -2204,24 +2198,6 @@ export default function Home() {
                           </div>
 
                           <div className="flex flex-col items-end gap-2">
-                            {/* Cooking Mode Timer */}
-                            {isTimerRunning || timeRemaining > 0 ? (
-                              <div className="bg-blue-100 px-3 py-2 rounded-lg flex items-center gap-2">
-                                <Timer className="h-4 w-4 text-blue-600" />
-                                <span className="font-mono font-bold text-blue-600">
-                                  {formatTime(timeRemaining)}
-                                </span>
-                                <Button
-                                  onClick={isTimerRunning ? pauseTimer : startTimer}
-                                  variant="outline"
-                                  size="sm"
-                                  className="h-6 w-6 p-0"
-                                >
-                                  {isTimerRunning ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
-                                </Button>
-                              </div>
-                            ) : null}
-                            
                             <Button 
                               variant="outline"
                               onClick={() => setIsCookingModeOpen(false)}
@@ -2347,7 +2323,9 @@ export default function Home() {
                   </Card>
                 ) : (
               <div className={viewMode === "grid" ? "grid md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"}>
-                {filteredRecipes.map((recipe: Recipe) => (
+                {filteredRecipes.map((recipe: Recipe) => {
+                  const recipeWarnings = checkRecipeWarnings(recipe);
+                  return (
                   <div key={recipe.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group">
                     {/* Recipe Image Thumbnail */}
                     <div className="h-48 bg-gray-100 relative overflow-hidden">
@@ -2423,6 +2401,14 @@ export default function Home() {
                     >
                       <div className="flex justify-between items-start mb-2">
                         <h3 className="text-lg font-semibold text-gray-900 flex-1 group-hover:text-blue-600 transition-colors">{recipe.title}</h3>
+                        {recipeWarnings.hasWarnings && (
+                          <div className="flex items-center gap-1 ml-2">
+                            <AlertTriangle className="h-4 w-4 text-orange-500" />
+                            <span className="text-xs text-orange-600 font-medium">
+                              {recipeWarnings.warnings.length} warning{recipeWarnings.warnings.length > 1 ? 's' : ''}
+                            </span>
+                          </div>
+                        )}
                       </div>
                       
                       {recipe.description && (
@@ -2485,7 +2471,8 @@ export default function Home() {
                       </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
                 </div>
                 )}
               </div>
@@ -4235,14 +4222,30 @@ export default function Home() {
                 <CardContent className="space-y-4">
                   <div>
                     <Label>Dietary Restrictions</Label>
-                    <div className="flex gap-2 mb-3">
-                      <Input placeholder="Add dietary restriction" className="flex-1" />
-                      <Button size="sm">
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <Select>
+                      <SelectTrigger className="mt-2">
+                        <SelectValue placeholder="Select dietary restrictions" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="vegetarian">Vegetarian</SelectItem>
+                        <SelectItem value="vegan">Vegan</SelectItem>
+                        <SelectItem value="gluten-free">Gluten-Free</SelectItem>
+                        <SelectItem value="dairy-free">Dairy-Free</SelectItem>
+                        <SelectItem value="keto">Keto</SelectItem>
+                        <SelectItem value="paleo">Paleo</SelectItem>
+                        <SelectItem value="low-carb">Low-Carb</SelectItem>
+                        <SelectItem value="low-fat">Low-Fat</SelectItem>
+                        <SelectItem value="low-sodium">Low-Sodium</SelectItem>
+                        <SelectItem value="sugar-free">Sugar-Free</SelectItem>
+                        <SelectItem value="kosher">Kosher</SelectItem>
+                        <SelectItem value="halal">Halal</SelectItem>
+                        <SelectItem value="pescatarian">Pescatarian</SelectItem>
+                        <SelectItem value="raw-food">Raw Food</SelectItem>
+                        <SelectItem value="whole30">Whole30</SelectItem>
+                      </SelectContent>
+                    </Select>
                     
-                    <div className="flex flex-wrap gap-2 mb-4">
+                    <div className="flex flex-wrap gap-2 mt-3">
                       {preferences?.dietaryRestrictions?.map((restriction, index) => (
                         <Badge key={index} variant="secondary" className="gap-2">
                           {restriction}
@@ -4254,18 +4257,34 @@ export default function Home() {
 
                   <div>
                     <Label>Allergies</Label>
-                    <div className="flex gap-2 mb-3">
-                      <Input placeholder="Add allergy" className="flex-1" />
-                      <Button size="sm">
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <Select>
+                      <SelectTrigger className="mt-2">
+                        <SelectValue placeholder="Select allergies" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="peanuts">Peanuts</SelectItem>
+                        <SelectItem value="tree-nuts">Tree Nuts</SelectItem>
+                        <SelectItem value="milk">Milk</SelectItem>
+                        <SelectItem value="eggs">Eggs</SelectItem>
+                        <SelectItem value="wheat">Wheat</SelectItem>
+                        <SelectItem value="soy">Soy</SelectItem>
+                        <SelectItem value="fish">Fish</SelectItem>
+                        <SelectItem value="shellfish">Shellfish</SelectItem>
+                        <SelectItem value="sesame">Sesame</SelectItem>
+                        <SelectItem value="mustard">Mustard</SelectItem>
+                        <SelectItem value="celery">Celery</SelectItem>
+                        <SelectItem value="lupin">Lupin</SelectItem>
+                        <SelectItem value="sulfites">Sulfites</SelectItem>
+                        <SelectItem value="corn">Corn</SelectItem>
+                        <SelectItem value="coconut">Coconut</SelectItem>
+                      </SelectContent>
+                    </Select>
                     
-                    <div className="flex flex-wrap gap-2 mb-4">
+                    <div className="flex flex-wrap gap-2 mt-3">
                       {preferences?.allergies?.map((allergy, index) => (
                         <Badge key={index} variant="destructive" className="gap-2">
                           {allergy}
-                          <button className="text-red-100 hover:text-white">×</button>
+                          <button className="text-red-200 hover:text-red-100">×</button>
                         </Badge>
                       ))}
                     </div>
