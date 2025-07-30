@@ -9,6 +9,8 @@ import {
   purchaseReceipts,
   wastedItems,
   usedItems,
+  aiLearning,
+  mealSuggestions,
   type User,
   type UpsertUser,
   type Recipe,
@@ -29,6 +31,10 @@ import {
   type InsertWastedItem,
   type UsedItem,
   type InsertUsedItem,
+  type AiLearning,
+  type InsertAiLearning,
+  type MealSuggestions,
+  type InsertMealSuggestions,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gte, lte, desc, asc, ilike, isNotNull, isNull } from "drizzle-orm";
@@ -98,6 +104,17 @@ export interface IStorage {
     totalMealPlans: number;
     monthlyRevenue: number;
   }>;
+
+  // AI Learning operations
+  createAiLearning(learning: InsertAiLearning): Promise<AiLearning>;
+  getAiLearningHistory(userId: string, limit?: number): Promise<AiLearning[]>;
+  getAiLearningByType(userId: string, interactionType: string, limit?: number): Promise<AiLearning[]>;
+  
+  // Meal suggestions operations
+  getMealSuggestions(userId: string, date?: string): Promise<MealSuggestions | undefined>;
+  createMealSuggestions(suggestions: InsertMealSuggestions): Promise<MealSuggestions>;
+  updateMealSuggestions(id: number, suggestions: Partial<InsertMealSuggestions>, userId: string): Promise<MealSuggestions | undefined>;
+  getMealSuggestionsHistory(userId: string, limit?: number): Promise<MealSuggestions[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -623,6 +640,80 @@ export class DatabaseStorage implements IStorage {
       totalMealPlans,
       monthlyRevenue,
     };
+  }
+
+  // AI Learning operations
+  async createAiLearning(learning: InsertAiLearning): Promise<AiLearning> {
+    const [result] = await db
+      .insert(aiLearning)
+      .values(learning)
+      .returning();
+    return result;
+  }
+
+  async getAiLearningHistory(userId: string, limit: number = 50): Promise<AiLearning[]> {
+    return await db
+      .select()
+      .from(aiLearning)
+      .where(eq(aiLearning.userId, userId))
+      .orderBy(desc(aiLearning.createdAt))
+      .limit(limit);
+  }
+
+  async getAiLearningByType(userId: string, interactionType: string, limit: number = 20): Promise<AiLearning[]> {
+    return await db
+      .select()
+      .from(aiLearning)
+      .where(and(
+        eq(aiLearning.userId, userId),
+        eq(aiLearning.interactionType, interactionType)
+      ))
+      .orderBy(desc(aiLearning.createdAt))
+      .limit(limit);
+  }
+
+  // Meal suggestions operations
+  async getMealSuggestions(userId: string, date?: string): Promise<MealSuggestions | undefined> {
+    const targetDate = date || new Date().toISOString().split('T')[0];
+    const [result] = await db
+      .select()
+      .from(mealSuggestions)
+      .where(and(
+        eq(mealSuggestions.userId, userId),
+        eq(mealSuggestions.suggestionDate, targetDate)
+      ))
+      .orderBy(desc(mealSuggestions.createdAt))
+      .limit(1);
+    return result;
+  }
+
+  async createMealSuggestions(suggestions: InsertMealSuggestions): Promise<MealSuggestions> {
+    const [result] = await db
+      .insert(mealSuggestions)
+      .values(suggestions)
+      .returning();
+    return result;
+  }
+
+  async updateMealSuggestions(id: number, suggestionsData: Partial<InsertMealSuggestions>, userId: string): Promise<MealSuggestions | undefined> {
+    const [result] = await db
+      .update(mealSuggestions)
+      .set(suggestionsData)
+      .where(and(
+        eq(mealSuggestions.id, id),
+        eq(mealSuggestions.userId, userId)
+      ))
+      .returning();
+    return result;
+  }
+
+  async getMealSuggestionsHistory(userId: string, limit: number = 10): Promise<MealSuggestions[]> {
+    return await db
+      .select()
+      .from(mealSuggestions)
+      .where(eq(mealSuggestions.userId, userId))
+      .orderBy(desc(mealSuggestions.createdAt))
+      .limit(limit);
   }
 }
 

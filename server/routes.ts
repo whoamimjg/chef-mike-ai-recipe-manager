@@ -1225,6 +1225,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // AI Learning tracking routes
+  app.post('/api/ai/learning', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const learningData = {
+        ...req.body,
+        userId,
+      };
+      
+      const learning = await storage.createAiLearning(learningData);
+      res.status(201).json(learning);
+    } catch (error) {
+      console.error("Error creating AI learning entry:", error);
+      res.status(500).json({ message: "Failed to track AI learning" });
+    }
+  });
+
+  app.get('/api/ai/learning/history', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const limit = parseInt(req.query.limit as string) || 50;
+      
+      const history = await storage.getAiLearningHistory(userId, limit);
+      res.json(history);
+    } catch (error) {
+      console.error("Error fetching AI learning history:", error);
+      res.status(500).json({ message: "Failed to fetch learning history" });
+    }
+  });
+
+  // Daily meal suggestions
+  app.get('/api/ai/meal-suggestions', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const date = req.query.date as string;
+      
+      const suggestions = await storage.getMealSuggestions(userId, date);
+      res.json(suggestions);
+    } catch (error) {
+      console.error("Error fetching meal suggestions:", error);
+      res.status(500).json({ message: "Failed to fetch meal suggestions" });
+    }
+  });
+
+  app.post('/api/ai/meal-suggestions', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const suggestionsData = {
+        ...req.body,
+        userId,
+      };
+      
+      const suggestions = await storage.createMealSuggestions(suggestionsData);
+      res.status(201).json(suggestions);
+    } catch (error) {
+      console.error("Error creating meal suggestions:", error);
+      res.status(500).json({ message: "Failed to create meal suggestions" });
+    }
+  });
+
+  app.put('/api/ai/meal-suggestions/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const suggestionId = parseInt(req.params.id);
+      
+      const suggestions = await storage.updateMealSuggestions(suggestionId, req.body, userId);
+      
+      if (!suggestions) {
+        return res.status(404).json({ message: "Meal suggestions not found" });
+      }
+      
+      res.json(suggestions);
+    } catch (error) {
+      console.error("Error updating meal suggestions:", error);
+      res.status(500).json({ message: "Failed to update meal suggestions" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

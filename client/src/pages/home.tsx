@@ -55,6 +55,7 @@ import {
   Menu
 } from "lucide-react";
 import type { Recipe, MealPlan, ShoppingList, UserPreferences, UserInventory } from "@shared/schema";
+import KitchenTimer from '@/components/KitchenTimer';
 
 export default function Home() {
   const { user, isLoading, isAuthenticated } = useAuth();
@@ -1207,6 +1208,14 @@ export default function Home() {
                 Shopping List
               </Button>
               <Button
+                variant={activeTab === "timer" ? "default" : "ghost"}
+                onClick={() => setActiveTab("timer")}
+                className="flex items-center gap-2"
+              >
+                <Timer className="h-4 w-4" />
+                Timer
+              </Button>
+              <Button
                 variant={activeTab === "account" ? "default" : "ghost"}
                 onClick={() => setActiveTab("account")}
                 className="flex items-center gap-2"
@@ -1304,6 +1313,17 @@ export default function Home() {
                 >
                   <ShoppingCart className="h-4 w-4" />
                   Shopping List
+                </Button>
+                <Button
+                  variant={activeTab === "timer" ? "default" : "ghost"}
+                  onClick={() => {
+                    setActiveTab("timer");
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="w-full justify-start gap-2"
+                >
+                  <Timer className="h-4 w-4" />
+                  Timer
                 </Button>
                 <Button
                   variant={activeTab === "account" ? "default" : "ghost"}

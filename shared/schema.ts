@@ -134,9 +134,58 @@ export const userPreferences = pgTable("user_preferences", {
     maxCookTime?: number;
     preferredMealTypes?: string[];
     avoidIngredients?: string[];
+    preferredIngredients?: string[];
+    mealComplexity?: "simple" | "moderate" | "complex";
+    spiceLevel?: "mild" | "medium" | "hot";
+    cookingMethods?: string[];
   }>().default({}),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// AI learning table to track user interactions and preferences
+export const aiLearning = pgTable("ai_learning", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  interactionType: varchar("interaction_type").notNull(), // "recipe_viewed", "recipe_cooked", "recipe_rated", "ingredient_liked", "ingredient_disliked"
+  recipeId: integer("recipe_id").references(() => recipes.id, { onDelete: "cascade" }),
+  ingredientName: varchar("ingredient_name"),
+  cuisine: varchar("cuisine"),
+  mealType: varchar("meal_type"),
+  rating: integer("rating"), // 1-10 scale
+  feedback: jsonb("feedback").$type<{
+    liked?: string[];
+    disliked?: string[];
+    suggestions?: string[];
+    cookingTime?: number;
+    difficulty?: string;
+  }>(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Meal suggestions tracking
+export const mealSuggestions = pgTable("meal_suggestions", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  suggestionDate: varchar("suggestion_date").notNull(), // YYYY-MM-DD format
+  suggestions: jsonb("suggestions").notNull().$type<Array<{
+    title: string;
+    description: string;
+    cuisine: string;
+    mealType: string;
+    prepTime: number;
+    cookTime: number;
+    difficulty: string;
+    matchScore: number;
+    ingredients: string[];
+    instructions: string[];
+    reasons: string[];
+    inventoryMatch: number;
+    missingIngredients?: string[];
+  }>>(),
+  acceptedSuggestions: jsonb("accepted_suggestions").$type<number[]>().default([]), // indices of accepted suggestions
+  rejectedSuggestions: jsonb("rejected_suggestions").$type<number[]>().default([]),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 // User inventory table (for AI recommendations)
@@ -258,6 +307,24 @@ export const userPreferencesRelations = relations(userPreferences, ({ one }) => 
   }),
 }));
 
+export const aiLearningRelations = relations(aiLearning, ({ one }) => ({
+  user: one(users, {
+    fields: [aiLearning.userId],
+    references: [users.id],
+  }),
+  recipe: one(recipes, {
+    fields: [aiLearning.recipeId],
+    references: [recipes.id],
+  }),
+}));
+
+export const mealSuggestionsRelations = relations(mealSuggestions, ({ one }) => ({
+  user: one(users, {
+    fields: [mealSuggestions.userId],
+    references: [users.id],
+  }),
+}));
+
 export const userInventoryRelations = relations(userInventory, ({ one }) => ({
   user: one(users, {
     fields: [userInventory.userId],
@@ -318,6 +385,16 @@ export const insertPurchaseReceiptSchema = createInsertSchema(purchaseReceipts).
   createdAt: true,
 });
 
+export const insertAiLearningSchema = createInsertSchema(aiLearning).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertMealSuggestionsSchema = createInsertSchema(mealSuggestions).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Export types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -339,3 +416,7 @@ export type InsertUserInventory = z.infer<typeof insertUserInventorySchema>;
 export type UserInventory = typeof userInventory.$inferSelect;
 export type InsertPurchaseReceipt = z.infer<typeof insertPurchaseReceiptSchema>;
 export type PurchaseReceipt = typeof purchaseReceipts.$inferSelect;
+export type InsertAiLearning = z.infer<typeof insertAiLearningSchema>;
+export type AiLearning = typeof aiLearning.$inferSelect;
+export type InsertMealSuggestions = z.infer<typeof insertMealSuggestionsSchema>;
+export type MealSuggestions = typeof mealSuggestions.$inferSelect;

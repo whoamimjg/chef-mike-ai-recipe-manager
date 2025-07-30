@@ -17,11 +17,16 @@ interface RecommendationRequest {
     cookingSkillLevel?: string;
     maxPrepTime?: number;
     maxCookTime?: number;
+    preferredIngredients?: string[];
+    mealComplexity?: "simple" | "moderate" | "complex";
+    spiceLevel?: "mild" | "medium" | "hot";
+    cookingMethods?: string[];
   };
   inventory?: Array<{
     ingredientName: string;
     quantity: string;
     unit: string;
+    expiryDate?: string;
   }>;
   existingRecipes?: Array<{
     id: number;
@@ -30,8 +35,20 @@ interface RecommendationRequest {
     description?: string;
     prepTime?: number;
     cookTime?: number;
+    cuisine?: string;
+    averageRating?: number;
+  }>;
+  aiLearningHistory?: Array<{
+    interactionType: string;
+    recipeId?: number;
+    ingredientName?: string;
+    cuisine?: string;
+    rating?: number;
+    feedback?: any;
+    createdAt: string;
   }>;
   mealType?: string;
+  targetDate?: string;
 }
 
 interface RecipeRecommendation {
@@ -49,6 +66,85 @@ interface RecipeRecommendation {
   matchType: 'full' | 'partial';
   missingIngredients?: string[];
   inventoryMatch: number; // percentage of ingredients you have
+  personalizationScore: number; // how well it matches user's learned preferences
+}
+
+interface LearningInsights {
+  preferredCuisines: string[];
+  likedIngredients: string[];
+  dislikedIngredients: string[];
+  preferredComplexity: string;
+  preferredMealTypes: string[];
+  avgRating: number;
+}
+
+function analyzeAiLearningHistory(history: any[]): LearningInsights | null {
+  if (!history || history.length === 0) {
+    return null;
+  }
+
+  const cuisineRatings = new Map<string, { total: number; count: number }>();
+  const ingredientLikes = new Map<string, number>();
+  const ingredientDislikes = new Map<string, number>();
+  const mealTypeFreq = new Map<string, number>();
+  let totalRating = 0;
+  let ratingCount = 0;
+
+  history.forEach(entry => {
+    // Analyze cuisine preferences
+    if (entry.cuisine && entry.rating) {
+      const existing = cuisineRatings.get(entry.cuisine) || { total: 0, count: 0 };
+      existing.total += entry.rating;
+      existing.count += 1;
+      cuisineRatings.set(entry.cuisine, existing);
+      totalRating += entry.rating;
+      ratingCount++;
+    }
+
+    // Analyze ingredient preferences
+    if (entry.ingredientName) {
+      if (entry.interactionType === 'ingredient_liked' || (entry.rating && entry.rating >= 7)) {
+        ingredientLikes.set(entry.ingredientName, (ingredientLikes.get(entry.ingredientName) || 0) + 1);
+      } else if (entry.interactionType === 'ingredient_disliked' || (entry.rating && entry.rating <= 3)) {
+        ingredientDislikes.set(entry.ingredientName, (ingredientDislikes.get(entry.ingredientName) || 0) + 1);
+      }
+    }
+
+    // Analyze meal type preferences
+    if (entry.mealType) {
+      mealTypeFreq.set(entry.mealType, (mealTypeFreq.get(entry.mealType) || 0) + 1);
+    }
+  });
+
+  // Extract top preferences
+  const preferredCuisines = Array.from(cuisineRatings.entries())
+    .sort((a, b) => (b[1].total / b[1].count) - (a[1].total / a[1].count))
+    .slice(0, 3)
+    .map(([cuisine]) => cuisine);
+
+  const likedIngredients = Array.from(ingredientLikes.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([ingredient]) => ingredient);
+
+  const dislikedIngredients = Array.from(ingredientDislikes.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([ingredient]) => ingredient);
+
+  const preferredMealTypes = Array.from(mealTypeFreq.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([mealType]) => mealType);
+
+  return {
+    preferredCuisines,
+    likedIngredients,
+    dislikedIngredients,
+    preferredComplexity: ratingCount > 5 ? (totalRating / ratingCount > 7 ? 'complex' : 'moderate') : 'simple',
+    preferredMealTypes,
+    avgRating: ratingCount > 0 ? totalRating / ratingCount : 5
+  };
 }
 
 export async function getAIRecipeRecommendations(

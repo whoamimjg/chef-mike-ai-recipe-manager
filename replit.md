@@ -38,19 +38,24 @@ Preferred communication style: Simple, everyday language.
 - **Users**: User profiles with authentication data and subscription plans
 - **Recipes**: Recipe entries with ingredients, instructions, and metadata
 - **Meal Plans**: Calendar-based meal planning with date and meal type associations
-- **Shopping Lists**: Generated shopping lists from meal plans
+- **Shopping Lists**: Generated shopping lists from meal plans with grocery store categories
 - **User Preferences**: Dietary restrictions, allergies, and cooking preferences
-- **User Inventory**: Pantry management for ingredient tracking
+- **User Inventory**: Pantry management for ingredient tracking with expiry dates
+- **AI Learning**: User interaction tracking for personalized recommendations
+- **Meal Suggestions**: Daily AI-generated meal suggestions based on user's saved recipes
 - **Sessions**: Session storage for Replit authentication
 
 ### Core Application Features
 - **Recipe Management**: CRUD operations for recipes with image upload support
 - **Meal Planning**: Calendar-based interface for scheduling meals
-- **Shopping List Generation**: Automatic list creation from planned meals
+- **Shopping List Generation**: Automatic list creation from planned meals organized by grocery store categories
 - **User Preferences**: Dietary restrictions and allergy management
-- **AI Recommendations**: OpenAI-powered recipe suggestions based on preferences and inventory
+- **AI Recommendations**: Enhanced OpenAI-powered recipe suggestions with personalized dietary learning
+- **Kitchen Timer**: Multi-timer functionality with audio notifications for cooking assistance
 - **Mobile Optimization**: Responsive design with hamburger menu for mobile-only navigation
 - **Cost Tracking**: Real-time food waste and usage cost analytics with proper financial reporting
+- **AI Learning System**: Tracks user interactions, preferences, and ratings for personalized meal suggestions
+- **Smart Meal Suggestions**: AI-powered daily meal recommendations based on user's saved recipes and learning history
 
 ### Authentication & Authorization
 - **Replit Auth**: Integrated authentication system with session management
