@@ -56,7 +56,8 @@ Preferred communication style: Simple, everyday language.
 - **AI Learning System**: Tracks user interactions, preferences, and ratings for personalized meal suggestions
 - **Smart Meal Suggestions**: AI-powered daily meal recommendations based on user's saved recipes and learning history
 - **Dietary Warning System**: Comprehensive recipe warning system that checks for conflicts with user's dietary restrictions and allergies
-- **Dropdown-based Preferences**: Predefined dropdown selections for dietary restrictions and allergies for consistency
+- **Dropdown-based Preferences**: Predefined dropdown selections for dietary restrictions and allergies for consistency with proper save functionality
+- **Kitchen Timer**: Multi-timer functionality available only within recipe cooking mode for focused cooking assistance
 
 ### Authentication & Authorization
 - **Replit Auth**: Integrated authentication system with session management

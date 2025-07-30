@@ -49,14 +49,13 @@ import {
   ChevronLeft,
   ChevronRight,
   CheckCircle,
-  Timer,
   Pause,
   RotateCcw,
   Menu,
   AlertTriangle
 } from "lucide-react";
 import type { Recipe, MealPlan, ShoppingList, UserPreferences, UserInventory } from "@shared/schema";
-import KitchenTimer from '@/components/KitchenTimer';
+
 
 export default function Home() {
   const { user, isLoading, isAuthenticated } = useAuth();
@@ -139,6 +138,10 @@ export default function Home() {
     quantity: '',
     unit: 'item',
     category: 'produce'
+  });
+  const [tempPreferences, setTempPreferences] = useState({
+    dietaryRestrictions: [] as string[],
+    allergies: [] as string[]
   });
 
   // Close mobile menu when clicking outside
@@ -225,6 +228,16 @@ export default function Home() {
     queryKey: ["/api/inventory"],
     retry: false,
   });
+
+  // Initialize temp preferences when preferences data loads
+  useEffect(() => {
+    if (preferences) {
+      setTempPreferences({
+        dietaryRestrictions: preferences.dietaryRestrictions || [],
+        allergies: preferences.allergies || []
+      });
+    }
+  }, [preferences]);
 
   // Create recipe mutation
   const createRecipeMutation = useMutation({
@@ -853,6 +866,38 @@ export default function Home() {
     },
   });
 
+  // Save preferences mutation
+  const savePreferencesMutation = useMutation({
+    mutationFn: async (preferencesData: { dietaryRestrictions: string[], allergies: string[] }) => {
+      await apiRequest('POST', '/api/preferences', preferencesData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/preferences'] });
+      toast({
+        title: "Success",
+        description: "Dietary preferences saved successfully!",
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to save preferences. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const addIngredient = () => {
     setRecipeIngredients([...recipeIngredients, { unit: '', amount: '', item: '', notes: '' }]);
   };
@@ -1209,14 +1254,7 @@ export default function Home() {
                 <ShoppingCart className="h-4 w-4" />
                 Shopping List
               </Button>
-              <Button
-                variant={activeTab === "timer" ? "default" : "ghost"}
-                onClick={() => setActiveTab("timer")}
-                className="flex items-center gap-2"
-              >
-                <Timer className="h-4 w-4" />
-                Timer
-              </Button>
+
               <Button
                 variant={activeTab === "account" ? "default" : "ghost"}
                 onClick={() => setActiveTab("account")}
@@ -1316,17 +1354,7 @@ export default function Home() {
                   <ShoppingCart className="h-4 w-4" />
                   Shopping List
                 </Button>
-                <Button
-                  variant={activeTab === "timer" ? "default" : "ghost"}
-                  onClick={() => {
-                    setActiveTab("timer");
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className="w-full justify-start gap-2"
-                >
-                  <Timer className="h-4 w-4" />
-                  Timer
-                </Button>
+
                 <Button
                   variant={activeTab === "account" ? "default" : "ghost"}
                   onClick={() => {
@@ -4222,7 +4250,14 @@ export default function Home() {
                 <CardContent className="space-y-4">
                   <div>
                     <Label>Dietary Restrictions</Label>
-                    <Select>
+                    <Select onValueChange={(value) => {
+                      if (value && !tempPreferences.dietaryRestrictions.includes(value)) {
+                        setTempPreferences(prev => ({
+                          ...prev,
+                          dietaryRestrictions: [...prev.dietaryRestrictions, value]
+                        }));
+                      }
+                    }}>
                       <SelectTrigger className="mt-2">
                         <SelectValue placeholder="Select dietary restrictions" />
                       </SelectTrigger>
@@ -4246,10 +4281,20 @@ export default function Home() {
                     </Select>
                     
                     <div className="flex flex-wrap gap-2 mt-3">
-                      {preferences?.dietaryRestrictions?.map((restriction, index) => (
+                      {tempPreferences.dietaryRestrictions.map((restriction, index) => (
                         <Badge key={index} variant="secondary" className="gap-2">
                           {restriction}
-                          <button className="text-gray-500 hover:text-gray-700">×</button>
+                          <button 
+                            className="text-gray-500 hover:text-gray-700"
+                            onClick={() => {
+                              setTempPreferences(prev => ({
+                                ...prev,
+                                dietaryRestrictions: prev.dietaryRestrictions.filter(r => r !== restriction)
+                              }));
+                            }}
+                          >
+                            ×
+                          </button>
                         </Badge>
                       ))}
                     </div>
@@ -4257,7 +4302,14 @@ export default function Home() {
 
                   <div>
                     <Label>Allergies</Label>
-                    <Select>
+                    <Select onValueChange={(value) => {
+                      if (value && !tempPreferences.allergies.includes(value)) {
+                        setTempPreferences(prev => ({
+                          ...prev,
+                          allergies: [...prev.allergies, value]
+                        }));
+                      }
+                    }}>
                       <SelectTrigger className="mt-2">
                         <SelectValue placeholder="Select allergies" />
                       </SelectTrigger>
@@ -4281,17 +4333,31 @@ export default function Home() {
                     </Select>
                     
                     <div className="flex flex-wrap gap-2 mt-3">
-                      {preferences?.allergies?.map((allergy, index) => (
+                      {tempPreferences.allergies.map((allergy, index) => (
                         <Badge key={index} variant="destructive" className="gap-2">
                           {allergy}
-                          <button className="text-red-200 hover:text-red-100">×</button>
+                          <button 
+                            className="text-red-200 hover:text-red-100"
+                            onClick={() => {
+                              setTempPreferences(prev => ({
+                                ...prev,
+                                allergies: prev.allergies.filter(a => a !== allergy)
+                              }));
+                            }}
+                          >
+                            ×
+                          </button>
                         </Badge>
                       ))}
                     </div>
                   </div>
 
-                  <Button className="w-full">
-                    Save Preferences
+                  <Button 
+                    className="w-full"
+                    onClick={() => savePreferencesMutation.mutate(tempPreferences)}
+                    disabled={savePreferencesMutation.isPending}
+                  >
+                    {savePreferencesMutation.isPending ? 'Saving...' : 'Save Preferences'}
                   </Button>
                 </CardContent>
               </Card>
