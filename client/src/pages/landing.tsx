@@ -46,7 +46,7 @@ export default function Landing() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Button 
-                onClick={handleSignIn}
+                onClick={() => window.location.href = "/signup"}
                 size="lg" 
                 className="bg-white text-primary-600 hover:bg-gray-100 text-lg px-8 py-4"
               >
@@ -83,26 +83,28 @@ export default function Landing() {
               </CardContent>
             </Card>
             
-            {/* Floating UI Elements */}
-            <Card className="absolute -top-4 -left-4 p-4 shadow-lg">
-              <div className="flex items-center gap-2">
-                <Brain className="h-6 w-6 text-primary-600" />
-                <div>
-                  <div className="font-semibold text-gray-800">Smart Recommendations</div>
-                  <div className="text-sm text-gray-600">Based on your inventory</div>
+            {/* Feature highlights */}
+            <div className="mt-8 flex flex-wrap gap-4 justify-center">
+              <Card className="p-4 shadow-lg bg-white/90 backdrop-blur-sm">
+                <div className="flex items-center gap-2">
+                  <Brain className="h-6 w-6 text-primary-600" />
+                  <div>
+                    <div className="font-semibold text-gray-800">Smart Recommendations</div>
+                    <div className="text-sm text-gray-600">Based on your inventory</div>
+                  </div>
                 </div>
-              </div>
-            </Card>
-            
-            <Card className="absolute -bottom-4 -right-4 p-4 shadow-lg">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-6 w-6 text-primary-600" />
-                <div>
-                  <div className="font-semibold text-gray-800">Weekly Planned</div>
-                  <div className="text-sm text-gray-600">7 meals ready</div>
+              </Card>
+              
+              <Card className="p-4 shadow-lg bg-white/90 backdrop-blur-sm">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-6 w-6 text-primary-600" />
+                  <div>
+                    <div className="font-semibold text-gray-800">Weekly Planned</div>
+                    <div className="text-sm text-gray-600">7 meals ready</div>
+                  </div>
                 </div>
-              </div>
-            </Card>
+              </Card>
+            </div>
           </div>
         </div>
       </div>
@@ -494,7 +496,7 @@ export default function Landing() {
                   className="bg-white border-0 text-gray-900 placeholder-gray-500"
                 />
                 <Button 
-                  onClick={handleSignIn}
+                  onClick={() => window.location.href = "/signup"}
                   className="w-full bg-white text-primary-600 hover:bg-gray-100 text-lg"
                 >
                   🚀 Start Your Free Trial

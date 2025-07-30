@@ -55,6 +55,7 @@ import {
   AlertTriangle
 } from "lucide-react";
 import type { Recipe, MealPlan, ShoppingList, UserPreferences, UserInventory } from "@shared/schema";
+import KitchenTimer from '@/components/KitchenTimer';
 
 
 export default function Home() {
@@ -1832,16 +1833,21 @@ export default function Home() {
                           </p>
                         </div>
 
-                        <div className="bg-gray-50 p-3 rounded-lg text-sm">
-                          <p className="font-medium mb-2">Expected CSV format:</p>
-                          <code className="text-xs bg-white p-2 rounded block">
+                        <div className="bg-muted/50 p-4 rounded-lg">
+                          <p className="text-sm font-medium mb-2">Expected CSV format:</p>
+                          <div className="bg-background p-3 rounded border text-xs font-mono overflow-x-auto">
                             title,description,ingredients,instructions,cuisine,prepTime,cookTime,servings
-                          </code>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            • Ingredients should be JSON array format<br/>
+                            • Instructions should be JSON array format<br/>
+                            • Times should be in minutes
+                          </p>
                         </div>
                         
                         {importProgress && (
-                          <div className="text-sm text-blue-600 bg-blue-50 p-3 rounded-lg">
-                            {importProgress}
+                          <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 p-3 rounded-lg">
+                            <p className="text-sm text-blue-700 dark:text-blue-300">{importProgress}</p>
                           </div>
                         )}
 
@@ -2192,6 +2198,14 @@ export default function Home() {
                           )}
 
                         </div>
+
+                        {/* Kitchen Timer Section */}
+                        <Card className="p-4">
+                          <KitchenTimer 
+                            recipeName={selectedRecipe.title}
+                            presetMinutes={selectedRecipe.cookTime || 15}
+                          />
+                        </Card>
 
                         {/* Navigation Buttons */}
                         <div className="flex justify-between items-center pt-4 border-t">

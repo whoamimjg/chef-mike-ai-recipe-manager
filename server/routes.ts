@@ -14,6 +14,7 @@ import { processReceiptImage, deleteReceiptImage } from "./receiptOCR";
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import Stripe from "stripe";
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(process.cwd(), 'uploads');
@@ -42,6 +43,14 @@ const upload = multer({
       cb(new Error('Only image files are allowed'));
     }
   }
+});
+
+// Initialize Stripe
+if (!process.env.STRIPE_SECRET_KEY) {
+  throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
+}
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: "2024-12-18.acacia",
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -1361,6 +1370,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating meal suggestions:", error);
       res.status(500).json({ message: "Failed to update meal suggestions" });
+    }
+  });
+
+  // Stripe payment routes
+  app.post("/api/create-payment-intent", async (req, res) => {
+    try {
+      const { amount } = req.body;
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(amount * 100), // Convert to cents
+        currency: "usd",
+      });
+      res.json({ clientSecret: paymentIntent.client_secret });
+    } catch (error: any) {
+      res
+        .status(500)
+        .json({ message: "Error creating payment intent: " + error.message });
+    }
+  });
+
+  // Stripe subscription route
+  app.post('/api/create-subscription', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !user.email) {
+        return res.status(400).json({ message: 'User email not found' });
+      }
+
+      // Check if user already has a Stripe customer
+      if (user.stripeCustomerId) {
+        const customer = await stripe.customers.retrieve(user.stripeCustomerId as string);
+        if (customer.deleted) {
+          // Customer was deleted, create a new one
+        } else {
+          // Use existing customer
+        }
+      }
+
+      // Create Stripe customer
+      const customer = await stripe.customers.create({
+        email: user.email,
+        name: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.firstName || 'Chef',
+      });
+
+      // Create subscription
+      const subscription = await stripe.subscriptions.create({
+        customer: customer.id,
+        items: [{
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: 'Chef Mike\'s Family Plan',
+              description: 'Full access to all features including unlimited recipes, AI recommendations, and family sharing.',
+            },
+            unit_amount: 1500, // $15.00
+            recurring: {
+              interval: 'month',
+            },
+          },
+        }],
+        payment_behavior: 'default_incomplete',
+        payment_settings: { save_default_payment_method: 'on_subscription' },
+        expand: ['latest_invoice.payment_intent'],
+      });
+
+      res.json({
+        subscriptionId: subscription.id,
+        clientSecret: (subscription.latest_invoice as any)?.payment_intent?.client_secret,
+      });
+    } catch (error: any) {
+      console.error('Stripe subscription error:', error);
+      res.status(400).json({ error: { message: error.message } });
     }
   });
 
