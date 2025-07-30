@@ -3980,19 +3980,25 @@ export default function Home() {
               </Card>
             ) : (
               <div className="space-y-6">
-                {shoppingLists.map((list: ShoppingList) => (
-                  <div key={list.id} className="grid lg:grid-cols-4 gap-6">
-                    {/* Meal Planning Sidebar */}
-                    <Card className="lg:col-span-1">
-                      <CardHeader>
-                        <CardTitle className="text-lg">Planned Meals</CardTitle>
-                        <p className="text-sm text-gray-600">
-                          {list.startDate && list.endDate 
-                            ? `${new Date(list.startDate).toLocaleDateString()} - ${new Date(list.endDate).toLocaleDateString()}`
-                            : 'Custom List'
-                          }
-                        </p>
-                      </CardHeader>
+                {shoppingLists.map((list: ShoppingList) => {
+                  // Parse items from JSON string if needed
+                  const listItems = typeof list.items === 'string' 
+                    ? JSON.parse(list.items || '[]') 
+                    : (Array.isArray(list.items) ? list.items : []);
+                  
+                  return (
+                    <div key={list.id} className="grid lg:grid-cols-4 gap-6">
+                      {/* Meal Planning Sidebar */}
+                      <Card className="lg:col-span-1">
+                        <CardHeader>
+                          <CardTitle className="text-lg">Planned Meals</CardTitle>
+                          <p className="text-sm text-gray-600">
+                            {list.startDate && list.endDate 
+                              ? `${new Date(list.startDate).toLocaleDateString()} - ${new Date(list.endDate).toLocaleDateString()}`
+                              : 'Custom List'
+                            }
+                          </p>
+                        </CardHeader>
                       <CardContent className="space-y-3">
                         {list.mealPlanIds?.length > 0 ? (
                           mealPlans
@@ -4038,9 +4044,14 @@ export default function Home() {
                                     checked: false,
                                     manuallyAdded: true
                                   };
+                                  // Parse items safely
+                                  const currentItems = typeof list.items === 'string' 
+                                    ? JSON.parse(list.items || '[]') 
+                                    : (Array.isArray(list.items) ? list.items : []);
+                                  
                                   updateShoppingListMutation.mutate({
                                     ...list,
-                                    items: [...list.items, newItem]
+                                    items: JSON.stringify([...currentItems, newItem])
                                   });
                                 }}
                               >
@@ -4060,10 +4071,10 @@ export default function Home() {
                           <CardTitle>{list.name}</CardTitle>
                           <div className="flex items-center gap-2">
                             <Badge variant="secondary">
-                              {list.items.filter(i => !i.checked).length} items left
+                              {listItems.filter(i => !i.checked).length} items left
                             </Badge>
-                            <Badge variant={list.items.filter(i => i.checked).length > 0 ? "default" : "secondary"}>
-                              {list.items.filter(i => i.checked).length} completed
+                            <Badge variant={listItems.filter(i => i.checked).length > 0 ? "default" : "secondary"}>
+                              {listItems.filter(i => i.checked).length} completed
                             </Badge>
                           </div>
                         </div>
@@ -4089,7 +4100,7 @@ export default function Home() {
                             { id: 'cleaning-supplies', name: 'Cleaning', icon: '🧽' },
                             { id: 'pets', name: 'Pet Supplies', icon: '🐕' }
                           ].map(category => {
-                            const categoryItems = list.items.filter(item => item.category === category.id);
+                            const categoryItems = listItems.filter(item => item.category === category.id);
                             if (categoryItems.length === 0) return null;
                             
                             return (
@@ -4107,12 +4118,12 @@ export default function Home() {
                                       <Checkbox 
                                         checked={item.checked}
                                         onCheckedChange={(checked) => {
-                                          const updatedItems = list.items.map(i => 
+                                          const updatedItems = listItems.map(i => 
                                             i.id === item.id ? { ...i, checked: !!checked } : i
                                           );
                                           updateShoppingListMutation.mutate({
                                             ...list,
-                                            items: updatedItems
+                                            items: JSON.stringify(updatedItems)
                                           });
                                         }}
                                       />
@@ -4129,10 +4140,10 @@ export default function Home() {
                                         variant="ghost"
                                         size="sm"
                                         onClick={() => {
-                                          const updatedItems = list.items.filter(i => i.id !== item.id);
+                                          const updatedItems = listItems.filter(i => i.id !== item.id);
                                           updateShoppingListMutation.mutate({
                                             ...list,
-                                            items: updatedItems
+                                            items: JSON.stringify(updatedItems)
                                           });
                                         }}
                                         className="text-red-600 hover:text-red-800 h-6 w-6 p-0"
@@ -4148,29 +4159,29 @@ export default function Home() {
                         </div>
                         
                         {/* Completed Items Section */}
-                        {list.items.filter(i => i.checked).length > 0 && (
+                        {listItems.filter(i => i.checked).length > 0 && (
                           <div className="border-t mt-6 pt-4">
                             <Button
                               variant="ghost"
                               onClick={() => setShowCompletedItems(!showCompletedItems)}
                               className="mb-3"
                             >
-                              {showCompletedItems ? 'Hide' : 'Show'} Completed Items ({list.items.filter(i => i.checked).length})
+                              {showCompletedItems ? 'Hide' : 'Show'} Completed Items ({listItems.filter(i => i.checked).length})
                             </Button>
                             
                             {showCompletedItems && (
                               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {list.items.filter(i => i.checked).map((item) => (
+                                {listItems.filter(i => i.checked).map((item) => (
                                   <div key={item.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded opacity-75">
                                     <Checkbox 
                                       checked={true}
                                       onCheckedChange={() => {
-                                        const updatedItems = list.items.map(i => 
+                                        const updatedItems = listItems.map(i => 
                                           i.id === item.id ? { ...i, checked: false } : i
                                         );
                                         updateShoppingListMutation.mutate({
                                           ...list,
-                                          items: updatedItems
+                                          items: JSON.stringify(updatedItems)
                                         });
                                       }}
                                     />
@@ -4186,8 +4197,9 @@ export default function Home() {
                         )}
                       </CardContent>
                     </Card>
-                  </div>
-                ))}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </TabsContent>

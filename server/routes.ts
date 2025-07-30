@@ -631,7 +631,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const shoppingListId = parseInt(req.params.id);
       
-      const shoppingList = await storage.updateShoppingList(shoppingListId, req.body, userId);
+      // Ensure proper date formatting for updatedAt
+      const updateData = {
+        ...req.body,
+        updatedAt: new Date(),
+      };
+      
+      const shoppingList = await storage.updateShoppingList(shoppingListId, updateData, userId);
       
       if (!shoppingList) {
         return res.status(404).json({ message: "Shopping list not found" });
@@ -659,6 +665,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting shopping list:", error);
       res.status(500).json({ message: "Failed to delete shopping list" });
+    }
+  });
+
+  // Route to add individual items to shopping list
+  app.post('/api/shopping-lists/:id/items', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const shoppingListId = parseInt(req.params.id);
+      const { item, category, quantity } = req.body;
+      
+      const shoppingList = await storage.getShoppingList(shoppingListId, userId);
+      if (!shoppingList) {
+        return res.status(404).json({ message: "Shopping list not found" });
+      }
+      
+      const currentItems = shoppingList.items ? JSON.parse(shoppingList.items) : {};
+      const targetCategory = category || 'Other';
+      
+      if (!currentItems[targetCategory]) {
+        currentItems[targetCategory] = [];
+      }
+      
+      // Add the new item
+      currentItems[targetCategory].push({
+        name: item,
+        quantity: quantity || '1',
+        checked: false,
+        addedManually: true
+      });
+      
+      const updatedList = await storage.updateShoppingList(shoppingListId, {
+        items: JSON.stringify(currentItems),
+        updatedAt: new Date(),
+      }, userId);
+      
+      res.json(updatedList);
+    } catch (error) {
+      console.error("Error adding item to shopping list:", error);
+      res.status(500).json({ message: "Failed to add item to shopping list" });
     }
   });
 
