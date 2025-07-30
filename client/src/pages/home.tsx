@@ -73,6 +73,9 @@ export default function Home() {
     return start;
   });
   const [mealPlanData, setMealPlanData] = useState<Record<string, Record<string, any>>>({});
+  const [newItemName, setNewItemName] = useState('');
+  const [newItemQuantity, setNewItemQuantity] = useState('');
+  const [newItemCategory, setNewItemCategory] = useState('other');
   const [isAddRecipeOpen, setIsAddRecipeOpen] = useState(false);
   const [isAIGeneratorOpen, setIsAIGeneratorOpen] = useState(false);
   const [isAddInventoryOpen, setIsAddInventoryOpen] = useState(false);
@@ -2016,89 +2019,7 @@ export default function Home() {
                           </div>
                         )}
 
-                        {/* Kitchen Timer */}
-                        <Card className="bg-gray-50 border-2 border-dashed border-gray-300">
-                          <CardContent className="p-4">
-                            <h4 className="font-semibold mb-3 flex items-center gap-2">
-                              <Timer className="h-4 w-4" />
-                              Kitchen Timer
-                            </h4>
-                            
-                            {!isTimerRunning && timeRemaining === 0 ? (
-                              <div className="space-y-3">
-                                <div className="flex gap-2 items-center">
-                                  <div className="flex items-center gap-1">
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      max="99"
-                                      value={timerMinutes || ''}
-                                      onChange={(e) => setTimerMinutes(parseInt(e.target.value) || 0)}
-                                      placeholder="0"
-                                      className="w-16 text-center"
-                                    />
-                                    <span className="text-sm text-gray-600">min</span>
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      max="59"
-                                      value={timerSeconds || ''}
-                                      onChange={(e) => setTimerSeconds(parseInt(e.target.value) || 0)}
-                                      placeholder="0"
-                                      className="w-16 text-center"
-                                    />
-                                    <span className="text-sm text-gray-600">sec</span>
-                                  </div>
-                                  <Button 
-                                    onClick={startTimer}
-                                    disabled={timerMinutes === 0 && timerSeconds === 0}
-                                    size="sm"
-                                  >
-                                    Start
-                                  </Button>
-                                </div>
-                                
-                                {/* Quick Timer Buttons */}
-                                <div className="flex gap-1 flex-wrap">
-                                  {[1, 5, 10, 15, 20, 30].map((mins) => (
-                                    <Button
-                                      key={mins}
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => {
-                                        setTimerMinutes(mins);
-                                        setTimerSeconds(0);
-                                      }}
-                                      className="text-xs"
-                                    >
-                                      {mins}m
-                                    </Button>
-                                  ))}
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="text-center space-y-3">
-                                <div className="text-3xl font-mono font-bold text-blue-600">
-                                  {formatTime(timeRemaining)}
-                                </div>
-                                <div className="flex gap-2 justify-center">
-                                  <Button
-                                    onClick={isTimerRunning ? pauseTimer : startTimer}
-                                    variant={isTimerRunning ? "outline" : "default"}
-                                    size="sm"
-                                  >
-                                    {isTimerRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                                  </Button>
-                                  <Button onClick={resetTimer} variant="outline" size="sm">
-                                    <RotateCcw className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </div>
-                            )}
-                          </CardContent>
-                        </Card>
+
 
                         {/* Action Buttons */}
                         <div className="flex gap-2 pt-4 border-t">
@@ -4023,9 +3944,77 @@ export default function Home() {
                           </div>
                         )}
                         
+                        {/* Add Item Form */}
+                        <div className="border-t pt-3 mt-4">
+                          <h4 className="text-sm font-medium text-gray-700 mb-2">Add Item</h4>
+                          <div className="space-y-2">
+                            <Input
+                              placeholder="Item name"
+                              value={newItemName}
+                              onChange={(e) => setNewItemName(e.target.value)}
+                              className="text-sm"
+                            />
+                            <div className="grid grid-cols-2 gap-2">
+                              <Input
+                                placeholder="Qty"
+                                value={newItemQuantity}
+                                onChange={(e) => setNewItemQuantity(e.target.value)}
+                                className="text-sm"
+                              />
+                              <Select value={newItemCategory} onValueChange={setNewItemCategory}>
+                                <SelectTrigger className="text-sm">
+                                  <SelectValue placeholder="Category" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="produce">Produce</SelectItem>
+                                  <SelectItem value="deli">Deli</SelectItem>
+                                  <SelectItem value="poultry">Poultry</SelectItem>
+                                  <SelectItem value="red-meat">Red Meat</SelectItem>
+                                  <SelectItem value="dairy">Dairy</SelectItem>
+                                  <SelectItem value="canned-goods">Canned Goods</SelectItem>
+                                  <SelectItem value="ethnic-foods">Ethnic Foods</SelectItem>
+                                  <SelectItem value="other">Other</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <Button
+                              size="sm"
+                              className="w-full"
+                              onClick={async () => {
+                                if (!newItemName.trim()) return;
+                                
+                                try {
+                                  await apiRequest(`/api/shopping-lists/${list.id}/items`, {
+                                    method: 'POST',
+                                    body: JSON.stringify({
+                                      item: newItemName.trim(),
+                                      quantity: newItemQuantity || '1',
+                                      category: newItemCategory || 'other'
+                                    })
+                                  });
+                                  
+                                  // Reset form
+                                  setNewItemName('');
+                                  setNewItemQuantity('');
+                                  setNewItemCategory('other');
+                                  
+                                  // Refresh shopping lists
+                                  queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+                                } catch (error) {
+                                  console.error('Failed to add item:', error);
+                                }
+                              }}
+                              disabled={!newItemName.trim()}
+                            >
+                              <Plus className="h-3 w-3 mr-1" />
+                              Add Item
+                            </Button>
+                          </div>
+                        </div>
+
                         {/* Frequent Items Suggestions */}
                         <div className="border-t pt-3 mt-4">
-                          <h4 className="text-sm font-medium text-gray-700 mb-2">Frequently Bought</h4>
+                          <h4 className="text-sm font-medium text-gray-700 mb-2">Quick Add</h4>
                           <div className="space-y-1">
                             {['Milk', 'Eggs', 'Bread', 'Bananas', 'Chicken'].map(item => (
                               <Button
@@ -4033,26 +4022,22 @@ export default function Home() {
                                 variant="ghost"
                                 size="sm"
                                 className="w-full justify-start text-xs h-8"
-                                onClick={() => {
-                                  // Add to current shopping list
-                                  const newItem = {
-                                    id: Date.now().toString(),
-                                    name: item,
-                                    quantity: '1',
-                                    unit: 'item',
-                                    category: getItemCategory(item),
-                                    checked: false,
-                                    manuallyAdded: true
-                                  };
-                                  // Parse items safely
-                                  const currentItems = typeof list.items === 'string' 
-                                    ? JSON.parse(list.items || '[]') 
-                                    : (Array.isArray(list.items) ? list.items : []);
-                                  
-                                  updateShoppingListMutation.mutate({
-                                    ...list,
-                                    items: JSON.stringify([...currentItems, newItem])
-                                  });
+                                onClick={async () => {
+                                  try {
+                                    await apiRequest(`/api/shopping-lists/${list.id}/items`, {
+                                      method: 'POST',
+                                      body: JSON.stringify({
+                                        item: item,
+                                        quantity: '1',
+                                        category: getItemCategory(item)
+                                      })
+                                    });
+                                    
+                                    // Refresh shopping lists
+                                    queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+                                  } catch (error) {
+                                    console.error('Failed to add item:', error);
+                                  }
                                 }}
                               >
                                 <Plus className="h-3 w-3 mr-1" />

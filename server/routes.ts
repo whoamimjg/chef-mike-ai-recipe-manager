@@ -681,24 +681,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Shopping list not found" });
       }
       
-      const currentItems = shoppingList.items ? JSON.parse(shoppingList.items) : {};
-      const targetCategory = category || 'Other';
-      
-      if (!currentItems[targetCategory]) {
-        currentItems[targetCategory] = [];
+      // Parse current items - handle both array and object formats
+      let currentItems = [];
+      if (shoppingList.items) {
+        const parsedItems = JSON.parse(shoppingList.items);
+        if (Array.isArray(parsedItems)) {
+          currentItems = parsedItems;
+        } else {
+          // Convert object format to array format
+          currentItems = Object.entries(parsedItems).flatMap(([cat, items]: [string, any]) => 
+            Array.isArray(items) ? items.map((item: any) => ({
+              ...item,
+              category: cat,
+              id: item.id || `${cat}-${item.name}`
+            })) : []
+          );
+        }
       }
       
       // Add the new item
-      currentItems[targetCategory].push({
+      const newItem = {
+        id: Date.now().toString(),
         name: item,
         quantity: quantity || '1',
+        unit: 'item',
+        category: category || 'other',
         checked: false,
-        addedManually: true
-      });
+        manuallyAdded: true
+      };
+      
+      currentItems.push(newItem);
       
       const updatedList = await storage.updateShoppingList(shoppingListId, {
-        items: JSON.stringify(currentItems),
-        updatedAt: new Date(),
+        items: JSON.stringify(currentItems)
       }, userId);
       
       res.json(updatedList);
