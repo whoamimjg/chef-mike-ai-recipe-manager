@@ -631,9 +631,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const shoppingListId = parseInt(req.params.id);
       
-      // Ensure proper date formatting for updatedAt
+      // Clean the request body and ensure proper date formatting
+      const { id, userId: reqUserId, createdAt, ...cleanData } = req.body;
       const updateData = {
-        ...req.body,
+        ...cleanData,
         updatedAt: new Date(),
       };
       

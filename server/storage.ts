@@ -328,8 +328,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateShoppingList(id: number, shoppingList: Partial<InsertShoppingList>, userId: string): Promise<ShoppingList | undefined> {
-    // Ensure array fields are properly typed
-    const updateData: any = { ...shoppingList, updatedAt: new Date() };
+    // Clean the data and ensure proper typing
+    const { id: _, userId: __, createdAt, ...cleanData } = shoppingList as any;
+    const updateData = {
+      ...cleanData,
+      updatedAt: new Date()
+    };
     
     const [updatedShoppingList] = await db
       .update(shoppingLists)
