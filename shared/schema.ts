@@ -103,14 +103,20 @@ export const shoppingLists = pgTable("shopping_lists", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   name: varchar("name").notNull(),
+  startDate: varchar("start_date"), // For week/date range planning
+  endDate: varchar("end_date"),
   items: jsonb("items").notNull().$type<Array<{
     id: string;
     name: string;
     quantity: string;
-    category: string;
+    unit: string;
+    category: "produce" | "deli" | "poultry" | "pork" | "red-meat" | "seafood" | "dairy" | "frozen" | "beverages" | "snacks" | "canned-goods" | "bread" | "ethnic-foods" | "household-goods" | "cleaning-supplies" | "pets";
     recipeId?: number;
+    recipeTitle?: string;
     checked: boolean;
+    manuallyAdded: boolean;
   }>>(),
+  mealPlanIds: jsonb("meal_plan_ids").$type<number[]>().default([]), // Track which meal plans contributed
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

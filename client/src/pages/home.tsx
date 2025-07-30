@@ -119,6 +119,25 @@ export default function Home() {
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [aiRecommendations, setAiRecommendations] = useState<any[]>([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [shoppingListStartDate, setShoppingListStartDate] = useState(() => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  });
+  const [shoppingListEndDate, setShoppingListEndDate] = useState(() => {
+    const today = new Date();
+    const nextWeek = new Date(today);
+    nextWeek.setDate(today.getDate() + 7);
+    return nextWeek.toISOString().split('T')[0];
+  });
+  const [shoppingListName, setShoppingListName] = useState(`Week of ${new Date().toLocaleDateString()}`);
+  const [isAddManualItemOpen, setIsAddManualItemOpen] = useState(false);
+  const [showCompletedItems, setShowCompletedItems] = useState(false);
+  const [manualItem, setManualItem] = useState({
+    name: '',
+    quantity: '',
+    unit: 'item',
+    category: 'produce'
+  });
 
   // Close mobile menu when clicking outside
   useEffect(() => {
@@ -302,6 +321,64 @@ export default function Home() {
       });
     },
   });
+
+  // Update shopping list mutation
+  const updateShoppingListMutation = useMutation({
+    mutationFn: async (data: any) => {
+      await apiRequest("PUT", `/api/shopping-lists/${data.id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/shopping-lists"] });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to update shopping list",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Helper function to categorize items
+  const getItemCategory = (itemName: string): string => {
+    const name = itemName.toLowerCase();
+    if (name.includes('lettuce') || name.includes('tomato') || name.includes('onion') || name.includes('carrot') || name.includes('banana') || name.includes('apple')) return 'produce';
+    if (name.includes('cheese') || name.includes('ham') || name.includes('turkey')) return 'deli';
+    if (name.includes('chicken') || name.includes('turkey breast')) return 'poultry';
+    if (name.includes('pork') || name.includes('bacon') || name.includes('ham')) return 'pork';
+    if (name.includes('beef') || name.includes('steak') || name.includes('ground beef')) return 'red-meat';
+    if (name.includes('fish') || name.includes('salmon') || name.includes('shrimp')) return 'seafood';
+    if (name.includes('milk') || name.includes('yogurt') || name.includes('butter') || name.includes('eggs')) return 'dairy';
+    if (name.includes('frozen') || name.includes('ice cream')) return 'frozen';
+    if (name.includes('juice') || name.includes('soda') || name.includes('water')) return 'beverages';
+    if (name.includes('chips') || name.includes('crackers') || name.includes('nuts')) return 'snacks';
+    if (name.includes('canned') || name.includes('beans') || name.includes('sauce')) return 'canned-goods';
+    if (name.includes('bread') || name.includes('bagel') || name.includes('muffin')) return 'bread';
+    if (name.includes('rice') || name.includes('pasta') || name.includes('spices')) return 'ethnic-foods';
+    if (name.includes('soap') || name.includes('shampoo') || name.includes('paper')) return 'household-goods';
+    if (name.includes('detergent') || name.includes('cleaner')) return 'cleaning-supplies';
+    if (name.includes('dog') || name.includes('cat') || name.includes('pet')) return 'pets';
+    return 'produce'; // Default category
+  };
+
+  const handleGenerateShoppingList = () => {
+    generateShoppingListMutation.mutate({
+      startDate: shoppingListStartDate,
+      endDate: shoppingListEndDate,
+      name: shoppingListName || `Shopping List ${new Date().toLocaleDateString()}`
+    });
+  };
 
   // Add inventory item mutation
   const addInventoryMutation = useMutation({
@@ -3752,61 +3829,122 @@ export default function Home() {
 
           {/* Shopping List */}
           <TabsContent value="shopping-list" className="space-y-6">
-            <h1 className="text-4xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-              <ShoppingCart className="h-8 w-8" />
-              Shopping List
-            </h1>
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="text-4xl font-bold text-gray-900 mb-2 flex items-center gap-2">
+                  <ShoppingCart className="h-8 w-8" />
+                  Smart Shopping List
+                </h1>
+                <p className="text-gray-600">Organized by grocery store sections with meal planning integration</p>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => window.print()}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Print List
+                </Button>
+                <Button onClick={() => setIsAddManualItemOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Item
+                </Button>
+              </div>
+            </div>
             
-            {/* Generate Shopping List */}
+            {/* Generate Shopping List from Meal Plans */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <CalendarIcon className="h-5 w-5" />
-                  Generate Shopping List
+                  Generate from Meal Plans
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-wrap gap-3 mb-4">
-                  <Button variant="outline">Next 7 Days</Button>
-                  <Button>Next 2 Weeks</Button>
-                  <Button variant="outline">Next Month</Button>
+                <div className="grid lg:grid-cols-4 gap-4 mb-4">
+                  <div>
+                    <Label htmlFor="shoppingStartDate">From Date</Label>
+                    <Input 
+                      type="date" 
+                      id="shoppingStartDate" 
+                      value={shoppingListStartDate}
+                      onChange={(e) => setShoppingListStartDate(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="shoppingEndDate">To Date</Label>
+                    <Input 
+                      type="date" 
+                      id="shoppingEndDate" 
+                      value={shoppingListEndDate}
+                      onChange={(e) => setShoppingListEndDate(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="shoppingListName">List Name</Label>
+                    <Input 
+                      id="shoppingListName" 
+                      placeholder="Weekly Shopping List" 
+                      value={shoppingListName}
+                      onChange={(e) => setShoppingListName(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <Button 
+                      onClick={handleGenerateShoppingList}
+                      disabled={generateShoppingListMutation.isPending}
+                      className="w-full"
+                    >
+                      {generateShoppingListMutation.isPending ? "Generating..." : "Generate List"}
+                    </Button>
+                  </div>
                 </div>
                 
-                <div className="grid md:grid-cols-3 gap-4 mb-4">
-                  <div>
-                    <Label htmlFor="startDate">From Date</Label>
-                    <Input type="date" id="startDate" />
-                  </div>
-                  <div>
-                    <Label htmlFor="endDate">To Date</Label>
-                    <Input type="date" id="endDate" />
-                  </div>
-                  <div>
-                    <Label htmlFor="listName">List Name</Label>
-                    <Input id="listName" placeholder="Weekly Shopping List" />
-                  </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      const today = new Date();
+                      const nextWeek = new Date(today);
+                      nextWeek.setDate(today.getDate() + 7);
+                      setShoppingListStartDate(today.toISOString().split('T')[0]);
+                      setShoppingListEndDate(nextWeek.toISOString().split('T')[0]);
+                      setShoppingListName(`Week of ${today.toLocaleDateString()}`);
+                    }}
+                  >
+                    Next 7 Days
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      const today = new Date();
+                      const twoWeeks = new Date(today);
+                      twoWeeks.setDate(today.getDate() + 14);
+                      setShoppingListStartDate(today.toISOString().split('T')[0]);
+                      setShoppingListEndDate(twoWeeks.toISOString().split('T')[0]);
+                      setShoppingListName(`2 Weeks from ${today.toLocaleDateString()}`);
+                    }}
+                  >
+                    Next 2 Weeks
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      const today = new Date();
+                      const nextMonth = new Date(today);
+                      nextMonth.setMonth(today.getMonth() + 1);
+                      setShoppingListStartDate(today.toISOString().split('T')[0]);
+                      setShoppingListEndDate(nextMonth.toISOString().split('T')[0]);
+                      setShoppingListName(`Month of ${today.toLocaleDateString()}`);
+                    }}
+                  >
+                    Next Month
+                  </Button>
                 </div>
-
-                <Button 
-                  onClick={() => {
-                    const today = new Date();
-                    const nextWeek = new Date(today);
-                    nextWeek.setDate(today.getDate() + 7);
-                    
-                    generateShoppingListMutation.mutate({
-                      startDate: today.toISOString().split('T')[0],
-                      endDate: nextWeek.toISOString().split('T')[0],
-                      name: "Weekly Shopping List"
-                    });
-                  }}
-                  disabled={generateShoppingListMutation.isPending}
-                >
-                  {generateShoppingListMutation.isPending ? "Generating..." : "Generate Shopping List"}
-                </Button>
               </CardContent>
             </Card>
 
-            {/* Shopping Lists */}
+            {/* Shopping Lists Display */}
             {shoppingListsLoading ? (
               <div className="text-center py-12">
                 <ShoppingCart className="h-12 w-12 animate-spin mx-auto mb-4 text-primary-600" />
@@ -3817,52 +3955,218 @@ export default function Home() {
                 <CardContent className="text-center py-12">
                   <ShoppingCart className="h-16 w-16 mx-auto mb-4 text-gray-300" />
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">No shopping lists yet</h3>
-                  <p className="text-gray-600">Generate your first shopping list from your meal plans</p>
+                  <p className="text-gray-600">Generate your first shopping list from your meal plans or add items manually</p>
                 </CardContent>
               </Card>
             ) : (
               <div className="space-y-6">
                 {shoppingLists.map((list: ShoppingList) => (
-                  <Card key={list.id}>
-                    <CardHeader>
-                      <div className="flex justify-between items-center">
-                        <CardTitle>{list.name}</CardTitle>
-                        <Badge variant="secondary">
-                          {list.items.length} items
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        {/* Group items by category */}
-                        {Object.entries(
-                          list.items.reduce((acc, item) => {
-                            const category = item.category || "Other";
-                            if (!acc[category]) acc[category] = [];
-                            acc[category].push(item);
-                            return acc;
-                          }, {} as Record<string, typeof list.items>)
-                        ).map(([category, items]) => (
-                          <div key={category}>
-                            <h4 className="font-semibold text-gray-900 bg-gray-100 px-4 py-2 rounded-lg mb-3">
-                              {category}
-                            </h4>
-                            <div className="space-y-2">
-                              {items.map((item) => (
-                                <div key={item.id} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg">
-                                  <Checkbox checked={item.checked} />
-                                  <div className={`flex-1 ${item.checked ? "opacity-50 line-through" : ""}`}>
-                                    <div className="font-medium">{item.name}</div>
-                                    <div className="text-sm text-gray-500">Quantity: {item.quantity}</div>
+                  <div key={list.id} className="grid lg:grid-cols-4 gap-6">
+                    {/* Meal Planning Sidebar */}
+                    <Card className="lg:col-span-1">
+                      <CardHeader>
+                        <CardTitle className="text-lg">Planned Meals</CardTitle>
+                        <p className="text-sm text-gray-600">
+                          {list.startDate && list.endDate 
+                            ? `${new Date(list.startDate).toLocaleDateString()} - ${new Date(list.endDate).toLocaleDateString()}`
+                            : 'Custom List'
+                          }
+                        </p>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        {list.mealPlanIds?.length > 0 ? (
+                          mealPlans
+                            .filter(plan => list.mealPlanIds?.includes(plan.id))
+                            .map(plan => {
+                              const recipe = recipes.find(r => r.id === plan.recipeId);
+                              return (
+                                <div key={plan.id} className="p-3 bg-gray-50 rounded-lg">
+                                  <div className="text-sm font-medium">
+                                    {new Date(plan.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                                  </div>
+                                  <div className="text-sm text-gray-600 capitalize">{plan.mealType}</div>
+                                  <div className="text-sm text-gray-900">
+                                    {recipe?.title || plan.customMeal || 'Unknown meal'}
                                   </div>
                                 </div>
-                              ))}
-                            </div>
+                              );
+                            })
+                        ) : (
+                          <div className="text-sm text-gray-500 text-center py-4">
+                            No meal plans linked
                           </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
+                        )}
+                        
+                        {/* Frequent Items Suggestions */}
+                        <div className="border-t pt-3 mt-4">
+                          <h4 className="text-sm font-medium text-gray-700 mb-2">Frequently Bought</h4>
+                          <div className="space-y-1">
+                            {['Milk', 'Eggs', 'Bread', 'Bananas', 'Chicken'].map(item => (
+                              <Button
+                                key={item}
+                                variant="ghost"
+                                size="sm"
+                                className="w-full justify-start text-xs h-8"
+                                onClick={() => {
+                                  // Add to current shopping list
+                                  const newItem = {
+                                    id: Date.now().toString(),
+                                    name: item,
+                                    quantity: '1',
+                                    unit: 'item',
+                                    category: getItemCategory(item),
+                                    checked: false,
+                                    manuallyAdded: true
+                                  };
+                                  updateShoppingListMutation.mutate({
+                                    ...list,
+                                    items: [...list.items, newItem]
+                                  });
+                                }}
+                              >
+                                <Plus className="h-3 w-3 mr-1" />
+                                {item}
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Shopping List - Grocery Store Layout */}
+                    <Card className="lg:col-span-3">
+                      <CardHeader>
+                        <div className="flex justify-between items-center">
+                          <CardTitle>{list.name}</CardTitle>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary">
+                              {list.items.filter(i => !i.checked).length} items left
+                            </Badge>
+                            <Badge variant={list.items.filter(i => i.checked).length > 0 ? "default" : "secondary"}>
+                              {list.items.filter(i => i.checked).length} completed
+                            </Badge>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {/* Grocery Store Categories */}
+                          {[
+                            { id: 'produce', name: 'Produce', icon: '🥬' },
+                            { id: 'deli', name: 'Deli', icon: '🧀' },
+                            { id: 'poultry', name: 'Poultry', icon: '🐔' },
+                            { id: 'pork', name: 'Pork', icon: '🥓' },
+                            { id: 'red-meat', name: 'Red Meat', icon: '🥩' },
+                            { id: 'seafood', name: 'Seafood', icon: '🐟' },
+                            { id: 'dairy', name: 'Dairy', icon: '🥛' },
+                            { id: 'frozen', name: 'Frozen', icon: '🧊' },
+                            { id: 'beverages', name: 'Beverages', icon: '🥤' },
+                            { id: 'snacks', name: 'Snacks', icon: '🍿' },
+                            { id: 'canned-goods', name: 'Canned Goods', icon: '🥫' },
+                            { id: 'bread', name: 'Bread & Bakery', icon: '🍞' },
+                            { id: 'ethnic-foods', name: 'Ethnic Foods', icon: '🌶️' },
+                            { id: 'household-goods', name: 'Household', icon: '🏠' },
+                            { id: 'cleaning-supplies', name: 'Cleaning', icon: '🧽' },
+                            { id: 'pets', name: 'Pet Supplies', icon: '🐕' }
+                          ].map(category => {
+                            const categoryItems = list.items.filter(item => item.category === category.id);
+                            if (categoryItems.length === 0) return null;
+                            
+                            return (
+                              <div key={category.id} className="border rounded-lg p-4">
+                                <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                  <span className="text-lg">{category.icon}</span>
+                                  {category.name}
+                                  <Badge variant="outline" className="ml-auto">
+                                    {categoryItems.filter(i => !i.checked).length}
+                                  </Badge>
+                                </h4>
+                                <div className="space-y-2">
+                                  {categoryItems.map((item) => (
+                                    <div key={item.id} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded">
+                                      <Checkbox 
+                                        checked={item.checked}
+                                        onCheckedChange={(checked) => {
+                                          const updatedItems = list.items.map(i => 
+                                            i.id === item.id ? { ...i, checked: !!checked } : i
+                                          );
+                                          updateShoppingListMutation.mutate({
+                                            ...list,
+                                            items: updatedItems
+                                          });
+                                        }}
+                                      />
+                                      <div className={`flex-1 ${item.checked ? "opacity-50 line-through" : ""}`}>
+                                        <div className="font-medium text-sm">{item.name}</div>
+                                        <div className="text-xs text-gray-500">
+                                          {item.quantity} {item.unit}
+                                          {item.recipeTitle && (
+                                            <span className="ml-2 text-blue-600">• {item.recipeTitle}</span>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                          const updatedItems = list.items.filter(i => i.id !== item.id);
+                                          updateShoppingListMutation.mutate({
+                                            ...list,
+                                            items: updatedItems
+                                          });
+                                        }}
+                                        className="text-red-600 hover:text-red-800 h-6 w-6 p-0"
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        
+                        {/* Completed Items Section */}
+                        {list.items.filter(i => i.checked).length > 0 && (
+                          <div className="border-t mt-6 pt-4">
+                            <Button
+                              variant="ghost"
+                              onClick={() => setShowCompletedItems(!showCompletedItems)}
+                              className="mb-3"
+                            >
+                              {showCompletedItems ? 'Hide' : 'Show'} Completed Items ({list.items.filter(i => i.checked).length})
+                            </Button>
+                            
+                            {showCompletedItems && (
+                              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {list.items.filter(i => i.checked).map((item) => (
+                                  <div key={item.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded opacity-75">
+                                    <Checkbox 
+                                      checked={true}
+                                      onCheckedChange={() => {
+                                        const updatedItems = list.items.map(i => 
+                                          i.id === item.id ? { ...i, checked: false } : i
+                                        );
+                                        updateShoppingListMutation.mutate({
+                                          ...list,
+                                          items: updatedItems
+                                        });
+                                      }}
+                                    />
+                                    <div className="flex-1 line-through">
+                                      <div className="font-medium text-sm">{item.name}</div>
+                                      <div className="text-xs text-gray-500">{item.quantity} {item.unit}</div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
                 ))}
               </div>
             )}
@@ -4267,6 +4571,130 @@ export default function Home() {
                 className="flex-1"
               >
                 {receiptMutation.isPending ? 'Processing...' : 'Process Receipt'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manual Item Dialog */}
+      <Dialog open={isAddManualItemOpen} onOpenChange={setIsAddManualItemOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Item to Shopping List</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="itemName">Item Name</Label>
+              <Input
+                id="itemName"
+                placeholder="e.g., Milk, Bananas, Chicken Breast"
+                value={manualItem.name}
+                onChange={(e) => setManualItem({ ...manualItem, name: e.target.value })}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="itemQuantity">Quantity</Label>
+                <Input
+                  id="itemQuantity"
+                  placeholder="1"
+                  value={manualItem.quantity}
+                  onChange={(e) => setManualItem({ ...manualItem, quantity: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="itemUnit">Unit</Label>
+                <Select value={manualItem.unit} onValueChange={(value) => setManualItem({ ...manualItem, unit: value })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="item">item</SelectItem>
+                    <SelectItem value="lb">lb</SelectItem>
+                    <SelectItem value="oz">oz</SelectItem>
+                    <SelectItem value="kg">kg</SelectItem>
+                    <SelectItem value="g">g</SelectItem>
+                    <SelectItem value="cup">cup</SelectItem>
+                    <SelectItem value="tsp">tsp</SelectItem>
+                    <SelectItem value="tbsp">tbsp</SelectItem>
+                    <SelectItem value="gallon">gallon</SelectItem>
+                    <SelectItem value="quart">quart</SelectItem>
+                    <SelectItem value="pint">pint</SelectItem>
+                    <SelectItem value="package">package</SelectItem>
+                    <SelectItem value="can">can</SelectItem>
+                    <SelectItem value="bottle">bottle</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="itemCategory">Store Section</Label>
+              <Select value={manualItem.category} onValueChange={(value) => setManualItem({ ...manualItem, category: value })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="produce">🥬 Produce</SelectItem>
+                  <SelectItem value="deli">🧀 Deli</SelectItem>
+                  <SelectItem value="poultry">🐔 Poultry</SelectItem>
+                  <SelectItem value="pork">🥓 Pork</SelectItem>
+                  <SelectItem value="red-meat">🥩 Red Meat</SelectItem>
+                  <SelectItem value="seafood">🐟 Seafood</SelectItem>
+                  <SelectItem value="dairy">🥛 Dairy</SelectItem>
+                  <SelectItem value="frozen">🧊 Frozen</SelectItem>
+                  <SelectItem value="beverages">🥤 Beverages</SelectItem>
+                  <SelectItem value="snacks">🍿 Snacks</SelectItem>
+                  <SelectItem value="canned-goods">🥫 Canned Goods</SelectItem>
+                  <SelectItem value="bread">🍞 Bread & Bakery</SelectItem>
+                  <SelectItem value="ethnic-foods">🌶️ Ethnic Foods</SelectItem>
+                  <SelectItem value="household-goods">🏠 Household</SelectItem>
+                  <SelectItem value="cleaning-supplies">🧽 Cleaning</SelectItem>
+                  <SelectItem value="pets">🐕 Pet Supplies</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setIsAddManualItemOpen(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  // Add item to most recent shopping list or create new one
+                  if (shoppingLists.length > 0) {
+                    const latestList = shoppingLists[0];
+                    const newItem = {
+                      id: Date.now().toString(),
+                      name: manualItem.name,
+                      quantity: manualItem.quantity,
+                      unit: manualItem.unit,
+                      category: manualItem.category,
+                      checked: false,
+                      manuallyAdded: true
+                    };
+                    updateShoppingListMutation.mutate({
+                      ...latestList,
+                      items: [...latestList.items, newItem]
+                    });
+                  } else {
+                    // Create new shopping list
+                    generateShoppingListMutation.mutate({
+                      startDate: new Date().toISOString().split('T')[0],
+                      endDate: new Date().toISOString().split('T')[0],
+                      name: "Quick Shopping List"
+                    });
+                  }
+                  setManualItem({ name: '', quantity: '', unit: 'item', category: 'produce' });
+                  setIsAddManualItemOpen(false);
+                }}
+                disabled={!manualItem.name || !manualItem.quantity}
+                className="flex-1"
+              >
+                Add Item
               </Button>
             </div>
           </div>

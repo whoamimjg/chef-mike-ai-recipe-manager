@@ -662,6 +662,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Helper function to categorize ingredients
+  function categorizeIngredient(ingredientName: string): string {
+    const name = ingredientName.toLowerCase();
+    
+    // Produce
+    if (name.includes('lettuce') || name.includes('spinach') || name.includes('tomato') || 
+        name.includes('onion') || name.includes('carrot') || name.includes('celery') ||
+        name.includes('bell pepper') || name.includes('broccoli') || name.includes('cucumber') ||
+        name.includes('avocado') || name.includes('potato') || name.includes('garlic') ||
+        name.includes('banana') || name.includes('apple') || name.includes('orange') ||
+        name.includes('lemon') || name.includes('lime') || name.includes('cilantro') ||
+        name.includes('parsley') || name.includes('basil') || name.includes('mushroom') ||
+        name.includes('zucchini') || name.includes('corn') || name.includes('jalapeño')) {
+      return 'produce';
+    }
+    
+    // Deli
+    if (name.includes('cheese') || name.includes('ham') || name.includes('turkey') ||
+        name.includes('salami') || name.includes('prosciutto') || name.includes('deli')) {
+      return 'deli';
+    }
+    
+    // Poultry
+    if (name.includes('chicken') || name.includes('turkey breast') || name.includes('duck')) {
+      return 'poultry';
+    }
+    
+    // Pork
+    if (name.includes('pork') || name.includes('bacon') || name.includes('ham') ||
+        name.includes('sausage') || name.includes('chorizo')) {
+      return 'pork';
+    }
+    
+    // Red Meat
+    if (name.includes('beef') || name.includes('steak') || name.includes('ground beef') ||
+        name.includes('lamb') || name.includes('veal')) {
+      return 'red-meat';
+    }
+    
+    // Seafood
+    if (name.includes('fish') || name.includes('salmon') || name.includes('tuna') ||
+        name.includes('shrimp') || name.includes('crab') || name.includes('lobster') ||
+        name.includes('cod') || name.includes('tilapia') || name.includes('scallop')) {
+      return 'seafood';
+    }
+    
+    // Dairy
+    if (name.includes('milk') || name.includes('yogurt') || name.includes('butter') ||
+        name.includes('cream') || name.includes('sour cream') || name.includes('eggs') ||
+        name.includes('egg')) {
+      return 'dairy';
+    }
+    
+    // Frozen
+    if (name.includes('frozen') || name.includes('ice cream') || name.includes('sorbet')) {
+      return 'frozen';
+    }
+    
+    // Beverages
+    if (name.includes('juice') || name.includes('soda') || name.includes('water') ||
+        name.includes('coffee') || name.includes('tea') || name.includes('wine') ||
+        name.includes('beer') || name.includes('milk')) {
+      return 'beverages';
+    }
+    
+    // Snacks
+    if (name.includes('chips') || name.includes('crackers') || name.includes('nuts') ||
+        name.includes('pretzels') || name.includes('popcorn')) {
+      return 'snacks';
+    }
+    
+    // Canned Goods
+    if (name.includes('canned') || name.includes('beans') || name.includes('sauce') ||
+        name.includes('tomato sauce') || name.includes('broth') || name.includes('stock') ||
+        name.includes('coconut milk') || name.includes('diced tomatoes')) {
+      return 'canned-goods';
+    }
+    
+    // Bread & Bakery
+    if (name.includes('bread') || name.includes('bagel') || name.includes('muffin') ||
+        name.includes('tortilla') || name.includes('pita') || name.includes('roll') ||
+        name.includes('baguette')) {
+      return 'bread';
+    }
+    
+    // Ethnic Foods
+    if (name.includes('rice') || name.includes('pasta') || name.includes('noodles') ||
+        name.includes('quinoa') || name.includes('couscous') || name.includes('soy sauce') ||
+        name.includes('sesame oil') || name.includes('curry') || name.includes('garam masala') ||
+        name.includes('cumin') || name.includes('paprika') || name.includes('oregano') ||
+        name.includes('thyme') || name.includes('rosemary') || name.includes('spices') ||
+        name.includes('vinegar') || name.includes('olive oil')) {
+      return 'ethnic-foods';
+    }
+    
+    // Household Goods
+    if (name.includes('paper towel') || name.includes('toilet paper') || name.includes('napkins') ||
+        name.includes('foil') || name.includes('plastic wrap') || name.includes('bags')) {
+      return 'household-goods';
+    }
+    
+    // Cleaning Supplies
+    if (name.includes('detergent') || name.includes('soap') || name.includes('cleaner') ||
+        name.includes('bleach') || name.includes('sponge')) {
+      return 'cleaning-supplies';
+    }
+    
+    // Pet Supplies
+    if (name.includes('dog') || name.includes('cat') || name.includes('pet') ||
+        name.includes('kibble') || name.includes('treats')) {
+      return 'pets';
+    }
+    
+    // Default to produce for most food items
+    return 'produce';
+  }
+
   // Generate shopping list from meal plans
   app.post('/api/shopping-lists/generate', isAuthenticated, async (req: any, res) => {
     try {
@@ -671,33 +788,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get meal plans for the date range
       const mealPlans = await storage.getMealPlans(userId, startDate, endDate);
       
-      // Get recipes for meal plans
-      const recipeIds = mealPlans
-        .filter(mp => mp.recipeId)
-        .map(mp => mp.recipeId!);
-      
       const items: Array<{
         id: string;
         name: string;
         quantity: string;
+        unit: string;
         category: string;
         recipeId?: number;
+        recipeTitle?: string;
         checked: boolean;
+        manuallyAdded: boolean;
       }> = [];
+
+      const mealPlanIds: number[] = [];
 
       // Aggregate ingredients from recipes
       for (const mealPlan of mealPlans) {
         if (mealPlan.recipeId) {
           const recipe = await storage.getRecipe(mealPlan.recipeId, userId);
           if (recipe) {
+            mealPlanIds.push(mealPlan.id);
+            
             recipe.ingredients.forEach((ingredient, index) => {
+              const ingredientName = typeof ingredient === 'string' ? ingredient : ingredient.item;
+              const quantity = typeof ingredient === 'object' && ingredient.amount ? ingredient.amount : "1";
+              const unit = typeof ingredient === 'object' && ingredient.unit ? ingredient.unit : "item";
+              
               items.push({
                 id: `${mealPlan.id}-${index}`,
-                name: ingredient,
-                quantity: "1",
-                category: "Pantry", // Default category
+                name: ingredientName,
+                quantity,
+                unit,
+                category: categorizeIngredient(ingredientName),
                 recipeId: recipe.id,
+                recipeTitle: recipe.title,
                 checked: false,
+                manuallyAdded: false,
               });
             });
           }
@@ -707,7 +833,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const shoppingListData = {
         userId,
         name: name || `Shopping List ${new Date().toLocaleDateString()}`,
+        startDate,
+        endDate,
         items,
+        mealPlanIds,
       };
 
       const shoppingList = await storage.createShoppingList(shoppingListData);
