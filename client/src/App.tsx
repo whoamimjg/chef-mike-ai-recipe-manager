@@ -8,6 +8,7 @@ import Landing from "@/pages/landing";
 import Home from "@/pages/home";
 import Admin from "@/pages/admin";
 import SignUp from "@/pages/signup";
+import SignupSuccess from "@/pages/signup-success";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -19,6 +20,7 @@ function Router() {
         <>
           <Route path="/" component={Landing} />
           <Route path="/signup" component={SignUp} />
+          <Route path="/signup/success" component={SignupSuccess} />
         </>
       ) : (
         <>

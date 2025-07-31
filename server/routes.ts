@@ -52,7 +52,7 @@ if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
 }
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: "2024-12-18.acacia",
+  apiVersion: "2025-06-30.basil",
 });
 
 // Utility function to check plan limits
@@ -1469,16 +1469,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Stripe payment routes
   app.post("/api/create-payment-intent", async (req, res) => {
     try {
-      const { amount } = req.body;
+      const { amount, plan, userInfo } = req.body;
       const paymentIntent = await stripe.paymentIntents.create({
         amount: Math.round(amount * 100), // Convert to cents
         currency: "usd",
+        metadata: {
+          plan: plan || '',
+          userEmail: userInfo?.email || '',
+          userName: `${userInfo?.firstName || ''} ${userInfo?.lastName || ''}`
+        }
       });
       res.json({ clientSecret: paymentIntent.client_secret });
     } catch (error: any) {
       res
         .status(500)
         .json({ message: "Error creating payment intent: " + error.message });
+    }
+  });
+
+  // Signup route for free accounts
+  app.post("/api/auth/signup", async (req, res) => {
+    try {
+      const { firstName, lastName, email, plan } = req.body;
+      
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: "User already exists with this email" });
+      }
+
+      // Create user account for free plan
+      if (plan === 'free') {
+        const newUser = await storage.createUser({
+          email,
+          firstName,
+          lastName,
+          plan: 'free'
+        });
+        res.json({ success: true, user: newUser });
+      } else {
+        res.status(400).json({ message: "Paid plans require payment processing" });
+      }
+    } catch (error: any) {
+      console.error("Signup error:", error);
+      res.status(500).json({ message: "Error creating account: " + error.message });
     }
   });
 
