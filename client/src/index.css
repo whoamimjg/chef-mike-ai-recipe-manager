@@ -179,6 +179,18 @@ button[style*="border-color: #ffffff"] {
   background-color: transparent !important;
 }
 
+/* Fix Chef Pro pricing button visibility */
+.bg-gradient-to-br button[style*="background-color: #ffffff"] {
+  color: #ea580c !important;
+  background-color: #ffffff !important;
+}
+
+/* General button text fixes */
+button.bg-white {
+  color: #ea580c !important;
+  background-color: #ffffff !important;
+}
+
 button:hover {
   opacity: 0.9;
 }
