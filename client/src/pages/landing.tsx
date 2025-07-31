@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ChefHat, Calendar, ShoppingCart, Brain, Clock, Users } from "lucide-react";
+import chefMikeImage from "@assets/AdobeStock_779778898_1753990317537.jpeg";
 
 export default function Landing() {
   const handleSignIn = () => {
@@ -504,7 +505,7 @@ export default function Landing() {
               </p>
               <div className="flex items-center gap-4">
                 <img 
-                  src="/chef-mike.jpeg" 
+                  src={chefMikeImage} 
                   alt="Chef Mike Greene in his kitchen"
                   className="w-16 h-16 rounded-full object-cover"
                 />
@@ -517,7 +518,7 @@ export default function Landing() {
             </div>
             <div>
               <img 
-                src="/chef-mike.jpeg" 
+                src={chefMikeImage} 
                 alt="Chef Mike Greene teaching cooking in a modern kitchen classroom"
                 className="w-full h-96 object-cover rounded-2xl shadow-2xl"
               />
