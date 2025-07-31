@@ -37,7 +37,7 @@ import {
   type InsertMealSuggestions,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, gte, lte, desc, asc, ilike, isNotNull, isNull } from "drizzle-orm";
+import { eq, and, gte, lte, desc, asc, ilike, isNotNull, isNull, sql } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -48,6 +48,7 @@ export interface IStorage {
   // Recipe operations
   getRecipes(userId: string, filters?: { search?: string; minRating?: number; maxRating?: number }): Promise<Recipe[]>;
   getRecipe(id: number, userId: string): Promise<Recipe | undefined>;
+  getRecipeCount(userId: string): Promise<number>;
   createRecipe(recipe: InsertRecipe): Promise<Recipe>;
   updateRecipe(id: number, recipe: Partial<InsertRecipe>, userId: string): Promise<Recipe | undefined>;
   deleteRecipe(id: number, userId: string): Promise<boolean>;
@@ -66,6 +67,7 @@ export interface IStorage {
   // Shopping list operations
   getShoppingLists(userId: string): Promise<ShoppingList[]>;
   getShoppingList(id: number, userId: string): Promise<ShoppingList | undefined>;
+  getShoppingListCount(userId: string): Promise<number>;
   createShoppingList(shoppingList: InsertShoppingList): Promise<ShoppingList>;
   updateShoppingList(id: number, shoppingList: Partial<InsertShoppingList>, userId: string): Promise<ShoppingList | undefined>;
   deleteShoppingList(id: number, userId: string): Promise<boolean>;
@@ -168,6 +170,14 @@ export class DatabaseStorage implements IStorage {
       .from(recipes)
       .where(and(eq(recipes.id, id), eq(recipes.userId, userId)));
     return recipe;
+  }
+
+  async getRecipeCount(userId: string): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(recipes)
+      .where(eq(recipes.userId, userId));
+    return result[0]?.count || 0;
   }
 
   async createRecipe(recipe: InsertRecipe): Promise<Recipe> {
@@ -314,6 +324,14 @@ export class DatabaseStorage implements IStorage {
       .from(shoppingLists)
       .where(and(eq(shoppingLists.id, id), eq(shoppingLists.userId, userId)));
     return shoppingList;
+  }
+
+  async getShoppingListCount(userId: string): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(shoppingLists)
+      .where(eq(shoppingLists.userId, userId));
+    return result[0]?.count || 0;
   }
 
   async createShoppingList(shoppingList: InsertShoppingList): Promise<ShoppingList> {

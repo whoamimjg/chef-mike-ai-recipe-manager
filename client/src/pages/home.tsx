@@ -2,8 +2,10 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { usePlanLimits } from "@/hooks/usePlanLimits";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
+import { PlanUsageWidget } from "@/components/PlanUsageWidget";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -61,6 +63,7 @@ import KitchenTimer from '@/components/KitchenTimer';
 export default function Home() {
   const { user, isLoading, isAuthenticated } = useAuth();
   const { toast } = useToast();
+  const { checkRecipeLimit, checkShoppingListLimit, showUpgradePrompt } = usePlanLimits();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("recipes");
   const [searchQuery, setSearchQuery] = useState("");
@@ -247,6 +250,7 @@ export default function Home() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/recipes"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/plan/usage"] }); // Update usage stats
       setIsAddRecipeOpen(false);
       resetRecipeForm();
       toast({
@@ -266,6 +270,18 @@ export default function Home() {
         }, 500);
         return;
       }
+      
+      // Check if this is a plan limit error
+      if (error.message.includes("Recipe limit reached")) {
+        const errorData = JSON.parse(error.message.split(": ")[1] || "{}");
+        toast({
+          title: "Recipe Limit Reached",
+          description: `You've reached your limit of ${errorData.limit} recipes. Upgrade to Pro for unlimited recipes!`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
       toast({
         title: "Error",
         description: "Failed to create recipe",
@@ -942,6 +958,12 @@ export default function Home() {
 
   const handleAddRecipe = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    
+    // Check recipe limit before proceeding
+    if (!checkRecipeLimit()) {
+      return;
+    }
+    
     const formData = new FormData(event.currentTarget);
     
     // Filter out empty ingredients and instructions
@@ -1367,6 +1389,11 @@ export default function Home() {
                   <User className="h-4 w-4" />
                   Account
                 </Button>
+                {/* Plan Usage Widget */}
+                <div className="px-3 py-2">
+                  <PlanUsageWidget />
+                </div>
+
                 <div className="border-t border-gray-200 pt-2 mt-2">
                   <div className="text-sm text-gray-600 px-3 py-1">
                     Welcome, {user?.firstName || 'Chef'}!

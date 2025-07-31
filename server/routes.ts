@@ -8,6 +8,8 @@ import {
   insertShoppingListSchema,
   insertUserPreferencesSchema,
   insertUserInventorySchema,
+  PLAN_LIMITS,
+  type PlanType,
 } from "@shared/schema";
 import { getAIRecipeRecommendations } from "./openai";
 import { processReceiptImage, deleteReceiptImage } from "./receiptOCR";
@@ -53,6 +55,38 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: "2024-12-18.acacia",
 });
 
+// Utility function to check plan limits
+async function checkPlanLimits(userId: string, resource: 'recipes' | 'shoppingLists') {
+  const user = await storage.getUser(userId);
+  if (!user) throw new Error('User not found');
+  
+  const planLimits = PLAN_LIMITS[user.plan as PlanType];
+  
+  if (resource === 'recipes') {
+    if (planLimits.maxRecipes === -1) return { allowed: true, current: 0, limit: -1 };
+    
+    const currentCount = await storage.getRecipeCount(userId);
+    return {
+      allowed: currentCount < planLimits.maxRecipes,
+      current: currentCount,
+      limit: planLimits.maxRecipes
+    };
+  }
+  
+  if (resource === 'shoppingLists') {
+    if (planLimits.maxShoppingLists === -1) return { allowed: true, current: 0, limit: -1 };
+    
+    const currentCount = await storage.getShoppingListCount(userId);
+    return {
+      allowed: currentCount < planLimits.maxShoppingLists,
+      current: currentCount,
+      limit: planLimits.maxShoppingLists
+    };
+  }
+  
+  return { allowed: false, current: 0, limit: 0 };
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
@@ -69,6 +103,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Plan usage endpoint
+  app.get('/api/plan/usage', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const planLimits = PLAN_LIMITS[user.plan as PlanType];
+      const recipeCount = await storage.getRecipeCount(userId);
+      const shoppingListCount = await storage.getShoppingListCount(userId);
+
+      res.json({
+        plan: user.plan,
+        usage: {
+          recipes: {
+            current: recipeCount,
+            limit: planLimits.maxRecipes,
+            percentage: planLimits.maxRecipes === -1 ? 0 : Math.round((recipeCount / planLimits.maxRecipes) * 100)
+          },
+          shoppingLists: {
+            current: shoppingListCount,
+            limit: planLimits.maxShoppingLists,
+            percentage: planLimits.maxShoppingLists === -1 ? 0 : Math.round((shoppingListCount / planLimits.maxShoppingLists) * 100)
+          }
+        },
+        features: planLimits.features
+      });
+    } catch (error) {
+      console.error("Error fetching plan usage:", error);
+      res.status(500).json({ message: "Failed to fetch plan usage" });
     }
   });
 
@@ -111,6 +180,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/recipes', isAuthenticated, upload.single('image'), async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      
+      // Check plan limits before creating recipe
+      const limitCheck = await checkPlanLimits(userId, 'recipes');
+      if (!limitCheck.allowed) {
+        return res.status(403).json({ 
+          message: "Recipe limit reached", 
+          current: limitCheck.current,
+          limit: limitCheck.limit,
+          plan: 'free'
+        });
+      }
+      
       const recipeData = insertRecipeSchema.parse({
         ...req.body,
         userId,
@@ -622,6 +703,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/shopping-lists', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      
+      // Check plan limits before creating shopping list
+      const limitCheck = await checkPlanLimits(userId, 'shoppingLists');
+      if (!limitCheck.allowed) {
+        return res.status(403).json({ 
+          message: "Shopping list limit reached", 
+          current: limitCheck.current,
+          limit: limitCheck.limit,
+          plan: 'free'
+        });
+      }
+      
       const shoppingListData = insertShoppingListSchema.parse({
         ...req.body,
         userId,

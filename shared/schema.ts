@@ -432,6 +432,27 @@ export const insertMealSuggestionsSchema = createInsertSchema(mealSuggestions).o
   createdAt: true,
 });
 
+// Plan limits constants
+export const PLAN_LIMITS = {
+  free: {
+    maxRecipes: 50,
+    maxShoppingLists: 5,
+    features: ['basic_recipes', 'basic_meal_planning']
+  },
+  pro: {
+    maxRecipes: -1, // unlimited
+    maxShoppingLists: -1, // unlimited  
+    features: ['unlimited_recipes', 'ai_recommendations', 'advanced_meal_planning', 'nutritional_analysis', 'recipe_import', 'family_sharing_4']
+  },
+  family: {
+    maxRecipes: -1, // unlimited
+    maxShoppingLists: -1, // unlimited
+    features: ['everything_in_pro', 'unlimited_family_members', 'kids_cooking_mode', 'dietary_restriction_management', 'priority_support']
+  }
+} as const;
+
+export type PlanType = keyof typeof PLAN_LIMITS;
+
 // Export types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
