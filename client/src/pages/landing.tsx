@@ -10,22 +10,22 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-500 to-primary-600">
+    <div className="min-h-screen bg-gradient-to-br from-orange-500 to-red-600">
       {/* Navigation */}
       <nav className="relative z-10 bg-white/10 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center gap-3">
-              <ChefHat className="h-8 w-8 text-white" />
-              <h1 className="text-2xl font-bold text-white">Chef Mike's Culinary Classroom</h1>
+              <ChefHat className="h-8 w-8" style={{ color: '#ffffff' }} />
+              <h1 className="text-2xl font-bold" style={{ color: '#ffffff' }}>Chef Mike's Culinary Classroom</h1>
             </div>
             <div className="flex items-center gap-6">
               <div className="hidden md:flex items-center gap-6">
-                <a href="#features" className="text-white/90 hover:text-white transition-colors">Features</a>
-                <a href="#pricing" className="text-white/90 hover:text-white transition-colors">Pricing</a>
-                <a href="#about" className="text-white/90 hover:text-white transition-colors">About</a>
+                <a href="#features" className="transition-colors" style={{ color: 'rgba(255, 255, 255, 0.9)' }} onMouseOver={(e) => e.target.style.color = '#ffffff'} onMouseOut={(e) => e.target.style.color = 'rgba(255, 255, 255, 0.9)'}>Features</a>
+                <a href="#pricing" className="transition-colors" style={{ color: 'rgba(255, 255, 255, 0.9)' }} onMouseOver={(e) => e.target.style.color = '#ffffff'} onMouseOut={(e) => e.target.style.color = 'rgba(255, 255, 255, 0.9)'}>Pricing</a>
+                <a href="#about" className="transition-colors" style={{ color: 'rgba(255, 255, 255, 0.9)' }} onMouseOver={(e) => e.target.style.color = '#ffffff'} onMouseOut={(e) => e.target.style.color = 'rgba(255, 255, 255, 0.9)'}>About</a>
               </div>
-              <Button onClick={handleSignIn} variant="secondary" className="bg-white text-primary-600 hover:bg-gray-100">
+              <Button onClick={handleSignIn} variant="secondary" className="bg-white text-orange-600 hover:bg-gray-100">
                 Sign In
               </Button>
             </div>
@@ -36,21 +36,21 @@ export default function Landing() {
       {/* Hero Section */}
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-32">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
-          <div className="text-white">
-            <h1 className="text-5xl lg:text-7xl font-bold mb-6 leading-tight">
-              Cook Smarter,<br/>
+          <div className="hero-text text-white">
+            <h1 className="text-5xl lg:text-7xl font-bold mb-6 leading-tight" style={{ color: '#ffffff' }}>
+              <span style={{ color: '#ffffff' }}>Cook Smarter,</span><br/>
               <span className="bg-gradient-to-r from-yellow-300 to-orange-300 bg-clip-text text-transparent">
                 Plan Better
               </span>
             </h1>
-            <p className="text-xl lg:text-2xl mb-8 text-white/90 leading-relaxed">
+            <p className="text-xl lg:text-2xl mb-8 leading-relaxed" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>
               Transform your kitchen into a culinary classroom with AI-powered recipe recommendations, smart meal planning, and automated shopping lists.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Button 
                 onClick={() => window.location.href = "/signup"}
                 size="lg" 
-                className="bg-white text-primary-600 hover:bg-gray-100 text-lg px-8 py-4"
+                className="bg-white text-orange-600 hover:bg-gray-100 text-lg px-8 py-4 font-semibold"
               >
                 🚀 Start Free Trial
               </Button>
@@ -62,14 +62,14 @@ export default function Landing() {
                 📹 Watch Demo
               </Button>
             </div>
-            <div className="flex items-center gap-6 mt-8 text-white/80">
+            <div className="flex items-center gap-6 mt-8" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-green-300 rounded-full"></div>
-                <span>Free 14-day trial</span>
+                <span style={{ color: '#ffffff' }}>Free 14-day trial</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-green-300 rounded-full"></div>
-                <span>No credit card required</span>
+                <span style={{ color: '#ffffff' }}>No credit card required</span>
               </div>
             </div>
           </div>
@@ -595,10 +595,10 @@ export default function Landing() {
       </section>
 
       {/* Sign Up CTA */}
-      <section className="py-20 bg-gradient-to-br from-primary-500 to-primary-600">
+      <section className="py-20 bg-gradient-to-br from-orange-500 to-red-600">
         <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-          <h2 className="text-4xl font-bold text-white mb-6">Ready to Transform Your Kitchen?</h2>
-          <p className="text-xl text-white/90 mb-8">Join thousands of home cooks who've already simplified their meal planning and discovered new favorite recipes.</p>
+          <h2 className="text-4xl font-bold mb-6" style={{ color: '#ffffff' }}>Ready to Transform Your Kitchen?</h2>
+          <p className="text-xl mb-8" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>Join thousands of home cooks who've already simplified their meal planning and discovered new favorite recipes.</p>
           
           <Card className="max-w-md mx-auto bg-white/10 backdrop-blur-sm border-white/20">
             <CardContent className="p-8">
@@ -615,12 +615,12 @@ export default function Landing() {
                 />
                 <Button 
                   onClick={() => window.location.href = "/signup"}
-                  className="w-full bg-white text-primary-600 hover:bg-gray-100 text-lg"
+                  className="w-full bg-white text-orange-600 hover:bg-gray-100 text-lg font-semibold"
                 >
                   🚀 Start Your Free Trial
                 </Button>
               </div>
-              <p className="text-sm text-white/80 mt-4">14-day free trial • No credit card required</p>
+              <p className="text-sm mt-4" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>14-day free trial • No credit card required</p>
             </CardContent>
           </Card>
         </div>

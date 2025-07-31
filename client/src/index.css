@@ -98,8 +98,8 @@ img {
 }
 
 /* Ensure proper contrast */
-.text-white {
-  color: white !important;
+.text-white, .text-white * {
+  color: #ffffff !important;
 }
 
 .text-gray-900 {
@@ -108,6 +108,32 @@ img {
 
 .text-gray-600 {
   color: rgb(75, 85, 99) !important;
+}
+
+/* Fix hero section text visibility */
+.hero-text h1 {
+  color: #ffffff !important;
+}
+
+.hero-text p {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.hero-text span:not(.bg-gradient-to-r) {
+  color: #ffffff !important;
+}
+
+/* Ensure navigation text is visible */
+nav .text-white {
+  color: #ffffff !important;
+}
+
+nav a {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+nav a:hover {
+  color: #ffffff !important;
 }
 
 /* Animation utilities */
