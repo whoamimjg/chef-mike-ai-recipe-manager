@@ -90,6 +90,21 @@ img {
   display: block;
   max-width: 100%;
   height: auto;
+  loading: lazy;
+}
+
+/* Specific fixes for feature card images */
+.feature-card img {
+  min-height: 200px;
+  object-fit: cover;
+  background-color: #f3f4f6;
+}
+
+/* Ensure images are visible with proper contrast */
+img[alt*="Modern smart kitchen"],
+img[alt*="Interactive cooking"] {
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 /* Fix any layout issues */

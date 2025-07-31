@@ -235,12 +235,15 @@ export default function Landing() {
             </Card>
 
             {/* AI Recommendations */}
-            <Card className="hover:shadow-lg transition-shadow duration-300">
+            <Card className="hover:shadow-lg transition-shadow duration-300 feature-card">
               <CardContent className="p-8">
                 <img 
-                  src="https://images.unsplash.com/photo-1558618047-3c8c76ca7d3c?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=200" 
+                  src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=200&q=80" 
                   alt="Modern smart kitchen with AI-powered cooking assistance interface" 
                   className="w-full h-48 object-cover rounded-xl mb-6"
+                  onError={(e) => {
+                    e.currentTarget.src = "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=200&q=80";
+                  }}
                 />
                 <div className="flex items-center gap-2 mb-4">
                   <Brain className="h-6 w-6 text-primary-600" />
@@ -273,12 +276,15 @@ export default function Landing() {
             </Card>
 
             {/* Interactive Cooking */}
-            <Card className="hover:shadow-lg transition-shadow duration-300">
+            <Card className="hover:shadow-lg transition-shadow duration-300 feature-card">
               <CardContent className="p-8">
                 <img 
-                  src="https://images.unsplash.com/photo-1556909114-355ae2fb4dd9?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=200" 
+                  src="https://images.unsplash.com/photo-1574484284002-952d92456975?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=200&q=80" 
                   alt="Interactive cooking mode with step-by-step guidance and timer" 
                   className="w-full h-48 object-cover rounded-xl mb-6"
+                  onError={(e) => {
+                    e.currentTarget.src = "https://images.unsplash.com/photo-1556909123-94d5ba4eaf28?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=200&q=80";
+                  }}
                 />
                 <div className="flex items-center gap-2 mb-4">
                   <Clock className="h-6 w-6 text-primary-600" />
