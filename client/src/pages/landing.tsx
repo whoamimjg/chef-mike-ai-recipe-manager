@@ -21,11 +21,11 @@ export default function Landing() {
             </div>
             <div className="flex items-center gap-6">
               <div className="hidden md:flex items-center gap-6">
-                <a href="#features" className="transition-colors" style={{ color: 'rgba(255, 255, 255, 0.9)' }} onMouseOver={(e) => e.target.style.color = '#ffffff'} onMouseOut={(e) => e.target.style.color = 'rgba(255, 255, 255, 0.9)'}>Features</a>
-                <a href="#pricing" className="transition-colors" style={{ color: 'rgba(255, 255, 255, 0.9)' }} onMouseOver={(e) => e.target.style.color = '#ffffff'} onMouseOut={(e) => e.target.style.color = 'rgba(255, 255, 255, 0.9)'}>Pricing</a>
-                <a href="#about" className="transition-colors" style={{ color: 'rgba(255, 255, 255, 0.9)' }} onMouseOver={(e) => e.target.style.color = '#ffffff'} onMouseOut={(e) => e.target.style.color = 'rgba(255, 255, 255, 0.9)'}>About</a>
+                <a href="#features" className="transition-colors hover:text-white" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>Features</a>
+                <a href="#pricing" className="transition-colors hover:text-white" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>Pricing</a>
+                <a href="#about" className="transition-colors hover:text-white" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>About</a>
               </div>
-              <Button onClick={handleSignIn} variant="secondary" className="bg-white text-orange-600 hover:bg-gray-100">
+              <Button onClick={handleSignIn} variant="secondary" className="bg-white hover:bg-gray-100" style={{ color: '#ea580c', backgroundColor: '#ffffff' }}>
                 Sign In
               </Button>
             </div>
@@ -50,14 +50,16 @@ export default function Landing() {
               <Button 
                 onClick={() => window.location.href = "/signup"}
                 size="lg" 
-                className="bg-white text-orange-600 hover:bg-gray-100 text-lg px-8 py-4 font-semibold"
+                className="bg-white hover:bg-gray-100 text-lg px-8 py-4 font-semibold"
+                style={{ color: '#ea580c', backgroundColor: '#ffffff' }}
               >
                 🚀 Start Free Trial
               </Button>
               <Button 
                 variant="outline" 
                 size="lg"
-                className="border-2 border-white text-white hover:bg-white/10 text-lg px-8 py-4"
+                className="border-2 hover:bg-white/10 text-lg px-8 py-4"
+                style={{ color: '#ffffff', borderColor: '#ffffff', backgroundColor: 'transparent' }}
               >
                 📹 Watch Demo
               </Button>
@@ -621,7 +623,8 @@ export default function Landing() {
                 />
                 <Button 
                   onClick={() => window.location.href = "/signup"}
-                  className="w-full bg-white text-orange-600 hover:bg-gray-100 text-lg font-semibold"
+                  className="w-full bg-white hover:bg-gray-100 text-lg font-semibold"
+                  style={{ color: '#ea580c', backgroundColor: '#ffffff' }}
                 >
                   🚀 Start Your Free Trial
                 </Button>

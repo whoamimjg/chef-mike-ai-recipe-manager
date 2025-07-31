@@ -151,6 +151,38 @@ nav a:hover {
   color: #ffffff !important;
 }
 
+/* Fix button text visibility */
+button[style*="background-color: #ffffff"] {
+  color: #ea580c !important;
+  background-color: #ffffff !important;
+}
+
+button[style*="border-color: #ffffff"] {
+  color: #ffffff !important;
+  border-color: #ffffff !important;
+  background-color: transparent !important;
+}
+
+/* Ensure all buttons have proper text visibility */
+.hero-text button {
+  font-weight: 600;
+}
+
+.hero-text button:first-child {
+  color: #ea580c !important;
+  background-color: #ffffff !important;
+}
+
+.hero-text button:last-child {
+  color: #ffffff !important;
+  border-color: #ffffff !important;
+  background-color: transparent !important;
+}
+
+button:hover {
+  opacity: 0.9;
+}
+
 /* Animation utilities */
 .fade-in {
   animation: fadeIn 0.5s ease-in;
