@@ -19,10 +19,12 @@ export default function Landing() {
               <ChefHat className="h-8 w-8 text-white" />
               <h1 className="text-2xl font-bold text-white">Chef Mike's Culinary Classroom</h1>
             </div>
-            <div className="hidden md:flex items-center gap-6">
-              <a href="#features" className="text-white/90 hover:text-white transition-colors">Features</a>
-              <a href="#pricing" className="text-white/90 hover:text-white transition-colors">Pricing</a>
-              <a href="#about" className="text-white/90 hover:text-white transition-colors">About</a>
+            <div className="flex items-center gap-6">
+              <div className="hidden md:flex items-center gap-6">
+                <a href="#features" className="text-white/90 hover:text-white transition-colors">Features</a>
+                <a href="#pricing" className="text-white/90 hover:text-white transition-colors">Pricing</a>
+                <a href="#about" className="text-white/90 hover:text-white transition-colors">About</a>
+              </div>
               <Button onClick={handleSignIn} variant="secondary" className="bg-white text-primary-600 hover:bg-gray-100">
                 Sign In
               </Button>
@@ -470,6 +472,122 @@ export default function Landing() {
                 >
                   Start Free Trial
                 </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* About Section */}
+      <section id="about" className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <h2 className="text-4xl font-bold text-gray-900 mb-6">Meet Chef Mike</h2>
+              <p className="text-xl text-gray-600 mb-6">
+                With over 15 years of culinary experience and a passion for teaching, Chef Mike has helped thousands of home cooks master their kitchens.
+              </p>
+              <p className="text-gray-600 mb-6">
+                After working in Michelin-starred restaurants and teaching at culinary schools, Chef Mike realized that the real magic happens when families cook together at home. That's why he created this platform - to bring professional cooking techniques and smart organization to your everyday kitchen.
+              </p>
+              <p className="text-gray-600 mb-8">
+                "Cooking should be joyful, not stressful. With the right tools and guidance, anyone can create amazing meals that bring their family together." - Chef Mike
+              </p>
+              <div className="flex items-center gap-4">
+                <img 
+                  src="https://images.unsplash.com/photo-1583394838336-acd977736f90?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100&q=80" 
+                  alt="Chef Mike in his kitchen"
+                  className="w-16 h-16 rounded-full object-cover"
+                />
+                <div>
+                  <div className="font-semibold text-gray-900">Chef Mike Thompson</div>
+                  <div className="text-sm text-gray-600">Founder & Head Chef</div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <img 
+                src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&h=400&q=80" 
+                alt="Chef Mike teaching cooking in a modern kitchen classroom"
+                className="w-full h-96 object-cover rounded-2xl shadow-2xl"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">What Our Users Say</h2>
+            <p className="text-xl text-gray-600">Join thousands of families who've transformed their cooking experience</p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            <Card className="p-6">
+              <CardContent className="p-0">
+                <div className="flex items-center gap-1 mb-4">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="w-4 h-4 bg-yellow-400 rounded-sm"></div>
+                  ))}
+                </div>
+                <p className="text-gray-600 mb-6">"This app completely changed how we meal plan! The AI recommendations are spot on, and my kids actually ask to help cook now."</p>
+                <div className="flex items-center gap-3">
+                  <img 
+                    src="https://images.unsplash.com/photo-1494790108755-2616b612b5bc?ixlib=rb-4.0.3&auto=format&fit=crop&w=50&h=50&q=80" 
+                    alt="Sarah M."
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                  <div>
+                    <div className="font-semibold text-gray-900">Sarah M.</div>
+                    <div className="text-sm text-gray-600">Mom of 3</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="p-6">
+              <CardContent className="p-0">
+                <div className="flex items-center gap-1 mb-4">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="w-4 h-4 bg-yellow-400 rounded-sm"></div>
+                  ))}
+                </div>
+                <p className="text-gray-600 mb-6">"The shopping lists organized by store layout save me so much time! I can get in and out of the grocery store in half the time."</p>
+                <div className="flex items-center gap-3">
+                  <img 
+                    src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=50&h=50&q=80" 
+                    alt="David K."
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                  <div>
+                    <div className="font-semibold text-gray-900">David K.</div>
+                    <div className="text-sm text-gray-600">Busy Professional</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="p-6">
+              <CardContent className="p-0">
+                <div className="flex items-center gap-1 mb-4">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="w-4 h-4 bg-yellow-400 rounded-sm"></div>
+                  ))}
+                </div>
+                <p className="text-gray-600 mb-6">"As someone with multiple food allergies, the dietary restriction warnings are a lifesaver. I finally feel confident trying new recipes!"</p>
+                <div className="flex items-center gap-3">
+                  <img 
+                    src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=50&h=50&q=80" 
+                    alt="Emily R."
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                  <div>
+                    <div className="font-semibold text-gray-900">Emily R.</div>
+                    <div className="text-sm text-gray-600">Food Allergy Warrior</div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>

@@ -13,8 +13,8 @@
   --card-foreground: hsl(20, 14.3%, 4.1%);
   --border: hsl(20, 5.9%, 90%);
   --input: hsl(20, 5.9%, 90%);
-  --primary: hsl(248, 77%, 70%);
-  --primary-foreground: hsl(211, 100%, 99%);
+  --primary: hsl(24, 95%, 53%);
+  --primary-foreground: hsl(0, 0%, 100%);
   --secondary: hsl(60, 4.8%, 95.9%);
   --secondary-foreground: hsl(24, 9.8%, 10%);
   --accent: hsl(60, 4.8%, 95.9%);
@@ -25,8 +25,8 @@
   --radius: 0.5rem;
   
   /* Custom gradient colors matching design */
-  --primary-500: hsl(248, 77%, 70%);
-  --primary-600: hsl(257, 47%, 55%);
+  --primary-500: hsl(24, 95%, 53%);
+  --primary-600: hsl(16, 85%, 47%);
 }
 
 .dark {
@@ -40,8 +40,8 @@
   --card-foreground: hsl(0, 0%, 98%);
   --border: hsl(240, 3.7%, 15.9%);
   --input: hsl(240, 3.7%, 15.9%);
-  --primary: hsl(248, 77%, 70%);
-  --primary-foreground: hsl(211, 100%, 99%);
+  --primary: hsl(24, 95%, 53%);
+  --primary-foreground: hsl(0, 0%, 100%);
   --secondary: hsl(240, 3.7%, 15.9%);
   --secondary-foreground: hsl(0, 0%, 98%);
   --accent: hsl(240, 3.7%, 15.9%);
@@ -64,14 +64,50 @@
 
 /* Custom gradient utilities */
 .bg-gradient-primary {
-  background: linear-gradient(135deg, hsl(248, 77%, 70%) 0%, hsl(257, 47%, 55%) 100%);
+  background: linear-gradient(135deg, hsl(24, 95%, 53%) 0%, hsl(16, 85%, 47%) 100%);
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, hsl(248, 77%, 70%) 0%, hsl(257, 47%, 55%) 100%);
+  background: linear-gradient(135deg, hsl(24, 95%, 53%) 0%, hsl(16, 85%, 47%) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+/* Ensure visibility of all text elements */
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* Fix any potential text rendering issues */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Ensure all images load properly */
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* Fix any layout issues */
+.min-h-screen {
+  min-height: 100vh;
+}
+
+/* Ensure proper contrast */
+.text-white {
+  color: white !important;
+}
+
+.text-gray-900 {
+  color: rgb(17, 24, 39) !important;
+}
+
+.text-gray-600 {
+  color: rgb(75, 85, 99) !important;
 }
 
 /* Animation utilities */
