@@ -491,32 +491,33 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
-              <h2 className="text-4xl font-bold text-gray-900 mb-6">Meet Chef Mike</h2>
+              <h2 className="text-4xl font-bold text-gray-900 mb-6">Meet Chef Mike Greene</h2>
               <p className="text-xl text-gray-600 mb-6">
-                With over 15 years of culinary experience and a passion for teaching, Chef Mike has helped thousands of home cooks master their kitchens.
+                With over 15 years of culinary experience and a passion for teaching, Chef Mike Greene has helped thousands of home cooks master their kitchens.
               </p>
               <p className="text-gray-600 mb-6">
                 After working in Michelin-starred restaurants and teaching at culinary schools, Chef Mike realized that the real magic happens when families cook together at home. That's why he created this platform - to bring professional cooking techniques and smart organization to your everyday kitchen.
               </p>
               <p className="text-gray-600 mb-8">
-                "Cooking should be joyful, not stressful. With the right tools and guidance, anyone can create amazing meals that bring their family together." - Chef Mike
+                "Cooking should be joyful, not stressful. With the right tools and guidance, anyone can create amazing meals that bring their family together." - Chef Mike Greene
               </p>
               <div className="flex items-center gap-4">
                 <img 
-                  src="https://images.unsplash.com/photo-1583394838336-acd977736f90?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100&q=80" 
-                  alt="Chef Mike in his kitchen"
+                  src="/chef-mike.jpeg" 
+                  alt="Chef Mike Greene in his kitchen"
                   className="w-16 h-16 rounded-full object-cover"
                 />
                 <div>
-                  <div className="font-semibold text-gray-900">Chef Mike Thompson</div>
+                  <div className="font-semibold text-gray-900">Chef Mike Greene</div>
                   <div className="text-sm text-gray-600">Founder & Head Chef</div>
+                  <div className="text-sm text-gray-600">chefmike@cmcc.com</div>
                 </div>
               </div>
             </div>
             <div>
               <img 
-                src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&h=400&q=80" 
-                alt="Chef Mike teaching cooking in a modern kitchen classroom"
+                src="/chef-mike.jpeg" 
+                alt="Chef Mike Greene teaching cooking in a modern kitchen classroom"
                 className="w-full h-96 object-cover rounded-2xl shadow-2xl"
               />
             </div>
