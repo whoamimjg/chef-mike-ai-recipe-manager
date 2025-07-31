@@ -241,12 +241,9 @@ export default function Landing() {
             <Card className="hover:shadow-lg transition-shadow duration-300 feature-card">
               <CardContent className="p-8">
                 <img 
-                  src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=200&q=80" 
-                  alt="Modern smart kitchen with AI-powered cooking assistance interface" 
+                  src={chefMikeImage} 
+                  alt="Chef Mike Greene demonstrating AI-powered cooking assistance" 
                   className="w-full h-48 object-cover rounded-xl mb-6"
-                  onError={(e) => {
-                    e.currentTarget.src = "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=200&q=80";
-                  }}
                 />
                 <div className="flex items-center gap-2 mb-4">
                   <Brain className="h-6 w-6 text-primary-600" />
