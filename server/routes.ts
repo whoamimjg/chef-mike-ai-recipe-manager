@@ -1490,7 +1490,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Signup route for free accounts
   app.post("/api/auth/signup", async (req, res) => {
     try {
-      const { firstName, lastName, email, plan } = req.body;
+      const { firstName, lastName, email, password, plan } = req.body;
+      
+      // Validate required fields
+      if (!firstName || !lastName || !email || !password) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
       
       // Check if user already exists
       const existingUser = await storage.getUserByEmail(email);
@@ -1504,6 +1509,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email,
           firstName,
           lastName,
+          password, // Will be hashed in storage layer
           plan: 'free'
         });
         res.json({ success: true, user: newUser });
@@ -1513,6 +1519,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Signup error:", error);
       res.status(500).json({ message: "Error creating account: " + error.message });
+    }
+  });
+
+  // Login route
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      // Validate required fields
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+      }
+      
+      // Find user by email
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+
+      // Verify password using bcrypt
+      if (!user.password) {
+        return res.status(401).json({ message: "This account was created with social login. Please use the appropriate login method." });
+      }
+      
+      const isValidPassword = await storage.verifyPassword(user.id, password);
+      if (!isValidPassword) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+
+      // Create session (simplified for now)
+      req.session.userId = user.id;
+      req.session.user = user;
+
+      res.json({ success: true, user: user });
+    } catch (error: any) {
+      console.error("Login error:", error);
+      res.status(500).json({ message: "Error logging in: " + error.message });
     }
   });
 

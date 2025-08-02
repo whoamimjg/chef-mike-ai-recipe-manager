@@ -104,6 +104,7 @@ const FreeCheckoutForm = ({ userInfo, selectedPlan }: { userInfo: any, selectedP
         firstName: userInfo.firstName,
         lastName: userInfo.lastName,
         email: userInfo.email,
+        password: userInfo.password,
         plan: selectedPlan.id
       });
       
@@ -112,13 +113,13 @@ const FreeCheckoutForm = ({ userInfo, selectedPlan }: { userInfo: any, selectedP
       if (response && response.success) {
         toast({
           title: "Account Created!",
-          description: "Welcome to Chef Mike's Culinary Classroom!",
+          description: "Your account has been created successfully. Please sign in with your credentials.",
         });
         
-        // Redirect to success page
+        // Redirect to login page
         setTimeout(() => {
-          window.location.href = "/signup/success";
-        }, 1000);
+          window.location.href = "/login";
+        }, 1500);
       } else {
         toast({
           title: "Error",
@@ -425,6 +426,18 @@ export default function Signup() {
                 value={userInfo.email}
                 onChange={(e) => setUserInfo(prev => ({ ...prev, email: e.target.value }))}
                 placeholder="john@example.com"
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="password">Password *</Label>
+              <Input
+                id="password"
+                type="password"
+                value={userInfo.password || ''}
+                onChange={(e) => setUserInfo(prev => ({ ...prev, password: e.target.value }))}
+                placeholder="Create a secure password"
                 required
               />
             </div>

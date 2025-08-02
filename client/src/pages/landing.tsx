@@ -26,7 +26,7 @@ export default function Landing() {
                 <a href="#pricing" className="transition-colors hover:text-white" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>Pricing</a>
                 <a href="#about" className="transition-colors hover:text-white" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>About</a>
               </div>
-              <Button onClick={() => window.location.href = "/signup"} variant="secondary" className="bg-white hover:bg-gray-100" style={{ color: '#ea580c', backgroundColor: '#ffffff' }}>
+              <Button onClick={() => window.location.href = "/login"} variant="secondary" className="bg-white hover:bg-gray-100" style={{ color: '#ea580c', backgroundColor: '#ffffff' }}>
                 Sign In
               </Button>
             </div>

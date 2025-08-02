@@ -38,6 +38,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gte, lte, desc, asc, ilike, isNotNull, isNull, sql } from "drizzle-orm";
+import bcrypt from "bcrypt";
 
 // Interface for storage operations
 export interface IStorage {
@@ -46,6 +47,7 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
   createUser(user: Partial<UpsertUser>): Promise<User>;
+  verifyPassword(userId: string, password: string): Promise<boolean>;
   
   // Recipe operations
   getRecipes(userId: string, filters?: { search?: string; minRating?: number; maxRating?: number }): Promise<Recipe[]>;
@@ -134,11 +136,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(userData: Partial<UpsertUser>): Promise<User> {
+    // Hash password if provided
+    const insertData: any = { ...userData };
+    if (insertData.password) {
+      const saltRounds = 10;
+      insertData.password = await bcrypt.hash(insertData.password, saltRounds);
+    }
+    
     const [user] = await db
       .insert(users)
-      .values(userData as UpsertUser)
+      .values(insertData as UpsertUser)
       .returning();
     return user;
+  }
+
+  async verifyPassword(userId: string, password: string): Promise<boolean> {
+    const user = await this.getUser(userId);
+    if (!user || !user.password) {
+      return false;
+    }
+    
+    return await bcrypt.compare(password, user.password);
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
