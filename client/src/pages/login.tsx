@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,13 +6,24 @@ import { Label } from "@/components/ui/label";
 import { ChefHat, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { FaGoogle, FaGithub } from "react-icons/fa";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
   const { toast } = useToast();
+
+  useEffect(() => {
+    // Check for OAuth error in URL params
+    const urlParams = new URLSearchParams(window.location.search);
+    const oauthError = urlParams.get('error');
+    if (oauthError === 'oauth') {
+      setError("OAuth authentication failed. Please try again.");
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,6 +100,11 @@ export default function Login() {
               <p className="text-gray-600">
                 Sign in to your Chef Mike's account
               </p>
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mt-4">
+                  {error}
+                </div>
+              )}
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
@@ -140,6 +156,36 @@ export default function Login() {
                   {isLoading ? "Signing In..." : "Sign In"}
                 </Button>
               </form>
+
+              <div className="mt-6">
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-300" />
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-2 bg-white text-gray-500">Or continue with</span>
+                  </div>
+                </div>
+
+                <div className="mt-6 grid grid-cols-2 gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => window.location.href = "/api/auth/google"}
+                    className="w-full flex items-center justify-center gap-2"
+                  >
+                    <FaGoogle className="h-4 w-4 text-red-500" />
+                    Google
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => window.location.href = "/api/auth/github"}
+                    className="w-full flex items-center justify-center gap-2"
+                  >
+                    <FaGithub className="h-4 w-4" />
+                    GitHub
+                  </Button>
+                </div>
+              </div>
 
               <div className="mt-6 text-center">
                 <p className="text-sm text-gray-600">
