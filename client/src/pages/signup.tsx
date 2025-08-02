@@ -109,20 +109,30 @@ const CheckoutForm = ({ userInfo, selectedPlan }: { userInfo: any, selectedPlan:
     try {
       // For free plan, just create account without payment
       if (selectedPlan.id === 'free') {
-        await apiRequest("POST", "/api/auth/signup", {
-          ...userInfo,
+        const response = await apiRequest("POST", "/api/auth/signup", {
+          firstName: userInfo.firstName,
+          lastName: userInfo.lastName,
+          email: userInfo.email,
           plan: selectedPlan.id
         });
         
-        toast({
-          title: "Account Created!",
-          description: "Welcome to Chef Mike's Culinary Classroom! You can now sign in.",
-        });
-        
-        // Redirect to login
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 2000);
+        if (response.success) {
+          toast({
+            title: "Account Created!",
+            description: "Welcome to Chef Mike's Culinary Classroom! You can now sign in.",
+          });
+          
+          // Redirect to success page
+          setTimeout(() => {
+            window.location.href = "/signup/success";
+          }, 2000);
+        } else {
+          toast({
+            title: "Error",
+            description: response.message || "Failed to create account. Please try again.",
+            variant: "destructive",
+          });
+        }
         return;
       }
 
@@ -222,7 +232,7 @@ export default function Signup() {
     }
 
     if (selectedPlan?.id === 'free') {
-      // Skip payment for free plan
+      // For free plan, go directly to payment step (which handles account creation)
       setStep('payment');
     } else {
       try {
