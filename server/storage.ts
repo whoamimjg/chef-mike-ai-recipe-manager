@@ -50,6 +50,11 @@ export interface IStorage {
   updateUser(id: string, updates: Partial<UpsertUser>): Promise<User | undefined>;
   verifyPassword(userId: string, password: string): Promise<boolean>;
   
+  // Email verification operations
+  getUserByVerificationToken(token: string): Promise<User | undefined>;
+  setEmailVerificationToken(userId: string, token: string): Promise<void>;
+  verifyEmail(token: string): Promise<User | null>;
+  
   // Recipe operations
   getRecipes(userId: string, filters?: { search?: string; minRating?: number; maxRating?: number }): Promise<Recipe[]>;
   getRecipe(id: number, userId: string): Promise<Recipe | undefined>;
@@ -191,6 +196,39 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return user;
+  }
+
+  // Email verification operations
+  async getUserByVerificationToken(token: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.emailVerificationToken, token));
+    return user;
+  }
+
+  async setEmailVerificationToken(userId: string, token: string): Promise<void> {
+    await db
+      .update(users)
+      .set({ 
+        emailVerificationToken: token,
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, userId));
+  }
+
+  async verifyEmail(token: string): Promise<User | null> {
+    const user = await this.getUserByVerificationToken(token);
+    if (!user) return null;
+
+    const [updatedUser] = await db
+      .update(users)
+      .set({ 
+        emailVerified: true,
+        emailVerificationToken: null,
+        updatedAt: new Date()
+      })
+      .where(eq(users.emailVerificationToken, token))
+      .returning();
+
+    return updatedUser || null;
   }
 
   // Recipe operations

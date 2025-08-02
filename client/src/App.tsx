@@ -11,6 +11,7 @@ import Account from "@/pages/account";
 import SignUp from "@/pages/signup";
 import SignupSuccess from "@/pages/signup-success";
 import Login from "@/pages/login";
+import VerifyEmail from "@/pages/verify-email";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -24,6 +25,7 @@ function Router() {
           <Route path="/signup" component={SignUp} />
           <Route path="/signup/success" component={SignupSuccess} />
           <Route path="/login" component={Login} />
+          <Route path="/verify-email" component={VerifyEmail} />
           {/* Redirect protected routes to login */}
           <Route path="/account">
             {() => {

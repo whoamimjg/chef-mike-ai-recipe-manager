@@ -2,6 +2,8 @@ import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./auth";
+import { sendEmail, generateVerificationEmailHtml, generateWelcomeEmailHtml } from "./email";
+import crypto from "crypto";
 import { 
   insertRecipeSchema,
   insertMealPlanSchema,
@@ -158,6 +160,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating dietary preferences:", error);
       res.status(500).json({ message: "Failed to update dietary preferences" });
+    }
+  });
+
+  // Email verification routes
+  app.post('/api/auth/send-verification', async (req, res) => {
+    try {
+      const { email, firstName } = req.body;
+      
+      if (!email || !firstName) {
+        return res.status(400).json({ message: "Email and first name are required" });
+      }
+
+      // Check if user exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (!existingUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      if (existingUser.emailVerified) {
+        return res.status(400).json({ message: "Email already verified" });
+      }
+
+      // Generate verification token
+      const verificationToken = crypto.randomBytes(32).toString('hex');
+      await storage.setEmailVerificationToken(existingUser.id, verificationToken);
+
+      // Send verification email
+      const verificationUrl = `${req.protocol}://${req.get('host')}/api/auth/verify-email?token=${verificationToken}`;
+      const emailHtml = generateVerificationEmailHtml(firstName, verificationUrl);
+
+      const emailSent = await sendEmail({
+        from: '"Chef Mike\'s Culinary Classroom" <noreply@chefmike.app>',
+        to: email,
+        subject: 'Verify Your Email - Chef Mike\'s Culinary Classroom',
+        html: emailHtml,
+      });
+
+      if (emailSent) {
+        res.json({ success: true, message: "Verification email sent" });
+      } else {
+        res.status(500).json({ message: "Failed to send verification email" });
+      }
+    } catch (error) {
+      console.error("Error sending verification email:", error);
+      res.status(500).json({ message: "Failed to send verification email" });
+    }
+  });
+
+  app.get('/api/auth/verify-email', async (req, res) => {
+    try {
+      const { token } = req.query;
+      
+      if (!token || typeof token !== 'string') {
+        return res.status(400).json({ message: "Invalid verification token" });
+      }
+
+      // Verify the email
+      const user = await storage.verifyEmail(token);
+      if (!user) {
+        return res.status(400).json({ message: "Invalid or expired verification token" });
+      }
+
+      // Send welcome email
+      const loginUrl = `${req.protocol}://${req.get('host')}/login`;
+      const welcomeEmailHtml = generateWelcomeEmailHtml(user.firstName || 'there', loginUrl);
+
+      await sendEmail({
+        from: '"Chef Mike\'s Culinary Classroom" <noreply@chefmike.app>',
+        to: user.email!,
+        subject: 'Welcome to Chef Mike\'s Culinary Classroom!',
+        html: welcomeEmailHtml,
+      });
+
+      // Redirect to success page or login
+      res.redirect('/login?verified=true');
+    } catch (error) {
+      console.error("Error verifying email:", error);
+      res.status(500).json({ message: "Failed to verify email" });
     }
   });
 

@@ -35,6 +35,8 @@ export const users = pgTable("users", {
   profileImageUrl: varchar("profile_image_url"),
   password: varchar("password"), // Hashed password for traditional auth
   plan: varchar("plan").notNull().default("free"), // free, pro, family
+  emailVerified: boolean("email_verified").default(false),
+  emailVerificationToken: varchar("email_verification_token"),
   // Dietary preferences and food preferences collected during signup
   dietaryRestrictions: text("dietary_restrictions").array(),
   allergies: text("allergies").array(),
