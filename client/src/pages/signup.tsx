@@ -100,12 +100,14 @@ const FreeCheckoutForm = ({ userInfo, selectedPlan }: { userInfo: any, selectedP
     setIsProcessing(true);
 
     try {
-      const response = await apiRequest("POST", "/api/auth/signup", {
+      const rawResponse = await apiRequest("POST", "/api/auth/signup", {
         firstName: userInfo.firstName,
         lastName: userInfo.lastName,
         email: userInfo.email,
         plan: selectedPlan.id
       });
+      
+      const response = await rawResponse.json();
       
       if (response && response.success) {
         toast({
@@ -267,11 +269,12 @@ export default function Signup() {
     } else {
       try {
         // Create payment intent for paid plans
-        const response = await apiRequest("POST", "/api/create-payment-intent", {
+        const rawResponse = await apiRequest("POST", "/api/create-payment-intent", {
           plan: selectedPlan?.id,
           amount: selectedPlan?.price,
           userInfo
         });
+        const response = await rawResponse.json();
         if (response && response.clientSecret) {
           setClientSecret(response.clientSecret);
         } else {
