@@ -35,6 +35,13 @@ export const users = pgTable("users", {
   profileImageUrl: varchar("profile_image_url"),
   password: varchar("password"), // Hashed password for traditional auth
   plan: varchar("plan").notNull().default("free"), // free, pro, family
+  // Dietary preferences and food preferences collected during signup
+  dietaryRestrictions: text("dietary_restrictions").array(),
+  allergies: text("allergies").array(),
+  cuisinePreferences: text("cuisine_preferences").array(),
+  dislikedIngredients: text("disliked_ingredients").array(),
+  cookingExperience: varchar("cooking_experience", { enum: ["beginner", "intermediate", "advanced"] }),
+  cookingGoals: text("cooking_goals").array(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -122,42 +129,7 @@ export const shoppingLists = pgTable("shopping_lists", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Predefined dietary restrictions and allergies for dropdown selection
-export const DIETARY_RESTRICTIONS = [
-  'vegetarian',
-  'vegan', 
-  'gluten-free',
-  'dairy-free',
-  'keto',
-  'paleo',
-  'low-carb',
-  'low-fat',
-  'low-sodium',
-  'sugar-free',
-  'kosher',
-  'halal',
-  'pescatarian',
-  'raw-food',
-  'whole30'
-] as const;
-
-export const COMMON_ALLERGIES = [
-  'peanuts',
-  'tree-nuts',
-  'milk',
-  'eggs', 
-  'wheat',
-  'soy',
-  'fish',
-  'shellfish',
-  'sesame',
-  'mustard',
-  'celery',
-  'lupin',
-  'sulfites',
-  'corn',
-  'coconut'
-] as const;
+// This section moved to end of file to avoid duplicates
 
 // User preferences table
 export const userPreferences = pgTable("user_preferences", {
@@ -455,6 +427,81 @@ export const PLAN_LIMITS = {
 export type PlanType = keyof typeof PLAN_LIMITS;
 
 // Export types
+// Dietary and cuisine preference constants
+export const DIETARY_RESTRICTIONS = [
+  'vegetarian',
+  'vegan', 
+  'gluten-free',
+  'dairy-free',
+  'keto',
+  'paleo',
+  'low-carb',
+  'low-fat',
+  'low-sodium',
+  'sugar-free',
+  'kosher',
+  'halal',
+  'pescatarian',
+  'raw-food',
+  'whole30',
+  'mediterranean',
+  'diabetic-friendly'
+] as const;
+
+export const COMMON_ALLERGIES = [
+  'peanuts',
+  'tree-nuts',
+  'milk',
+  'eggs', 
+  'wheat',
+  'soy',
+  'fish',
+  'shellfish',
+  'sesame',
+  'mustard',
+  'celery',
+  'lupin',
+  'sulfites',
+  'corn',
+  'coconut'
+] as const;
+
+export const CUISINE_TYPES = [
+  'american',
+  'italian',
+  'mexican',
+  'chinese',
+  'japanese',
+  'thai',
+  'indian',
+  'french',
+  'mediterranean',
+  'greek',
+  'korean',
+  'vietnamese',
+  'spanish',
+  'german',
+  'british',
+  'middle-eastern',
+  'african',
+  'caribbean',
+  'latin-american',
+  'scandinavian'
+] as const;
+
+export const COOKING_GOALS = [
+  'lose-weight',
+  'gain-muscle',
+  'eat-healthier',
+  'save-money',
+  'save-time',
+  'learn-new-cuisines',
+  'cook-for-family',
+  'meal-prep',
+  'special-occasions',
+  'dietary-restrictions'
+] as const;
+
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 export type WastedItem = typeof wastedItems.$inferSelect;

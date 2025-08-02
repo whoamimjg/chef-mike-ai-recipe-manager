@@ -97,12 +97,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.claims?.sub || req.session?.userId;
       const user = await storage.getUser(userId);
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Update user profile
+  app.patch('/api/auth/profile', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims?.sub || req.session?.userId;
+      const { firstName, lastName, email, currentPassword, newPassword } = req.body;
+      
+      // Update basic profile info
+      const updateData: any = { firstName, lastName, email };
+      
+      // Handle password change if requested
+      if (newPassword && currentPassword) {
+        const isValidPassword = await storage.verifyPassword(userId, currentPassword);
+        if (!isValidPassword) {
+          return res.status(400).json({ message: "Current password is incorrect" });
+        }
+        updateData.password = newPassword; // Will be hashed in storage layer
+      }
+
+      await storage.updateUser(userId, updateData);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      res.status(500).json({ message: "Failed to update profile" });
+    }
+  });
+
+  // Update dietary preferences
+  app.patch('/api/auth/dietary-preferences', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims?.sub || req.session?.userId;
+      const { 
+        dietaryRestrictions, 
+        allergies, 
+        cuisinePreferences, 
+        dislikedIngredients, 
+        cookingExperience, 
+        cookingGoals 
+      } = req.body;
+
+      await storage.updateUser(userId, {
+        dietaryRestrictions,
+        allergies,
+        cuisinePreferences,
+        dislikedIngredients,
+        cookingExperience,
+        cookingGoals
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error updating dietary preferences:", error);
+      res.status(500).json({ message: "Failed to update dietary preferences" });
     }
   });
 

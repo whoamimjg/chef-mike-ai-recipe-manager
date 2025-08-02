@@ -58,6 +58,8 @@ Preferred communication style: Simple, everyday language.
 - **Dietary Warning System**: Comprehensive recipe warning system that checks for conflicts with user's dietary restrictions and allergies
 - **Dropdown-based Preferences**: Predefined dropdown selections for dietary restrictions and allergies for consistency with proper save functionality
 - **Kitchen Timer**: Multi-timer functionality available only within recipe cooking mode for focused cooking assistance
+- **Comprehensive Dietary Preferences**: Enhanced signup flow collects dietary restrictions, allergies, cuisine preferences, disliked ingredients, cooking experience, and cooking goals
+- **Account Management**: Full account settings page with dietary preferences management and profile updates
 
 ### Authentication & Authorization
 - **Replit Auth**: Integrated authentication system with session management

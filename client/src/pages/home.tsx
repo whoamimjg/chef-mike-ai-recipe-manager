@@ -1279,8 +1279,8 @@ export default function Home() {
               </Button>
 
               <Button
-                variant={activeTab === "account" ? "default" : "ghost"}
-                onClick={() => setActiveTab("account")}
+                variant="ghost"
+                onClick={() => window.location.href = "/account"}
                 className="flex items-center gap-2"
               >
                 <User className="h-4 w-4" />
@@ -1379,9 +1379,9 @@ export default function Home() {
                 </Button>
 
                 <Button
-                  variant={activeTab === "account" ? "default" : "ghost"}
+                  variant="ghost"
                   onClick={() => {
-                    setActiveTab("account");
+                    window.location.href = "/account";
                     setIsMobileMenuOpen(false);
                   }}
                   className="w-full justify-start gap-2"

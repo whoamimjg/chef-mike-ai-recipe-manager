@@ -47,6 +47,7 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
   createUser(user: Partial<UpsertUser>): Promise<User>;
+  updateUser(id: string, updates: Partial<UpsertUser>): Promise<User | undefined>;
   verifyPassword(userId: string, password: string): Promise<boolean>;
   
   // Recipe operations
@@ -146,6 +147,24 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db
       .insert(users)
       .values(insertData as UpsertUser)
+      .returning();
+    return user;
+  }
+
+  async updateUser(id: string, updates: Partial<UpsertUser>): Promise<User | undefined> {
+    // Hash password if provided
+    const updateData: any = { ...updates };
+    if (updateData.password) {
+      const saltRounds = 10;
+      updateData.password = await bcrypt.hash(updateData.password, saltRounds);
+    }
+    
+    updateData.updatedAt = new Date();
+    
+    const [user] = await db
+      .update(users)
+      .set(updateData)
+      .where(eq(users.id, id))
       .returning();
     return user;
   }

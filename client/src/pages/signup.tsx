@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   ChefHat, 
   Check,
@@ -22,6 +24,12 @@ import { loadStripe } from '@stripe/stripe-js';
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { FaGoogle, FaGithub } from "react-icons/fa";
+import { 
+  DIETARY_RESTRICTIONS,
+  COMMON_ALLERGIES,
+  CUISINE_TYPES,
+  COOKING_GOALS
+} from "@shared/schema";
 
 if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
   throw new Error('Missing required Stripe key: VITE_STRIPE_PUBLIC_KEY');
