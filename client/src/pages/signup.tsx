@@ -91,6 +91,64 @@ const plans: Plan[] = [
   }
 ];
 
+const FreeCheckoutForm = ({ userInfo, selectedPlan }: { userInfo: any, selectedPlan: Plan }) => {
+  const { toast } = useToast();
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsProcessing(true);
+
+    try {
+      const response = await apiRequest("POST", "/api/auth/signup", {
+        firstName: userInfo.firstName,
+        lastName: userInfo.lastName,
+        email: userInfo.email,
+        plan: selectedPlan.id
+      });
+      
+      if (response && response.success) {
+        toast({
+          title: "Account Created!",
+          description: "Welcome to Chef Mike's Culinary Classroom!",
+        });
+        
+        // Redirect to success page
+        setTimeout(() => {
+          window.location.href = "/signup/success";
+        }, 1000);
+      } else {
+        toast({
+          title: "Error",
+          description: (response && response.message) || "Failed to create account. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <Button 
+        type="submit" 
+        className="w-full" 
+        size="lg"
+        disabled={isProcessing}
+      >
+        {isProcessing ? "Creating Account..." : "Create Free Account"}
+      </Button>
+    </form>
+  );
+};
+
 const CheckoutForm = ({ userInfo, selectedPlan }: { userInfo: any, selectedPlan: Plan }) => {
   const stripe = useStripe();
   const elements = useElements();
@@ -107,34 +165,6 @@ const CheckoutForm = ({ userInfo, selectedPlan }: { userInfo: any, selectedPlan:
     setIsProcessing(true);
 
     try {
-      // For free plan, just create account without payment
-      if (selectedPlan.id === 'free') {
-        const response = await apiRequest("POST", "/api/auth/signup", {
-          firstName: userInfo.firstName,
-          lastName: userInfo.lastName,
-          email: userInfo.email,
-          plan: selectedPlan.id
-        });
-        
-        if (response && response.success) {
-          toast({
-            title: "Account Created!",
-            description: "Welcome to Chef Mike's Culinary Classroom! You can now sign in.",
-          });
-          
-          // Redirect to success page
-          setTimeout(() => {
-            window.location.href = "/signup/success";
-          }, 1000);
-        } else {
-          toast({
-            title: "Error",
-            description: (response && response.message) || "Failed to create account. Please try again.",
-            variant: "destructive",
-          });
-        }
-        return;
-      }
 
       // For paid plans, process payment
       const { error } = await stripe.confirmPayment({
@@ -456,12 +486,17 @@ export default function Signup() {
           </div>
 
           {selectedPlan && (
-            selectedPlan.price === 0 || !clientSecret ? (
-              <CheckoutForm userInfo={userInfo} selectedPlan={selectedPlan} />
-            ) : (
+            selectedPlan.price === 0 ? (
+              <FreeCheckoutForm userInfo={userInfo} selectedPlan={selectedPlan} />
+            ) : clientSecret ? (
               <Elements stripe={stripePromise} options={{ clientSecret }}>
                 <CheckoutForm userInfo={userInfo} selectedPlan={selectedPlan} />
               </Elements>
+            ) : (
+              <div className="text-center p-4">
+                <div className="animate-spin w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full mx-auto mb-2"></div>
+                <p>Initializing payment...</p>
+              </div>
             )
           )}
         </CardContent>
