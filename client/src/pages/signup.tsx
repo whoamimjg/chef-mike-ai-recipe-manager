@@ -116,7 +116,7 @@ const CheckoutForm = ({ userInfo, selectedPlan }: { userInfo: any, selectedPlan:
           plan: selectedPlan.id
         });
         
-        if (response.success) {
+        if (response && response.success) {
           toast({
             title: "Account Created!",
             description: "Welcome to Chef Mike's Culinary Classroom! You can now sign in.",
@@ -125,11 +125,11 @@ const CheckoutForm = ({ userInfo, selectedPlan }: { userInfo: any, selectedPlan:
           // Redirect to success page
           setTimeout(() => {
             window.location.href = "/signup/success";
-          }, 2000);
+          }, 1000);
         } else {
           toast({
             title: "Error",
-            description: response.message || "Failed to create account. Please try again.",
+            description: (response && response.message) || "Failed to create account. Please try again.",
             variant: "destructive",
           });
         }
@@ -242,8 +242,11 @@ export default function Signup() {
           amount: selectedPlan?.price,
           userInfo
         });
-        const data = response;
-        setClientSecret(data.clientSecret);
+        if (response && response.clientSecret) {
+          setClientSecret(response.clientSecret);
+        } else {
+          throw new Error("Failed to get payment details");
+        }
         setStep('payment');
       } catch (error) {
         toast({
