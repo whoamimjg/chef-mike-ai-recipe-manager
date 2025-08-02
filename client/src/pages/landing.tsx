@@ -26,7 +26,7 @@ export default function Landing() {
                 <a href="#pricing" className="transition-colors hover:text-white" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>Pricing</a>
                 <a href="#about" className="transition-colors hover:text-white" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>About</a>
               </div>
-              <Button onClick={handleSignIn} variant="secondary" className="bg-white hover:bg-gray-100" style={{ color: '#ea580c', backgroundColor: '#ffffff' }}>
+              <Button onClick={() => window.location.href = "/signup"} variant="secondary" className="bg-white hover:bg-gray-100" style={{ color: '#ea580c', backgroundColor: '#ffffff' }}>
                 Sign In
               </Button>
             </div>
@@ -390,7 +390,7 @@ export default function Landing() {
                   </li>
                 </ul>
                 <Button 
-                  onClick={handleSignIn}
+                  onClick={() => window.location.href = "/signup"}
                   variant="outline" 
                   className="w-full border-primary-600 text-primary-600 hover:bg-primary-50"
                 >
@@ -435,7 +435,7 @@ export default function Landing() {
                     </li>
                   </ul>
                   <Button 
-                    onClick={handleSignIn}
+                    onClick={() => window.location.href = "/signup"}
                     className="w-full bg-white hover:bg-gray-100"
                     style={{ color: '#ea580c', backgroundColor: '#ffffff' }}
                   >
@@ -473,7 +473,7 @@ export default function Landing() {
                   </li>
                 </ul>
                 <Button 
-                  onClick={handleSignIn}
+                  onClick={() => window.location.href = "/signup"}
                   variant="outline" 
                   className="w-full border-primary-600 text-primary-600 hover:bg-primary-50"
                 >
