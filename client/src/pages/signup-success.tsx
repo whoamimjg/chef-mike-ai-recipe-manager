@@ -10,7 +10,7 @@ export default function SignupSuccess() {
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
-          window.location.href = "/api/login";
+          window.location.href = "/";
           return 0;
         }
         return prev - 1;

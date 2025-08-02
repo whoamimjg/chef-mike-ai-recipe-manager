@@ -127,9 +127,23 @@ const FreeCheckoutForm = ({ userInfo, selectedPlan }: { userInfo: any, selectedP
         });
       }
     } catch (error: any) {
+      let errorMessage = "Something went wrong. Please try again.";
+      
+      // Check if it's a 400 error (user already exists)
+      if (error.message && error.message.includes("400:")) {
+        const errorText = error.message.split("400:")[1]?.trim();
+        if (errorText && errorText.includes("User already exists")) {
+          errorMessage = "An account with this email already exists. Please try signing in instead.";
+        } else {
+          errorMessage = errorText || errorMessage;
+        }
+      } else {
+        errorMessage = error.message || errorMessage;
+      }
+      
       toast({
         title: "Error",
-        description: error.message || "Something went wrong. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
