@@ -40,7 +40,7 @@ export async function setupAuth(app: Express) {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       callbackURL: "/api/auth/google/callback"
-    }, async (accessToken, refreshToken, profile, done) => {
+    }, async (accessToken: any, refreshToken: any, profile: any, done: any) => {
       try {
         // Check if user exists
         let user = await storage.getUserByEmail(profile.emails?.[0]?.value || '');
@@ -58,7 +58,7 @@ export async function setupAuth(app: Express) {
         
         return done(null, user);
       } catch (error) {
-        return done(error, null);
+        return done(error, undefined);
       }
     }));
 
@@ -81,7 +81,7 @@ export async function setupAuth(app: Express) {
       clientID: process.env.GITHUB_CLIENT_ID,
       clientSecret: process.env.GITHUB_CLIENT_SECRET,
       callbackURL: "/api/auth/github/callback"
-    }, async (accessToken, refreshToken, profile, done) => {
+    }, async (accessToken: any, refreshToken: any, profile: any, done: any) => {
       try {
         // Check if user exists
         let user = await storage.getUserByEmail(profile.emails?.[0]?.value || '');
@@ -99,7 +99,7 @@ export async function setupAuth(app: Express) {
         
         return done(null, user);
       } catch (error) {
-        return done(error, null);
+        return done(error, undefined);
       }
     }));
 

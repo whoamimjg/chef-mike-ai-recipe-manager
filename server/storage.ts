@@ -701,7 +701,7 @@ export class DatabaseStorage implements IStorage {
   async createAiLearning(learning: InsertAiLearning): Promise<AiLearning> {
     const [result] = await db
       .insert(aiLearning)
-      .values(learning)
+      .values([learning])
       .returning();
     return result;
   }
@@ -745,15 +745,16 @@ export class DatabaseStorage implements IStorage {
   async createMealSuggestions(suggestions: InsertMealSuggestions): Promise<MealSuggestions> {
     const [result] = await db
       .insert(mealSuggestions)
-      .values(suggestions)
+      .values([suggestions])
       .returning();
     return result;
   }
 
   async updateMealSuggestions(id: number, suggestionsData: Partial<InsertMealSuggestions>, userId: string): Promise<MealSuggestions | undefined> {
+    const updateData = suggestionsData as any;
     const [result] = await db
       .update(mealSuggestions)
-      .set(suggestionsData)
+      .set(updateData)
       .where(and(
         eq(mealSuggestions.id, id),
         eq(mealSuggestions.userId, userId)
