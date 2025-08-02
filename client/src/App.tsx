@@ -24,6 +24,19 @@ function Router() {
           <Route path="/signup" component={SignUp} />
           <Route path="/signup/success" component={SignupSuccess} />
           <Route path="/login" component={Login} />
+          {/* Redirect protected routes to login */}
+          <Route path="/account">
+            {() => {
+              window.location.href = "/login";
+              return null;
+            }}
+          </Route>
+          <Route path="/admin">
+            {() => {
+              window.location.href = "/login";
+              return null;
+            }}
+          </Route>
         </>
       ) : (
         <>

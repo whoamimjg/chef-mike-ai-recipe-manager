@@ -51,6 +51,28 @@ export default function Account() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const response = await fetch("/api/auth/user", { credentials: 'include' });
+        if (!response.ok) {
+          toast({
+            title: "Unauthorized",
+            description: "Please log in to access your account settings.",
+            variant: "destructive",
+          });
+          setTimeout(() => {
+            window.location.href = "/login";
+          }, 1000);
+        }
+      } catch (error) {
+        window.location.href = "/login";
+      }
+    };
+    checkAuth();
+  }, [toast]);
+
   // Fetch user data
   const { data: user, isLoading } = useQuery<UserType>({
     queryKey: ['/api/auth/user'],
@@ -189,8 +211,20 @@ export default function Account() {
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Account Settings</h1>
-            <p className="text-gray-600 mt-2">Manage your profile and preferences</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Account Settings</h1>
+                <p className="text-gray-600 mt-2">Manage your profile and preferences</p>
+              </div>
+              <Button 
+                variant="outline" 
+                onClick={() => window.location.href = "/"}
+                className="flex items-center gap-2"
+              >
+                <ChefHat className="h-4 w-4" />
+                Back to App
+              </Button>
+            </div>
           </div>
 
           <Tabs defaultValue="profile" className="space-y-6">
