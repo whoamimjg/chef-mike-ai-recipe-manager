@@ -36,10 +36,14 @@ export async function setupAuth(app: Express) {
 
   // Google OAuth Strategy
   if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+    const callbackURL = process.env.REPLIT_DOMAINS 
+      ? `https://${process.env.REPLIT_DOMAINS}/api/auth/google/callback`
+      : "/api/auth/google/callback";
+      
     passport.use(new GoogleStrategy({
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: "/api/auth/google/callback"
+      callbackURL: callbackURL
     }, async (accessToken: any, refreshToken: any, profile: any, done: any) => {
       try {
         // Check if user exists
@@ -77,10 +81,14 @@ export async function setupAuth(app: Express) {
 
   // GitHub OAuth Strategy
   if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
+    const githubCallbackURL = process.env.REPLIT_DOMAINS 
+      ? `https://${process.env.REPLIT_DOMAINS}/api/auth/github/callback`
+      : "/api/auth/github/callback";
+      
     passport.use(new GitHubStrategy({
       clientID: process.env.GITHUB_CLIENT_ID,
       clientSecret: process.env.GITHUB_CLIENT_SECRET,
-      callbackURL: "/api/auth/github/callback"
+      callbackURL: githubCallbackURL
     }, async (accessToken: any, refreshToken: any, profile: any, done: any) => {
       try {
         // Check if user exists
