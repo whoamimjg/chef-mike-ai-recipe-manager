@@ -15,7 +15,7 @@ const createTransporter = () => {
   
   if (process.env.EMAIL_HOST && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
     // Production configuration with real SMTP
-    return nodemailer.createTransporter({
+    return nodemailer.createTransport({
       host: process.env.EMAIL_HOST,
       port: parseInt(process.env.EMAIL_PORT || '587'),
       secure: process.env.EMAIL_SECURE === 'true',
@@ -26,7 +26,7 @@ const createTransporter = () => {
     });
   } else {
     // Development: Use Ethereal for testing (creates fake SMTP)
-    return nodemailer.createTransporter({
+    return nodemailer.createTransport({
       host: 'smtp.ethereal.email',
       port: 587,
       auth: {
@@ -117,7 +117,7 @@ export function generateVerificationEmailHtml(firstName: string, verificationUrl
         <div class="footer">
           <p>Happy cooking!<br>The Chef Mike's Team</p>
           <p style="font-size: 12px; color: #999;">
-            This email was sent to ${config.to}. If you have any questions, please contact us.
+            This email was sent to verify your account. If you have any questions, please contact us.
           </p>
         </div>
       </div>
