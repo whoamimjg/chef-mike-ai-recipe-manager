@@ -60,7 +60,7 @@ Preferred communication style: Simple, everyday language.
 - **Kitchen Timer**: Multi-timer functionality available only within recipe cooking mode for focused cooking assistance
 - **Comprehensive Dietary Preferences**: Enhanced signup flow collects dietary restrictions, allergies, cuisine preferences, disliked ingredients, cooking experience, and cooking goals
 - **Account Management**: Full account settings page with dietary preferences management and profile updates (authenticated users only)
-- **Email Verification**: Comprehensive email confirmation system using Nodemailer for secure account activation
+- **Email System**: Welcome emails using Nodemailer (verification disabled for immediate access like PlanToEat)
 
 ### Authentication & Authorization
 - **Replit Auth**: Integrated authentication system with session management
