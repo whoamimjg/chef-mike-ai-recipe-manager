@@ -1645,9 +1645,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
           firstName,
           lastName,
           password, // Will be hashed in storage layer
-          plan: 'free'
+          plan: 'free',
+          emailVerified: false
         });
-        res.json({ success: true, user: newUser });
+
+        // Generate verification token and send email
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+        await storage.setEmailVerificationToken(newUser.id, verificationToken);
+
+        // Send verification email
+        const verificationUrl = `${req.protocol}://${req.get('host')}/api/auth/verify-email?token=${verificationToken}`;
+        const emailHtml = generateVerificationEmailHtml(firstName, verificationUrl);
+
+        const emailSent = await sendEmail({
+          from: '"Chef Mike\'s Culinary Classroom" <noreply@chefmike.app>',
+          to: email,
+          subject: 'Verify Your Email - Chef Mike\'s Culinary Classroom',
+          html: emailHtml,
+        });
+
+        if (emailSent) {
+          console.log(`Verification email sent to ${email}`);
+        } else {
+          console.error(`Failed to send verification email to ${email}`);
+        }
+
+        res.json({ 
+          success: true, 
+          user: newUser,
+          message: "Account created successfully. Please check your email to verify your account.",
+          emailSent 
+        });
       } else {
         res.status(400).json({ message: "Paid plans require payment processing" });
       }
@@ -1684,8 +1712,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Create session (simplified for now)
-      req.session.userId = user.id;
-      req.session.user = user;
+      (req.session as any).userId = user.id;
+      (req.session as any).user = user;
 
       res.json({ success: true, user: user });
     } catch (error: any) {

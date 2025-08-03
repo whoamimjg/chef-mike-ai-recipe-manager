@@ -1,16 +1,16 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle, ChefHat, Sparkles, ArrowRight } from "lucide-react";
+import { CheckCircle, ChefHat, Sparkles, ArrowRight, Mail } from "lucide-react";
 
 export default function SignupSuccess() {
-  const [countdown, setCountdown] = useState(5);
+  const [countdown, setCountdown] = useState(15);
 
   useEffect(() => {
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
-          window.location.href = "/";
+          window.location.href = "/verify-email";
           return 0;
         }
         return prev - 1;
@@ -44,10 +44,20 @@ export default function SignupSuccess() {
                   <CheckCircle className="h-10 w-10 text-green-600" />
                 </div>
               </div>
-              <CardTitle className="text-3xl text-gray-900 mb-2">Welcome to the Kitchen!</CardTitle>
-              <p className="text-gray-600">
-                Your account has been successfully created and your subscription is now active.
+              <CardTitle className="text-3xl text-gray-900 mb-2">Account Created!</CardTitle>
+              <p className="text-gray-600 mb-4">
+                Welcome to Chef Mike's Culinary Classroom! Your account has been successfully created.
               </p>
+              
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <Mail className="h-8 w-8 text-blue-500 mx-auto mb-2" />
+                <p className="text-sm text-blue-800 font-medium mb-1">
+                  📧 Verification Email Sent!
+                </p>
+                <p className="text-xs text-blue-600">
+                  Please check your email and click the verification link to activate your account.
+                </p>
+              </div>
             </CardHeader>
             
             <CardContent className="space-y-6">
@@ -66,16 +76,24 @@ export default function SignupSuccess() {
 
               <div className="space-y-3">
                 <Button 
-                  onClick={() => window.location.href = "/api/login"}
+                  onClick={() => window.location.href = "/verify-email"}
                   className="w-full bg-orange-600 hover:bg-orange-700"
                   size="lg"
                 >
                   <ArrowRight className="h-4 w-4 mr-2" />
-                  Start Cooking
+                  Verify Email Now
+                </Button>
+                
+                <Button 
+                  variant="outline"
+                  onClick={() => window.location.href = "/login"}
+                  className="w-full"
+                >
+                  Go to Login
                 </Button>
                 
                 <p className="text-sm text-gray-500">
-                  Redirecting automatically in {countdown} seconds...
+                  Redirecting to email verification in {countdown} seconds...
                 </p>
               </div>
 
