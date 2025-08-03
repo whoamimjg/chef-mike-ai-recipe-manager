@@ -99,8 +99,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims?.sub || req.session?.userId;
+      // Get user ID from either OAuth or session
+      const userId = req.user?.claims?.sub || req.session?.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "No user ID found" });
+      }
+      
       const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);
@@ -111,7 +120,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update user profile
   app.patch('/api/auth/profile', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims?.sub || req.session?.userId;
+      const userId = req.user?.claims?.sub || req.session?.userId;
       const { firstName, lastName, email, currentPassword, newPassword } = req.body;
       
       // Update basic profile info
@@ -137,7 +146,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update dietary preferences
   app.patch('/api/auth/dietary-preferences', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims?.sub || req.session?.userId;
+      const userId = req.user?.claims?.sub || req.session?.userId;
       const { 
         dietaryRestrictions, 
         allergies, 
@@ -1729,6 +1738,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Login error:", error);
       res.status(500).json({ message: "Error logging in: " + error.message });
     }
+  });
+
+  // Session-based logout route
+  app.post("/api/auth/logout", (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        console.error("Error destroying session:", err);
+        return res.status(500).json({ message: "Error logging out" });
+      }
+      res.clearCookie('connect.sid');
+      res.json({ success: true, message: "Logged out successfully" });
+    });
   });
 
   // Stripe subscription route

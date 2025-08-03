@@ -199,8 +199,15 @@ export async function setupAuth(app: Express) {
 }
 
 export const isAuthenticated: RequestHandler = (req, res, next) => {
+  // Check OAuth authentication (passport)
   if (req.isAuthenticated()) {
     return next();
   }
+  
+  // Check session-based authentication
+  if ((req.session as any)?.userId) {
+    return next();
+  }
+  
   res.status(401).json({ message: "Unauthorized" });
 };
