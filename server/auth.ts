@@ -1,6 +1,7 @@
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { Strategy as GitHubStrategy } from "passport-github2";
+import { Strategy as FacebookStrategy } from "passport-facebook";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import type { Express, RequestHandler } from "express";
@@ -118,6 +119,52 @@ export async function setupAuth(app: Express) {
 
     app.get("/api/auth/github/callback",
       passport.authenticate("github", { failureRedirect: "/login?error=oauth" }),
+      (req, res) => {
+        res.redirect("/"); // Redirect to home page after successful login
+      }
+    );
+  }
+
+  // Facebook OAuth Strategy
+  if (process.env.FACEBOOK_CLIENT_ID && process.env.FACEBOOK_CLIENT_SECRET) {
+    const facebookCallbackURL = process.env.REPLIT_DOMAINS 
+      ? `https://${process.env.REPLIT_DOMAINS}/api/auth/facebook/callback`
+      : "/api/auth/facebook/callback";
+      
+    passport.use(new FacebookStrategy({
+      clientID: process.env.FACEBOOK_CLIENT_ID,
+      clientSecret: process.env.FACEBOOK_CLIENT_SECRET,
+      callbackURL: facebookCallbackURL,
+      profileFields: ['id', 'emails', 'name', 'picture.type(large)']
+    }, async (accessToken: any, refreshToken: any, profile: any, done: any) => {
+      try {
+        // Check if user exists
+        let user = await storage.getUserByEmail(profile.emails?.[0]?.value || '');
+        
+        if (!user) {
+          // Create new user
+          user = await storage.createUser({
+            email: profile.emails?.[0]?.value || '',
+            firstName: profile.name?.givenName || profile.displayName || 'User',
+            lastName: profile.name?.familyName || '',
+            profileImageUrl: profile.photos?.[0]?.value || '',
+            plan: 'free'
+          });
+        }
+        
+        return done(null, user);
+      } catch (error) {
+        return done(error, undefined);
+      }
+    }));
+
+    // Facebook OAuth routes
+    app.get("/api/auth/facebook", 
+      passport.authenticate("facebook", { scope: ["email"] })
+    );
+
+    app.get("/api/auth/facebook/callback",
+      passport.authenticate("facebook", { failureRedirect: "/login?error=oauth" }),
       (req, res) => {
         res.redirect("/"); // Redirect to home page after successful login
       }

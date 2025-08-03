@@ -23,7 +23,7 @@ import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-
 import { loadStripe } from '@stripe/stripe-js';
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { FaGoogle, FaGithub } from "react-icons/fa";
+import { FaGoogle, FaGithub, FaFacebook } from "react-icons/fa";
 import { 
   DIETARY_RESTRICTIONS,
   COMMON_ALLERGIES,
@@ -318,10 +318,74 @@ export default function Signup() {
   const renderPlanSelection = () => (
     <div className="space-y-8">
       <div className="text-center">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">Choose Your Plan</h1>
+        <h1 className="text-4xl font-bold text-gray-900 mb-4">Join Chef Mike's Culinary Classroom</h1>
         <p className="text-xl text-gray-600 max-w-3xl mx-auto">
           Start your culinary journey with the perfect plan for your cooking needs
         </p>
+      </div>
+
+      {/* OAuth Sign-up Options */}
+      <div className="max-w-md mx-auto">
+        <Card className="shadow-lg">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl text-gray-900">Quick Sign Up</CardTitle>
+            <p className="text-gray-600">
+              Sign up instantly with your existing account
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-3 gap-3">
+              <Button
+                variant="outline"
+                onClick={() => window.location.href = "/api/auth/google"}
+                className="w-full flex items-center justify-center gap-2"
+              >
+                <FaGoogle className="h-4 w-4 text-red-500" />
+                Google
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => window.location.href = "/api/auth/github"}
+                className="w-full flex items-center justify-center gap-2"
+              >
+                <FaGithub className="h-4 w-4" />
+                GitHub
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => window.location.href = "/api/auth/facebook"}
+                className="w-full flex items-center justify-center gap-2"
+              >
+                <FaFacebook className="h-4 w-4 text-blue-600" />
+                Facebook
+              </Button>
+            </div>
+            
+            <div className="mt-6">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-300" />
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white text-gray-500">Or choose a plan below</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-6 text-center">
+              <p className="text-sm text-gray-600">
+                Already have an account?{" "}
+                <Button 
+                  variant="link" 
+                  className="p-0 h-auto font-semibold"
+                  onClick={() => window.location.href = "/login"}
+                >
+                  Sign in here
+                </Button>
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
