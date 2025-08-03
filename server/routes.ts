@@ -1707,8 +1707,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const isValidPassword = await storage.verifyPassword(user.id, password);
+      
       if (!isValidPassword) {
         return res.status(401).json({ message: "Invalid email or password" });
+      }
+
+      // Check if email is verified
+      if (!user.emailVerified) {
+        return res.status(401).json({ 
+          message: "Please verify your email address before logging in. Check your inbox for the verification email.",
+          requiresVerification: true 
+        });
       }
 
       // Create session (simplified for now)
