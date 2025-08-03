@@ -4121,7 +4121,17 @@ export default function Home() {
                         </div>
                       </CardHeader>
                       <CardContent>
-                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="shopping-list-printable">
+                          <div className="print-only hidden print:block mb-6">
+                            <h1 className="text-2xl font-bold mb-2">{list.name}</h1>
+                            <p className="text-gray-600">
+                              {list.startDate && list.endDate 
+                                ? `${new Date(list.startDate).toLocaleDateString()} - ${new Date(list.endDate).toLocaleDateString()}`
+                                : 'Shopping List'
+                              }
+                            </p>
+                          </div>
+                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 print:grid-cols-1 print:gap-0">
                           {/* Grocery Store Categories */}
                           {[
                             { id: 'produce', name: 'Produce', icon: '🥬' },
@@ -4145,17 +4155,17 @@ export default function Home() {
                             if (categoryItems.length === 0) return null;
                             
                             return (
-                              <div key={category.id} className="border rounded-lg p-4">
-                                <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                                  <span className="text-lg">{category.icon}</span>
+                              <div key={category.id} className="border rounded-lg p-4 print-category">
+                                <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2 print-category-title">
+                                  <span className="text-lg print:hidden">{category.icon}</span>
                                   {category.name}
-                                  <Badge variant="outline" className="ml-auto">
+                                  <Badge variant="outline" className="ml-auto print:hidden">
                                     {categoryItems.filter(i => !i.checked).length}
                                   </Badge>
                                 </h4>
                                 <div className="space-y-2">
-                                  {categoryItems.map((item) => (
-                                    <div key={item.id} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded">
+                                  {categoryItems.filter(item => !item.checked).map((item) => (
+                                    <div key={item.id} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded print-item">
                                       <Checkbox 
                                         checked={item.checked}
                                         onCheckedChange={(checked) => {
@@ -4167,13 +4177,14 @@ export default function Home() {
                                             items: JSON.stringify(updatedItems)
                                           });
                                         }}
+                                        className="print:hidden"
                                       />
                                       <div className={`flex-1 ${item.checked ? "opacity-50 line-through" : ""}`}>
-                                        <div className="font-medium text-sm">{item.name}</div>
-                                        <div className="text-xs text-gray-500">
+                                        <div className="font-medium text-sm print-item-name">• {item.name}</div>
+                                        <div className="text-xs text-gray-500 print-item-details print:text-black">
                                           {item.quantity} {item.unit}
                                           {item.recipeTitle && (
-                                            <span className="ml-2 text-blue-600">• {item.recipeTitle}</span>
+                                            <span className="ml-2 text-blue-600 print:text-gray-600">• {item.recipeTitle}</span>
                                           )}
                                         </div>
                                       </div>
@@ -4187,7 +4198,7 @@ export default function Home() {
                                             items: JSON.stringify(updatedItems)
                                           });
                                         }}
-                                        className="text-red-600 hover:text-red-800 h-6 w-6 p-0"
+                                        className="text-red-600 hover:text-red-800 h-6 w-6 p-0 print:hidden"
                                       >
                                         <X className="h-3 w-3" />
                                       </Button>
@@ -4197,6 +4208,7 @@ export default function Home() {
                               </div>
                             );
                           })}
+                        </div>
                         </div>
                         
                         {/* Completed Items Section */}

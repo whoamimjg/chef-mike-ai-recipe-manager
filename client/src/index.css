@@ -74,6 +74,79 @@
   background-clip: text;
 }
 
+/* Print styles for shopping list */
+@media print {
+  /* Hide everything by default */
+  * {
+    visibility: hidden;
+  }
+  
+  /* Show only the shopping list content */
+  .shopping-list-printable,
+  .shopping-list-printable * {
+    visibility: visible;
+  }
+  
+  /* Position the printable content */
+  .shopping-list-printable {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+  
+  /* Clean print layout */
+  body {
+    font-size: 12pt;
+    line-height: 1.4;
+  }
+  
+  /* Hide interactive elements */
+  button, 
+  .checkbox, 
+  input[type="checkbox"],
+  .hover\:bg-gray-50,
+  .text-red-600 {
+    display: none !important;
+  }
+  
+  /* Style categories for print */
+  .print-category {
+    break-inside: avoid;
+    margin-bottom: 20pt;
+    border: 1pt solid #ccc;
+    padding: 10pt;
+  }
+  
+  .print-category-title {
+    font-weight: bold;
+    font-size: 14pt;
+    margin-bottom: 8pt;
+    border-bottom: 1pt solid #eee;
+    padding-bottom: 4pt;
+  }
+  
+  .print-item {
+    margin-bottom: 4pt;
+    padding: 2pt 0;
+  }
+  
+  .print-item-name {
+    font-weight: 500;
+  }
+  
+  .print-item-details {
+    font-size: 10pt;
+    color: #666;
+  }
+  
+  /* Remove box shadows and rounded corners */
+  .print-category {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+}
+
 /* Ensure visibility of all text elements */
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
