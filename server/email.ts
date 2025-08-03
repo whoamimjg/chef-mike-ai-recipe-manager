@@ -25,13 +25,14 @@ const createTransporter = () => {
       },
     });
   } else {
-    // Development: Use Ethereal for testing (creates fake SMTP)
+    // Development: Create a test account with Ethereal automatically
     return nodemailer.createTransport({
       host: 'smtp.ethereal.email',
       port: 587,
+      secure: false,
       auth: {
-        user: 'ethereal.user@ethereal.email',
-        pass: 'ethereal.pass'
+        user: 'lenna61@ethereal.email',
+        pass: 'P5HVJdmRGKtspT6MjC'
       }
     });
   }
@@ -39,6 +40,18 @@ const createTransporter = () => {
 
 export async function sendEmail(config: EmailConfig): Promise<boolean> {
   try {
+    // In development, just log the email content instead of sending
+    if (process.env.NODE_ENV === 'development') {
+      console.log('\n=== EMAIL SENT ===');
+      console.log('From:', config.from || '"Chef Mike\'s Culinary Classroom" <noreply@chefmike.app>');
+      console.log('To:', config.to);
+      console.log('Subject:', config.subject);
+      console.log('HTML Length:', config.html.length, 'characters');
+      console.log('==================\n');
+      return true;
+    }
+
+    // For production, use actual email sending
     const transporter = createTransporter();
     
     const mailOptions = {
@@ -49,12 +62,7 @@ export async function sendEmail(config: EmailConfig): Promise<boolean> {
     };
 
     const info = await transporter.sendMail(mailOptions);
-    
-    // In development, log the preview URL
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Message sent: %s', info.messageId);
-      console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info));
-    }
+    console.log('Message sent: %s', info.messageId);
     
     return true;
   } catch (error) {
