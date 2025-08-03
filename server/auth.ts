@@ -81,50 +81,7 @@ export async function setupAuth(app: Express) {
     );
   }
 
-  // GitHub OAuth Strategy
-  if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
-    const githubCallbackURL = process.env.REPLIT_DOMAINS 
-      ? `https://${process.env.REPLIT_DOMAINS}/api/auth/github/callback`
-      : "/api/auth/github/callback";
-      
-    passport.use(new GitHubStrategy({
-      clientID: process.env.GITHUB_CLIENT_ID,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET,
-      callbackURL: githubCallbackURL
-    }, async (accessToken: any, refreshToken: any, profile: any, done: any) => {
-      try {
-        // Check if user exists
-        let user = await storage.getUserByEmail(profile.emails?.[0]?.value || '');
-        
-        if (!user) {
-          // Create new user
-          user = await storage.createUser({
-            email: profile.emails?.[0]?.value || '',
-            firstName: profile.displayName || profile.username || 'User',
-            lastName: '',
-            profileImageUrl: profile.photos?.[0]?.value || '',
-            plan: 'free'
-          });
-        }
-        
-        return done(null, user);
-      } catch (error) {
-        return done(error, undefined);
-      }
-    }));
-
-    // GitHub OAuth routes
-    app.get("/api/auth/github", 
-      passport.authenticate("github", { scope: ["user:email"] })
-    );
-
-    app.get("/api/auth/github/callback",
-      passport.authenticate("github", { failureRedirect: "/login?error=oauth" }),
-      (req, res) => {
-        res.redirect("/"); // Redirect to home page after successful login
-      }
-    );
-  }
+  // GitHub OAuth removed - not commonly used by target audience
 
   // Facebook OAuth Strategy
   if (process.env.FACEBOOK_CLIENT_ID && process.env.FACEBOOK_CLIENT_SECRET) {

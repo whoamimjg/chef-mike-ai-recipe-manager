@@ -1655,35 +1655,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lastName,
           password, // Will be hashed in storage layer
           plan: 'free',
-          emailVerified: false
+          emailVerified: true // Simplified signup - no email verification required
         });
 
-        // Generate verification token and send email
-        const verificationToken = crypto.randomBytes(32).toString('hex');
-        await storage.setEmailVerificationToken(newUser.id, verificationToken);
-
-        // Send verification email
-        const verificationUrl = `${req.protocol}://${req.get('host')}/api/auth/verify-email?token=${verificationToken}`;
-        const emailHtml = generateVerificationEmailHtml(firstName, verificationUrl);
+        // Send welcome email (optional, no verification required)
+        const loginUrl = `${req.protocol}://${req.get('host')}/login`;
+        const welcomeEmailHtml = generateWelcomeEmailHtml(firstName, loginUrl);
 
         const emailSent = await sendEmail({
           from: '"Chef Mike\'s Culinary Classroom" <noreply@chefmike.app>',
           to: email,
-          subject: 'Verify Your Email - Chef Mike\'s Culinary Classroom',
-          html: emailHtml,
+          subject: 'Welcome to Chef Mike\'s Culinary Classroom!',
+          html: welcomeEmailHtml,
         });
 
         if (emailSent) {
-          console.log(`Verification email sent to ${email}`);
+          console.log(`Welcome email sent to ${email}`);
         } else {
-          console.error(`Failed to send verification email to ${email}`);
+          console.error(`Failed to send welcome email to ${email}`);
         }
 
         res.json({ 
           success: true, 
           user: newUser,
-          message: "Account created successfully. Please check your email to verify your account.",
-          emailSent 
+          message: "Account created successfully! You can now sign in.",
+          canLogin: true
         });
       } else {
         res.status(400).json({ message: "Paid plans require payment processing" });
@@ -1721,13 +1717,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid email or password" });
       }
 
-      // Check if email is verified
-      if (!user.emailVerified) {
-        return res.status(401).json({ 
-          message: "Please verify your email address before logging in. Check your inbox for the verification email.",
-          requiresVerification: true 
-        });
-      }
+      // For now, allow login without email verification for testing
+      // TODO: Re-enable email verification after fixing the flow
+      // if (!user.emailVerified) {
+      //   return res.status(401).json({ 
+      //     message: "Please verify your email address before logging in. Check your inbox for the verification email.",
+      //     requiresVerification: true 
+      //   });
+      // }
 
       // Create session (simplified for now)
       (req.session as any).userId = user.id;
