@@ -77,14 +77,14 @@
 /* Print styles for shopping list */
 @media print {
   /* Hide everything by default */
-  * {
+  body * {
     visibility: hidden;
   }
   
   /* Show only the shopping list content */
   .shopping-list-printable,
   .shopping-list-printable * {
-    visibility: visible;
+    visibility: visible !important;
   }
   
   /* Position the printable content */
@@ -99,51 +99,78 @@
   body {
     font-size: 12pt;
     line-height: 1.4;
+    margin: 0;
+    padding: 20pt;
   }
   
-  /* Hide interactive elements */
+  /* Hide interactive elements in print */
   button, 
-  .checkbox, 
   input[type="checkbox"],
-  .hover\:bg-gray-50,
-  .text-red-600 {
+  [data-radix-collection-item] {
     display: none !important;
+    visibility: hidden !important;
   }
   
   /* Style categories for print */
   .print-category {
     break-inside: avoid;
-    margin-bottom: 20pt;
-    border: 1pt solid #ccc;
-    padding: 10pt;
+    margin-bottom: 15pt;
+    border: 1pt solid #333;
+    padding: 8pt;
+    box-shadow: none !important;
+    border-radius: 0 !important;
   }
   
   .print-category-title {
     font-weight: bold;
     font-size: 14pt;
-    margin-bottom: 8pt;
-    border-bottom: 1pt solid #eee;
-    padding-bottom: 4pt;
+    margin-bottom: 6pt;
+    border-bottom: 1pt solid #666;
+    padding-bottom: 3pt;
+    color: #000 !important;
   }
   
   .print-item {
-    margin-bottom: 4pt;
-    padding: 2pt 0;
+    margin-bottom: 3pt;
+    padding: 1pt 0;
   }
   
   .print-item-name {
     font-weight: 500;
+    font-size: 11pt;
+    color: #000 !important;
+    display: block;
   }
   
   .print-item-details {
-    font-size: 10pt;
-    color: #666;
+    font-size: 9pt;
+    color: #333 !important;
+    margin-left: 10pt;
   }
   
-  /* Remove box shadows and rounded corners */
-  .print-category {
-    box-shadow: none !important;
-    border-radius: 0 !important;
+  /* Ensure proper text color in print */
+  .shopping-list-printable * {
+    color: #000 !important;
+    background: white !important;
+  }
+  
+  /* Print title styling */
+  .print-only {
+    display: block !important;
+    visibility: visible !important;
+  }
+  
+  .print-only h1 {
+    font-size: 18pt;
+    font-weight: bold;
+    margin-bottom: 8pt;
+    color: #000 !important;
+  }
+  
+  .print-only p {
+    font-size: 10pt;
+    margin-bottom: 15pt;
+    color: #333 !important;
   }
 }
 
