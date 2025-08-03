@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { ChefHat, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { FaGoogle, FaGithub, FaFacebook } from "react-icons/fa";
+import { FaGoogle, FaFacebook } from "react-icons/fa";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -168,7 +168,7 @@ export default function Login() {
                   </div>
                 </div>
 
-                <div className="mt-6 grid grid-cols-3 gap-3">
+                <div className="mt-6 grid grid-cols-2 gap-3">
                   <Button
                     variant="outline"
                     onClick={() => window.location.href = "/api/auth/google"}
@@ -176,14 +176,6 @@ export default function Login() {
                   >
                     <FaGoogle className="h-4 w-4 text-red-500" />
                     Google
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => window.location.href = "/api/auth/github"}
-                    className="w-full flex items-center justify-center gap-2"
-                  >
-                    <FaGithub className="h-4 w-4" />
-                    GitHub
                   </Button>
                   <Button
                     variant="outline"

@@ -1,582 +1,305 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { 
   User, 
+  Mail, 
   Shield, 
-  Heart, 
-  Utensils, 
-  AlertTriangle, 
-  ChefHat,
+  CreditCard, 
+  Settings,
   Save,
-  Eye,
-  EyeOff
+  LogOut
 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { useMutation } from "@tanstack/react-query";
 import { 
   DIETARY_RESTRICTIONS,
   COMMON_ALLERGIES,
   CUISINE_TYPES,
-  COOKING_GOALS,
-  type User as UserType
+  COOKING_GOALS
 } from "@shared/schema";
 
-export default function Account() {
-  const [showPassword, setShowPassword] = useState(false);
-  const [userForm, setUserForm] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
-  });
-  const [dietaryForm, setDietaryForm] = useState({
-    dietaryRestrictions: [] as string[],
-    allergies: [] as string[],
-    cuisinePreferences: [] as string[],
-    dislikedIngredients: [] as string[],
-    cookingExperience: 'beginner' as 'beginner' | 'intermediate' | 'advanced',
-    cookingGoals: [] as string[]
-  });
-  const [dislikedInput, setDislikedInput] = useState("");
+export function Account() {
+  const { user } = useAuth();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
-
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const response = await fetch("/api/auth/user", { credentials: 'include' });
-        if (!response.ok) {
-          toast({
-            title: "Unauthorized",
-            description: "Please log in to access your account settings.",
-            variant: "destructive",
-          });
-          setTimeout(() => {
-            window.location.href = "/login";
-          }, 1000);
-        }
-      } catch (error) {
-        window.location.href = "/login";
-      }
-    };
-    checkAuth();
-  }, [toast]);
-
-  // Fetch user data
-  const { data: user, isLoading } = useQuery<UserType>({
-    queryKey: ['/api/auth/user'],
-    retry: false,
+  const [isEditing, setIsEditing] = useState(false);
+  
+  const [profileData, setProfileData] = useState({
+    firstName: user?.firstName || '',
+    lastName: user?.lastName || '',
+    email: user?.email || '',
+    dietaryRestrictions: user?.dietaryRestrictions || [],
+    allergies: user?.allergies || [],
+    cuisinePreferences: user?.cuisinePreferences || [],
+    dislikedIngredients: user?.dislikedIngredients || [],
+    cookingExperience: user?.cookingExperience || '',
+    cookingGoals: user?.cookingGoals || []
   });
 
-  // Update forms when user data loads
-  useEffect(() => {
-    if (user) {
-      setUserForm({
-        firstName: user.firstName || '',
-        lastName: user.lastName || '',
-        email: user.email || '',
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-      });
-      setDietaryForm({
-        dietaryRestrictions: user.dietaryRestrictions || [],
-        allergies: user.allergies || [],
-        cuisinePreferences: user.cuisinePreferences || [],
-        dislikedIngredients: user.dislikedIngredients || [],
-        cookingExperience: user.cookingExperience || 'beginner',
-        cookingGoals: user.cookingGoals || []
-      });
-    }
-  }, [user]);
-
-  // Update user profile mutation
   const updateProfileMutation = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest("PATCH", "/api/auth/profile", data);
+      const response = await apiRequest("PATCH", "/api/auth/profile", data);
+      return response.json();
     },
     onSuccess: () => {
       toast({
         title: "Profile Updated",
-        description: "Your profile has been updated successfully.",
+        description: "Your account information has been saved successfully.",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+      setIsEditing(false);
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to update profile.",
+        title: "Update Failed",
+        description: error.message || "Failed to update profile. Please try again.",
         variant: "destructive",
       });
     },
   });
 
-  // Update dietary preferences mutation
-  const updateDietaryMutation = useMutation({
-    mutationFn: async (data: any) => {
-      return apiRequest("PATCH", "/api/auth/dietary-preferences", data);
-    },
-    onSuccess: () => {
-      toast({
-        title: "Preferences Updated",
-        description: "Your dietary preferences have been updated successfully.",
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update dietary preferences.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleProfileSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Validate passwords if changing
-    if (userForm.newPassword && userForm.newPassword !== userForm.confirmPassword) {
-      toast({
-        title: "Error",
-        description: "New passwords do not match.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const updateData: any = {
-      firstName: userForm.firstName,
-      lastName: userForm.lastName,
-      email: userForm.email
-    };
-
-    if (userForm.newPassword) {
-      updateData.currentPassword = userForm.currentPassword;
-      updateData.newPassword = userForm.newPassword;
-    }
-
-    updateProfileMutation.mutate(updateData);
+  const handleSave = () => {
+    updateProfileMutation.mutate(profileData);
   };
 
-  const handleDietarySubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    updateDietaryMutation.mutate(dietaryForm);
+  const handleLogout = () => {
+    window.location.href = "/api/auth/logout";
   };
 
-  const toggleArrayItem = (array: string[], item: string) => {
-    return array.includes(item) 
-      ? array.filter(i => i !== item)
-      : [...array, item];
-  };
-
-  const addDislikedIngredient = () => {
-    if (dislikedInput.trim() && !dietaryForm.dislikedIngredients.includes(dislikedInput.trim())) {
-      setDietaryForm(prev => ({
-        ...prev,
-        dislikedIngredients: [...prev.dislikedIngredients, dislikedInput.trim()]
-      }));
-      setDislikedInput("");
-    }
-  };
-
-  const removeDislikedIngredient = (ingredient: string) => {
-    setDietaryForm(prev => ({
-      ...prev,
-      dislikedIngredients: prev.dislikedIngredients.filter(i => i !== ingredient)
-    }));
-  };
-
-  if (isLoading) {
+  if (!user) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="mb-8">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Account Settings</h1>
-                <p className="text-gray-600 mt-2">Manage your profile and preferences</p>
-              </div>
-              <Button 
-                variant="outline" 
-                onClick={() => window.location.href = "/"}
-                className="flex items-center gap-2"
-              >
-                <ChefHat className="h-4 w-4" />
-                Back to App
-              </Button>
-            </div>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Account Settings</h1>
+            <p className="text-gray-600 dark:text-gray-300 mt-2">
+              Manage your profile and dietary preferences
+            </p>
           </div>
+          <Button 
+            variant="outline" 
+            onClick={handleLogout}
+            className="flex items-center gap-2"
+            data-testid="button-logout"
+          >
+            <LogOut className="h-4 w-4" />
+            Sign Out
+          </Button>
+        </div>
 
-          <Tabs defaultValue="profile" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="profile" className="flex items-center gap-2">
-                <User className="h-4 w-4" />
-                Profile
-              </TabsTrigger>
-              <TabsTrigger value="dietary" className="flex items-center gap-2">
-                <Heart className="h-4 w-4" />
-                Dietary Preferences
-              </TabsTrigger>
-              <TabsTrigger value="subscription" className="flex items-center gap-2">
-                <Shield className="h-4 w-4" />
-                Subscription
-              </TabsTrigger>
-            </TabsList>
-
-            {/* Profile Tab */}
-            <TabsContent value="profile">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Personal Information</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleProfileSubmit} className="space-y-6">
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="firstName">First Name</Label>
-                        <Input
-                          id="firstName"
-                          value={userForm.firstName}
-                          onChange={(e) => setUserForm(prev => ({ ...prev, firstName: e.target.value }))}
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="lastName">Last Name</Label>
-                        <Input
-                          id="lastName"
-                          value={userForm.lastName}
-                          onChange={(e) => setUserForm(prev => ({ ...prev, lastName: e.target.value }))}
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={userForm.email}
-                        onChange={(e) => setUserForm(prev => ({ ...prev, email: e.target.value }))}
-                        required
-                      />
-                    </div>
-
-                    <div className="border-t pt-6">
-                      <h3 className="text-lg font-medium mb-4">Change Password</h3>
-                      <div className="grid md:grid-cols-3 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="currentPassword">Current Password</Label>
-                          <div className="relative">
-                            <Input
-                              id="currentPassword"
-                              type={showPassword ? "text" : "password"}
-                              value={userForm.currentPassword}
-                              onChange={(e) => setUserForm(prev => ({ ...prev, currentPassword: e.target.value }))}
-                              placeholder="Enter current password"
-                            />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                              onClick={() => setShowPassword(!showPassword)}
-                            >
-                              {showPassword ? (
-                                <EyeOff className="h-4 w-4 text-gray-400" />
-                              ) : (
-                                <Eye className="h-4 w-4 text-gray-400" />
-                              )}
-                            </Button>
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="newPassword">New Password</Label>
-                          <Input
-                            id="newPassword"
-                            type={showPassword ? "text" : "password"}
-                            value={userForm.newPassword}
-                            onChange={(e) => setUserForm(prev => ({ ...prev, newPassword: e.target.value }))}
-                            placeholder="Enter new password"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="confirmPassword">Confirm Password</Label>
-                          <Input
-                            id="confirmPassword"
-                            type={showPassword ? "text" : "password"}
-                            value={userForm.confirmPassword}
-                            onChange={(e) => setUserForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                            placeholder="Confirm new password"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <Button 
-                      type="submit" 
-                      disabled={updateProfileMutation.isPending}
-                      className="flex items-center gap-2"
-                    >
-                      <Save className="h-4 w-4" />
-                      {updateProfileMutation.isPending ? "Saving..." : "Save Changes"}
-                    </Button>
-                  </form>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Dietary Preferences Tab */}
-            <TabsContent value="dietary">
-              <form onSubmit={handleDietarySubmit} className="space-y-6">
-                {/* Dietary Restrictions */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Heart className="h-5 w-5 text-green-600" />
-                      Dietary Restrictions
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                      {DIETARY_RESTRICTIONS.map((restriction) => (
-                        <div key={restriction} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={restriction}
-                            checked={dietaryForm.dietaryRestrictions.includes(restriction)}
-                            onCheckedChange={() => 
-                              setDietaryForm(prev => ({
-                                ...prev,
-                                dietaryRestrictions: toggleArrayItem(prev.dietaryRestrictions, restriction)
-                              }))
-                            }
-                          />
-                          <Label htmlFor={restriction} className="text-sm capitalize cursor-pointer">
-                            {restriction.replace('-', ' ')}
-                          </Label>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Allergies */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <AlertTriangle className="h-5 w-5 text-red-600" />
-                      Food Allergies
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                      {COMMON_ALLERGIES.map((allergy) => (
-                        <div key={allergy} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={allergy}
-                            checked={dietaryForm.allergies.includes(allergy)}
-                            onCheckedChange={() => 
-                              setDietaryForm(prev => ({
-                                ...prev,
-                                allergies: toggleArrayItem(prev.allergies, allergy)
-                              }))
-                            }
-                          />
-                          <Label htmlFor={allergy} className="text-sm capitalize cursor-pointer">
-                            {allergy.replace('-', ' ')}
-                          </Label>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Cuisine Preferences */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Utensils className="h-5 w-5 text-blue-600" />
-                      Favorite Cuisines
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                      {CUISINE_TYPES.map((cuisine) => (
-                        <div key={cuisine} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={cuisine}
-                            checked={dietaryForm.cuisinePreferences.includes(cuisine)}
-                            onCheckedChange={() => 
-                              setDietaryForm(prev => ({
-                                ...prev,
-                                cuisinePreferences: toggleArrayItem(prev.cuisinePreferences, cuisine)
-                              }))
-                            }
-                          />
-                          <Label htmlFor={cuisine} className="text-sm capitalize cursor-pointer">
-                            {cuisine.replace('-', ' ')}
-                          </Label>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Disliked Ingredients */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Ingredients You Dislike</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="flex gap-2">
-                        <Input
-                          placeholder="Add an ingredient you don't like..."
-                          value={dislikedInput}
-                          onChange={(e) => setDislikedInput(e.target.value)}
-                          onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addDislikedIngredient())}
-                        />
-                        <Button type="button" onClick={addDislikedIngredient} variant="outline">
-                          Add
-                        </Button>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {dietaryForm.dislikedIngredients.map((ingredient) => (
-                          <Badge 
-                            key={ingredient} 
-                            variant="secondary"
-                            className="cursor-pointer"
-                            onClick={() => removeDislikedIngredient(ingredient)}
-                          >
-                            {ingredient} ×
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Cooking Experience & Goals */}
-                <div className="grid md:grid-cols-2 gap-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <ChefHat className="h-5 w-5 text-purple-600" />
-                        Cooking Experience
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <Select
-                        value={dietaryForm.cookingExperience}
-                        onValueChange={(value: 'beginner' | 'intermediate' | 'advanced') => 
-                          setDietaryForm(prev => ({ ...prev, cookingExperience: value }))
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select your level" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="beginner">Beginner - I'm just starting out</SelectItem>
-                          <SelectItem value="intermediate">Intermediate - I can handle most recipes</SelectItem>
-                          <SelectItem value="advanced">Advanced - I love complex cooking</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Cooking Goals</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        {COOKING_GOALS.map((goal) => (
-                          <div key={goal} className="flex items-center space-x-2">
-                            <Checkbox
-                              id={goal}
-                              checked={dietaryForm.cookingGoals.includes(goal)}
-                              onCheckedChange={() => 
-                                setDietaryForm(prev => ({
-                                  ...prev,
-                                  cookingGoals: toggleArrayItem(prev.cookingGoals, goal)
-                                }))
-                              }
-                            />
-                            <Label htmlFor={goal} className="text-sm capitalize cursor-pointer">
-                              {goal.replace('-', ' ')}
-                            </Label>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
+        <div className="grid gap-6">
+          {/* Profile Information */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div className="flex items-center gap-2">
+                <User className="h-5 w-5 text-primary" />
+                <CardTitle>Profile Information</CardTitle>
+              </div>
+              <Button
+                variant={isEditing ? "default" : "outline"}
+                size="sm"
+                onClick={isEditing ? handleSave : () => setIsEditing(true)}
+                disabled={updateProfileMutation.isPending}
+                data-testid={isEditing ? "button-save-profile" : "button-edit-profile"}
+              >
+                {isEditing ? (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    {updateProfileMutation.isPending ? "Saving..." : "Save Changes"}
+                  </>
+                ) : (
+                  <>
+                    <Settings className="h-4 w-4 mr-2" />
+                    Edit Profile
+                  </>
+                )}
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="firstName">First Name</Label>
+                  <Input
+                    id="firstName"
+                    value={profileData.firstName}
+                    onChange={(e) => setProfileData(prev => ({ ...prev, firstName: e.target.value }))}
+                    disabled={!isEditing}
+                    data-testid="input-first-name"
+                  />
                 </div>
+                <div>
+                  <Label htmlFor="lastName">Last Name</Label>
+                  <Input
+                    id="lastName"
+                    value={profileData.lastName}
+                    onChange={(e) => setProfileData(prev => ({ ...prev, lastName: e.target.value }))}
+                    disabled={!isEditing}
+                    data-testid="input-last-name"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="email">Email Address</Label>
+                <div className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-gray-400" />
+                  <Input
+                    id="email"
+                    type="email"
+                    value={profileData.email}
+                    disabled={true} // Email changes require verification
+                    className="flex-1"
+                    data-testid="input-email"
+                  />
+                  {user.emailVerified && (
+                    <Badge variant="secondary" className="flex items-center gap-1">
+                      <Shield className="h-3 w-3" />
+                      Verified
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-sm text-gray-500 mt-1">
+                  Contact support to change your email address
+                </p>
+              </div>
+            </CardContent>
+          </Card>
 
-                <Button 
-                  type="submit" 
-                  disabled={updateDietaryMutation.isPending}
-                  className="flex items-center gap-2"
-                  size="lg"
-                >
-                  <Save className="h-4 w-4" />
-                  {updateDietaryMutation.isPending ? "Saving..." : "Save Preferences"}
-                </Button>
-              </form>
-            </TabsContent>
-
-            {/* Subscription Tab */}
-            <TabsContent value="subscription">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Subscription Details</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <Label className="text-sm font-medium">Current Plan</Label>
-                      <p className="text-lg font-semibold capitalize">{user?.plan || 'Free'}</p>
-                    </div>
-                    {user?.plan === 'free' && (
-                      <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
-                        <p className="text-orange-800">
-                          Upgrade to Pro or Premium to unlock advanced features like AI recommendations and unlimited recipes.
-                        </p>
-                        <Button 
-                          className="mt-3"
-                          onClick={() => window.location.href = "/signup"}
-                        >
-                          Upgrade Now
-                        </Button>
-                      </div>
-                    )}
+          {/* Subscription Information */}
+          <Card>
+            <CardHeader className="flex flex-row items-center gap-2">
+              <CreditCard className="h-5 w-5 text-primary" />
+              <CardTitle>Subscription Plan</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={user.plan === 'free' ? 'secondary' : 'default'}>
+                      {user.plan === 'free' ? 'Free Plan' : `${user.plan.charAt(0).toUpperCase() + user.plan.slice(1)} Plan`}
+                    </Badge>
                   </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                    {user.plan === 'free' 
+                      ? 'Upgrade to unlock unlimited recipes and AI recommendations'
+                      : 'Thank you for being a premium member!'
+                    }
+                  </p>
+                </div>
+                {user.plan === 'free' && (
+                  <Button onClick={() => window.location.href = '/signup'} data-testid="button-upgrade">
+                    Upgrade Plan
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Dietary Preferences */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Dietary Preferences</CardTitle>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Help us personalize your recipe recommendations
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div>
+                <Label>Cooking Experience</Label>
+                <Select
+                  value={profileData.cookingExperience}
+                  onValueChange={(value) => setProfileData(prev => ({ ...prev, cookingExperience: value }))}
+                  disabled={!isEditing}
+                >
+                  <SelectTrigger data-testid="select-cooking-experience">
+                    <SelectValue placeholder="Select your experience level" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="beginner">Beginner - Just getting started</SelectItem>
+                    <SelectItem value="intermediate">Intermediate - Comfortable with basics</SelectItem>
+                    <SelectItem value="advanced">Advanced - Experienced home cook</SelectItem>
+                    <SelectItem value="professional">Professional - Culinary background</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Separator />
+
+              <div>
+                <Label>Dietary Restrictions</Label>
+                <p className="text-sm text-gray-500 mb-2">Current: {profileData.dietaryRestrictions?.length || 0} selected</p>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {DIETARY_RESTRICTIONS.map((restriction) => (
+                    <Button
+                      key={restriction}
+                      variant={profileData.dietaryRestrictions?.includes(restriction) ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => {
+                        if (!isEditing) return;
+                        const current = profileData.dietaryRestrictions || [];
+                        const updated = current.includes(restriction)
+                          ? current.filter(r => r !== restriction)
+                          : [...current, restriction];
+                        setProfileData(prev => ({ ...prev, dietaryRestrictions: updated }));
+                      }}
+                      disabled={!isEditing}
+                      className="justify-start text-left"
+                      data-testid={`dietary-restriction-${restriction.toLowerCase().replace(/\s+/g, '-')}`}
+                    >
+                      {restriction}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <Separator />
+
+              <div>
+                <Label>Food Allergies</Label>
+                <p className="text-sm text-gray-500 mb-2">Current: {profileData.allergies?.length || 0} selected</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {COMMON_ALLERGIES.map((allergy) => (
+                    <Button
+                      key={allergy}
+                      variant={profileData.allergies?.includes(allergy) ? "destructive" : "outline"}
+                      size="sm"
+                      onClick={() => {
+                        if (!isEditing) return;
+                        const current = profileData.allergies || [];
+                        const updated = current.includes(allergy)
+                          ? current.filter(a => a !== allergy)
+                          : [...current, allergy];
+                        setProfileData(prev => ({ ...prev, allergies: updated }));
+                      }}
+                      disabled={!isEditing}
+                      className="justify-start text-left"
+                      data-testid={`allergy-${allergy.toLowerCase().replace(/\s+/g, '-')}`}
+                    >
+                      {allergy}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
   );
 }
+
+export default Account;

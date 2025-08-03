@@ -23,7 +23,7 @@ import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-
 import { loadStripe } from '@stripe/stripe-js';
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { FaGoogle, FaGithub, FaFacebook } from "react-icons/fa";
+import { FaGoogle, FaFacebook } from "react-icons/fa";
 import { 
   DIETARY_RESTRICTIONS,
   COMMON_ALLERGIES,
@@ -334,22 +334,14 @@ export default function Signup() {
             </p>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               <Button
                 variant="outline"
                 onClick={() => window.location.href = "/api/auth/google"}
                 className="w-full flex items-center justify-center gap-2"
               >
                 <FaGoogle className="h-4 w-4 text-red-500" />
-                Google
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => window.location.href = "/api/auth/github"}
-                className="w-full flex items-center justify-center gap-2"
-              >
-                <FaGithub className="h-4 w-4" />
-                GitHub
+                Continue with Google
               </Button>
               <Button
                 variant="outline"
@@ -357,7 +349,7 @@ export default function Signup() {
                 className="w-full flex items-center justify-center gap-2"
               >
                 <FaFacebook className="h-4 w-4 text-blue-600" />
-                Facebook
+                Continue with Facebook
               </Button>
             </div>
             

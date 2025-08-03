@@ -150,7 +150,7 @@ export async function setupAuth(app: Express) {
         return res.status(500).json({ message: "Error logging out" });
       }
       req.session.destroy(() => {
-        res.redirect("/");
+        res.redirect("/"); // Redirects to landing page (main site)
       });
     });
   });
