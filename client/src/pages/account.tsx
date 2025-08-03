@@ -18,7 +18,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   DIETARY_RESTRICTIONS,
   COMMON_ALLERGIES,
@@ -29,6 +29,7 @@ import {
 export function Account() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   
   const [profileData, setProfileData] = useState({
