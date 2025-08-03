@@ -68,8 +68,22 @@ export function Account() {
     updateProfileMutation.mutate(profileData);
   };
 
-  const handleLogout = () => {
-    window.location.href = "/api/auth/logout";
+  const handleLogout = async () => {
+    try {
+      // Call logout endpoint to clear server session
+      await fetch("/api/auth/logout", { 
+        method: "GET",
+        credentials: "include" 
+      });
+      // Clear client cache
+      queryClient.clear();
+      // Redirect to homepage
+      window.location.href = "/";
+    } catch (error) {
+      // If logout fails, still redirect to homepage
+      queryClient.clear();
+      window.location.href = "/";
+    }
   };
 
   if (!user) {
