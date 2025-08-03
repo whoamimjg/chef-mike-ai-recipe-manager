@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { ChefHat, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { FaGoogle, FaGithub, FaFacebook } from "react-icons/fa";
 
 export default function Login() {
@@ -43,7 +43,8 @@ export default function Login() {
           description: "You have successfully signed in.",
         });
         
-        // Redirect to home page
+        // Invalidate auth cache and redirect
+        await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
         window.location.href = "/";
       } else {
         toast({
