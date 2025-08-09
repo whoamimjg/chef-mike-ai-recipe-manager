@@ -1544,7 +1544,7 @@ END:VCALENDAR`
                 onClick={() => setActiveTab("meal-planner")}
                 className="flex items-center gap-2"
               >
-                <CalendarIcon className="h-4 w-4" />
+                <CalendarClock className="h-4 w-4" />
                 Meal Planner
               </Button>
               <Button
@@ -1557,8 +1557,8 @@ END:VCALENDAR`
               </Button>
 
               <Button
-                variant="ghost"
-                onClick={() => window.location.href = "/account"}
+                variant={activeTab === "account" ? "default" : "ghost"}
+                onClick={() => setActiveTab("account")}
                 className="flex items-center gap-2"
               >
                 <User className="h-4 w-4" />
@@ -1641,7 +1641,7 @@ END:VCALENDAR`
                   }}
                   className="w-full justify-start gap-2"
                 >
-                  <CalendarIcon className="h-4 w-4" />
+                  <CalendarClock className="h-4 w-4" />
                   Meal Planner
                 </Button>
                 <Button
@@ -1657,9 +1657,9 @@ END:VCALENDAR`
                 </Button>
 
                 <Button
-                  variant="ghost"
+                  variant={activeTab === "account" ? "default" : "ghost"}
                   onClick={() => {
-                    window.location.href = "/account";
+                    setActiveTab("account");
                     setIsMobileMenuOpen(false);
                   }}
                   className="w-full justify-start gap-2"
