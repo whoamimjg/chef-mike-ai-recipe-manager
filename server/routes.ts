@@ -973,6 +973,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
   function categorizeIngredient(ingredientName: string): string {
     const name = ingredientName.toLowerCase();
     
+    // Skip plain water unless it's specifically bottled/gallon water
+    if (name === 'water' || (name.includes('water') && !name.includes('bottled') && !name.includes('gallon') && !name.includes('sparkling') && !name.includes('coconut'))) {
+      return 'skip'; // Special category to exclude from shopping lists
+    }
+    
+    // Dry Goods - Non-perishable pantry staples (including oils, spices, grains, legumes)
+    if (name.includes('flour') || name.includes('sugar') || name.includes('salt') || name.includes('pepper') ||
+        name.includes('rice') || name.includes('pasta') || name.includes('orzo') || name.includes('quinoa') ||
+        name.includes('barley') || name.includes('oats') || name.includes('lentil') || name.includes('chickpea') ||
+        name.includes('black bean') || name.includes('kidney bean') || name.includes('pinto bean') ||
+        name.includes('navy bean') || name.includes('split pea') || name.includes('couscous') ||
+        name.includes('bulgur') || name.includes('farro') || name.includes('millet') || name.includes('amaranth') ||
+        name.includes('buckwheat') || name.includes('cornmeal') || name.includes('corn starch') ||
+        name.includes('cornstarch') || name.includes('breadcrumb') || name.includes('panko') ||
+        name.includes('baking powder') || name.includes('baking soda') || name.includes('vanilla extract') ||
+        name.includes('almond extract') || name.includes('coconut extract') || name.includes('vinegar') ||
+        name.includes('olive oil') || name.includes('vegetable oil') || name.includes('canola oil') ||
+        name.includes('sesame oil') || name.includes('coconut oil') || name.includes('honey') ||
+        name.includes('maple syrup') || name.includes('molasses') || name.includes('brown sugar') ||
+        name.includes('powdered sugar') || name.includes('cocoa powder') || name.includes('chocolate chip') ||
+        name.includes('raisin') || name.includes('date') || name.includes('fig') || name.includes('apricot') ||
+        name.includes('cranberry') || name.includes('almond') || name.includes('walnut') ||
+        name.includes('pecan') || name.includes('cashew') || name.includes('pistachio') ||
+        name.includes('peanut') || name.includes('sunflower seed') || name.includes('pumpkin seed') ||
+        name.includes('chia seed') || name.includes('flax seed') || name.includes('sesame seed') ||
+        name.includes('cumin') || name.includes('paprika') || name.includes('oregano') ||
+        name.includes('thyme') || name.includes('rosemary') || name.includes('sage') ||
+        name.includes('turmeric') || name.includes('cinnamon') || name.includes('nutmeg') ||
+        name.includes('chili powder') || name.includes('cayenne') || name.includes('garlic powder') ||
+        name.includes('onion powder') || name.includes('italian seasoning') || name.includes('bay leaf')) {
+      return 'dry-goods';
+    }
+    
     // Produce
     if (name.includes('lettuce') || name.includes('spinach') || name.includes('tomato') || 
         name.includes('onion') || name.includes('carrot') || name.includes('celery') ||
@@ -981,56 +1014,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name.includes('banana') || name.includes('apple') || name.includes('orange') ||
         name.includes('lemon') || name.includes('lime') || name.includes('cilantro') ||
         name.includes('parsley') || name.includes('basil') || name.includes('mushroom') ||
-        name.includes('zucchini') || name.includes('corn') || name.includes('jalapeño')) {
+        name.includes('zucchini') || name.includes('corn') || name.includes('jalapeño') ||
+        name.includes('kale') || name.includes('arugula') || name.includes('mint') ||
+        name.includes('dill') || name.includes('chive') || name.includes('scallion') ||
+        name.includes('leek') || name.includes('shallot') || name.includes('ginger') ||
+        name.includes('strawberry') || name.includes('grape') || name.includes('pear') ||
+        name.includes('peach') || name.includes('mango') || name.includes('pineapple') ||
+        name.includes('cabbage') || name.includes('cauliflower') || name.includes('asparagus') ||
+        name.includes('green bean') || name.includes('pea') || name.includes('radish') ||
+        name.includes('beet') || name.includes('turnip') || name.includes('sweet potato')) {
       return 'produce';
+    }
+    
+    // Dairy
+    if (name.includes('milk') || name.includes('yogurt') || name.includes('butter') ||
+        name.includes('cream') || name.includes('sour cream') || name.includes('eggs') ||
+        name.includes('egg') || name.includes('cottage cheese') || name.includes('ricotta') ||
+        name.includes('mozzarella') || name.includes('cheddar') || name.includes('parmesan') ||
+        name.includes('swiss') || name.includes('goat cheese') || name.includes('feta') ||
+        name.includes('brie') || name.includes('cream cheese') || name.includes('half and half') ||
+        name.includes('heavy cream') || name.includes('buttermilk')) {
+      return 'dairy';
     }
     
     // Deli
     if (name.includes('cheese') || name.includes('ham') || name.includes('turkey') ||
-        name.includes('salami') || name.includes('prosciutto') || name.includes('deli')) {
+        name.includes('salami') || name.includes('prosciutto') || name.includes('deli') ||
+        name.includes('lunch meat') || name.includes('cold cut') || name.includes('pastrami') ||
+        name.includes('corned beef') || name.includes('mortadella') || name.includes('bologna')) {
       return 'deli';
     }
     
     // Poultry
-    if (name.includes('chicken') || name.includes('turkey breast') || name.includes('duck')) {
+    if (name.includes('chicken') || name.includes('turkey breast') || name.includes('duck') ||
+        name.includes('goose') || name.includes('chicken breast') || name.includes('chicken thigh') ||
+        name.includes('chicken wing') || name.includes('ground chicken') || name.includes('ground turkey')) {
       return 'poultry';
     }
     
     // Pork
     if (name.includes('pork') || name.includes('bacon') || name.includes('ham') ||
-        name.includes('sausage') || name.includes('chorizo')) {
+        name.includes('sausage') || name.includes('chorizo') || name.includes('pork chop') ||
+        name.includes('pork loin') || name.includes('pork shoulder') || name.includes('pepperoni') ||
+        name.includes('pancetta') || name.includes('ground pork')) {
       return 'pork';
     }
     
     // Red Meat
     if (name.includes('beef') || name.includes('steak') || name.includes('ground beef') ||
-        name.includes('lamb') || name.includes('veal')) {
+        name.includes('lamb') || name.includes('veal') || name.includes('roast beef') ||
+        name.includes('brisket') || name.includes('ribs') || name.includes('venison') ||
+        name.includes('sirloin') || name.includes('ribeye') || name.includes('filet mignon')) {
       return 'red-meat';
     }
     
     // Seafood
     if (name.includes('fish') || name.includes('salmon') || name.includes('tuna') ||
         name.includes('shrimp') || name.includes('crab') || name.includes('lobster') ||
-        name.includes('cod') || name.includes('tilapia') || name.includes('scallop')) {
+        name.includes('cod') || name.includes('tilapia') || name.includes('scallop') ||
+        name.includes('mussel') || name.includes('clam') || name.includes('oyster') ||
+        name.includes('halibut') || name.includes('mahi mahi') || name.includes('trout') ||
+        name.includes('bass') || name.includes('snapper') || name.includes('sardine')) {
       return 'seafood';
     }
     
-    // Dairy
-    if (name.includes('milk') || name.includes('yogurt') || name.includes('butter') ||
-        name.includes('cream') || name.includes('sour cream') || name.includes('eggs') ||
-        name.includes('egg')) {
-      return 'dairy';
-    }
-    
     // Frozen
-    if (name.includes('frozen') || name.includes('ice cream') || name.includes('sorbet')) {
+    if (name.includes('frozen') || name.includes('ice cream') || name.includes('sorbet') ||
+        name.includes('gelato') || name.includes('popsicle') || name.includes('frozen yogurt') ||
+        name.includes('frozen fruit') || name.includes('frozen vegetable')) {
       return 'frozen';
     }
     
-    // Beverages
-    if (name.includes('juice') || name.includes('soda') || name.includes('water') ||
-        name.includes('coffee') || name.includes('tea') || name.includes('wine') ||
-        name.includes('beer') || name.includes('milk')) {
+    // Beverages (excluding plain water)
+    if (name.includes('juice') || name.includes('soda') || name.includes('bottled water') ||
+        name.includes('gallon water') || name.includes('coffee') || name.includes('tea') ||
+        name.includes('wine') || name.includes('beer') || name.includes('sparkling water') ||
+        name.includes('coconut water') || name.includes('energy drink') || name.includes('kombucha')) {
       return 'beverages';
     }
     
@@ -1120,18 +1179,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const ingredientName = typeof ingredient === 'string' ? ingredient : ingredient.item;
               const quantity = typeof ingredient === 'object' && ingredient.amount ? ingredient.amount : "1";
               const unit = typeof ingredient === 'object' && ingredient.unit ? ingredient.unit : "item";
+              const category = categorizeIngredient(ingredientName);
               
-              items.push({
-                id: `${mealPlan.id}-${index}`,
-                name: ingredientName,
-                quantity,
-                unit,
-                category: categorizeIngredient(ingredientName),
-                recipeId: recipe.id,
-                recipeTitle: recipe.title,
-                checked: false,
-                manuallyAdded: false,
-              });
+              // Skip items categorized as 'skip' (like plain water)
+              if (category !== 'skip') {
+                items.push({
+                  id: `${mealPlan.id}-${index}`,
+                  name: ingredientName,
+                  quantity,
+                  unit,
+                  category,
+                  recipeId: recipe.id,
+                  recipeTitle: recipe.title,
+                  checked: false,
+                  manuallyAdded: false,
+                });
+              }
             });
           }
         }

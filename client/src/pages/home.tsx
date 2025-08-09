@@ -386,6 +386,11 @@ export default function Home() {
   const getItemCategory = (itemName: string): string => {
     const name = itemName.toLowerCase();
     
+    // Skip plain water unless it's specifically bottled/gallon water
+    if (name === 'water' || (name.includes('water') && !name.includes('bottled') && !name.includes('gallon') && !name.includes('sparkling') && !name.includes('coconut'))) {
+      return 'skip'; // Special category to exclude from shopping lists
+    }
+    
     // Produce - Fresh fruits and vegetables
     const produceItems = ['lettuce', 'tomato', 'onion', 'carrot', 'banana', 'apple', 'potato', 'garlic', 'celery', 'bell pepper', 'broccoli', 'spinach', 'cucumber', 'zucchini', 'mushroom', 'avocado', 'lime', 'lemon', 'orange', 'strawberry', 'grape', 'pear', 'peach', 'mango', 'pineapple', 'cabbage', 'cauliflower', 'asparagus', 'corn', 'green bean', 'pea', 'radish', 'beet', 'turnip', 'parsnip', 'sweet potato', 'kale', 'arugula', 'cilantro', 'parsley', 'basil', 'mint', 'dill', 'rosemary', 'thyme', 'sage', 'oregano', 'chive', 'scallion', 'leek', 'shallot', 'ginger', 'jalapeño', 'serrano', 'habanero', 'poblano'];
     
@@ -393,7 +398,7 @@ export default function Home() {
     const dairyItems = ['milk', 'yogurt', 'butter', 'eggs', 'cream', 'sour cream', 'cottage cheese', 'ricotta', 'mozzarella', 'cheddar', 'parmesan', 'swiss', 'goat cheese', 'feta', 'brie', 'camembert', 'blue cheese', 'cream cheese', 'half and half', 'heavy cream', 'whipping cream', 'buttermilk', 'condensed milk', 'evaporated milk'];
     
     // Dry Goods - Non-perishable pantry staples
-    const dryGoodsItems = ['flour', 'sugar', 'salt', 'pepper', 'rice', 'pasta', 'quinoa', 'barley', 'oats', 'lentil', 'chickpea', 'black bean', 'kidney bean', 'pinto bean', 'navy bean', 'split pea', 'couscous', 'bulgur', 'farro', 'millet', 'amaranth', 'buckwheat', 'cornmeal', 'breadcrumb', 'panko', 'baking powder', 'baking soda', 'vanilla extract', 'almond extract', 'coconut extract', 'vinegar', 'olive oil', 'vegetable oil', 'canola oil', 'sesame oil', 'coconut oil', 'honey', 'maple syrup', 'molasses', 'brown sugar', 'powdered sugar', 'cocoa powder', 'chocolate chip', 'raisin', 'date', 'fig', 'apricot', 'cranberry', 'almond', 'walnut', 'pecan', 'cashew', 'pistachio', 'peanut', 'sunflower seed', 'pumpkin seed', 'chia seed', 'flax seed', 'sesame seed'];
+    const dryGoodsItems = ['flour', 'sugar', 'salt', 'pepper', 'rice', 'pasta', 'orzo', 'quinoa', 'barley', 'oats', 'lentil', 'chickpea', 'black bean', 'kidney bean', 'pinto bean', 'navy bean', 'split pea', 'couscous', 'bulgur', 'farro', 'millet', 'amaranth', 'buckwheat', 'cornmeal', 'corn starch', 'cornstarch', 'breadcrumb', 'panko', 'baking powder', 'baking soda', 'vanilla extract', 'almond extract', 'coconut extract', 'vinegar', 'olive oil', 'vegetable oil', 'canola oil', 'sesame oil', 'coconut oil', 'honey', 'maple syrup', 'molasses', 'brown sugar', 'powdered sugar', 'cocoa powder', 'chocolate chip', 'raisin', 'date', 'fig', 'apricot', 'cranberry', 'almond', 'walnut', 'pecan', 'cashew', 'pistachio', 'peanut', 'sunflower seed', 'pumpkin seed', 'chia seed', 'flax seed', 'sesame seed'];
     
     // Canned Goods - Shelf-stable canned/jarred items
     const cannedGoodsItems = ['canned', 'sauce', 'tomato sauce', 'tomato paste', 'diced tomato', 'crushed tomato', 'tomato puree', 'marinara', 'salsa', 'bean', 'corn', 'pea', 'carrot', 'green bean', 'artichoke', 'olive', 'pickle', 'jam', 'jelly', 'preserve', 'peanut butter', 'almond butter', 'tahini', 'hummus', 'coconut milk', 'broth', 'stock', 'soup', 'chili', 'tuna', 'salmon', 'sardine', 'anchovy', 'chicken broth', 'beef broth', 'vegetable broth'];
@@ -409,7 +414,7 @@ export default function Home() {
     
     // Other categories
     const frozenItems = ['frozen', 'ice cream', 'gelato', 'sorbet', 'popsicle', 'frozen yogurt', 'frozen fruit', 'frozen vegetable', 'frozen meal', 'frozen pizza', 'frozen waffle', 'frozen berries'];
-    const beverageItems = ['juice', 'soda', 'water', 'coffee', 'tea', 'beer', 'wine', 'liquor', 'energy drink', 'sports drink', 'kombucha', 'sparkling water', 'coconut water'];
+    const beverageItems = ['juice', 'soda', 'bottled water', 'gallon water', 'coffee', 'tea', 'beer', 'wine', 'liquor', 'energy drink', 'sports drink', 'kombucha', 'sparkling water', 'coconut water'];
     const snackItems = ['chips', 'crackers', 'nuts', 'popcorn', 'pretzel', 'granola bar', 'energy bar', 'trail mix', 'dried fruit', 'jerky', 'candy', 'chocolate', 'cookie', 'cake', 'muffin', 'donut'];
     const breadItems = ['bread', 'bagel', 'muffin', 'bun', 'roll', 'baguette', 'croissant', 'pita', 'tortilla', 'wrap', 'naan', 'flatbread', 'sourdough', 'whole wheat', 'rye bread', 'pumpernickel'];
     const ethnicItems = ['soy sauce', 'fish sauce', 'miso', 'kimchi', 'wasabi', 'nori', 'mirin', 'sake', 'sriracha', 'gochujang', 'curry powder', 'garam masala', 'turmeric', 'cumin', 'coriander', 'cardamom', 'cinnamon', 'nutmeg', 'allspice', 'bay leaf', 'paprika', 'chili powder', 'cayenne', 'red pepper flake'];
@@ -4074,13 +4079,23 @@ export default function Home() {
                               onClick={async () => {
                                 if (!newItemName.trim()) return;
                                 
+                                const category = getItemCategory(newItemName.trim());
+                                if (category === 'skip') {
+                                  toast({
+                                    title: "Item Skipped",
+                                    description: `${newItemName.trim()} is typically not needed on shopping lists.`,
+                                    variant: "destructive",
+                                  });
+                                  return;
+                                }
+                                
                                 try {
                                   await apiRequest(`/api/shopping-lists/${list.id}/items`, {
                                     method: 'POST',
                                     body: JSON.stringify({
                                       item: newItemName.trim(),
                                       quantity: newItemQuantity || '1',
-                                      category: newItemCategory || 'other'
+                                      category: newItemCategory || category
                                     })
                                   });
                                   
@@ -4115,12 +4130,22 @@ export default function Home() {
                                 className="w-full justify-start text-xs h-8"
                                 onClick={async () => {
                                   try {
+                                    const category = getItemCategory(item);
+                                    if (category === 'skip') {
+                                      toast({
+                                        title: "Item Skipped",
+                                        description: `${item} is typically not needed on shopping lists.`,
+                                        variant: "destructive",
+                                      });
+                                      return;
+                                    }
+                                    
                                     await apiRequest(`/api/shopping-lists/${list.id}/items`, {
                                       method: 'POST',
                                       body: JSON.stringify({
                                         item: item,
                                         quantity: '1',
-                                        category: getItemCategory(item)
+                                        category: category
                                       })
                                     });
                                     

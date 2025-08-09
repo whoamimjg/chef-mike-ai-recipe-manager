@@ -48,7 +48,10 @@ Preferred communication style: Simple, everyday language.
 ### Core Application Features
 - **Recipe Management**: CRUD operations for recipes with image upload support
 - **Meal Planning**: Calendar-based interface for scheduling meals
-- **Shopping List Generation**: Automatic list creation from planned meals organized by grocery store categories
+- **Shopping List Generation**: Automatic list creation from planned meals organized by 15 comprehensive grocery store categories
+- **Intelligent Ingredient Categorization**: Advanced system with 300+ categorized ingredients across produce, dairy, dry goods, oils, spices, and more
+- **Smart Item Filtering**: Automatically excludes inappropriate items like plain water from shopping lists while allowing specific water types
+- **Print-Optimized Shopping Lists**: Clean print functionality with CSS media queries for physical shopping trips
 - **User Preferences**: Dietary restrictions and allergy management
 - **AI Recommendations**: Enhanced OpenAI-powered recipe suggestions with personalized dietary learning
 - **Mobile Optimization**: Responsive design with hamburger menu for mobile-only navigation
