@@ -58,7 +58,9 @@ import {
   DollarSign,
   GripVertical,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  ArrowLeft,
+  Calendar as CalendarClock
 } from "lucide-react";
 import type { Recipe, MealPlan, ShoppingList, UserPreferences, UserInventory } from "@shared/schema";
 import KitchenTimer from '@/components/KitchenTimer';
@@ -377,6 +379,33 @@ export default function Home() {
       });
     }
   }, [preferences]);
+
+  // Generate calendar links for meal planning
+  const generateCalendarLink = (recipe: Recipe, date: Date, mealType: string) => {
+    const startDate = new Date(date);
+    startDate.setHours(mealType === 'breakfast' ? 8 : mealType === 'lunch' ? 12 : 18, 0, 0, 0);
+    const endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // 1 hour duration
+    
+    const title = encodeURIComponent(`${mealType.charAt(0).toUpperCase() + mealType.slice(1)}: ${recipe.title}`);
+    const description = encodeURIComponent(`Recipe: ${recipe.title}\nIngredients: ${recipe.ingredients?.slice(0, 3).join(', ')}${recipe.ingredients?.length > 3 ? '...' : ''}\nCook time: ${recipe.cookTime || 'Not specified'}\n\nView full recipe: ${window.location.origin}`);
+    
+    const startTime = startDate.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    const endTime = endDate.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    
+    return {
+      google: `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startTime}/${endTime}&details=${description}`,
+      apple: `data:text/calendar;charset=utf8,BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+URL:${window.location.origin}
+DTSTART:${startTime}
+DTEND:${endTime}
+SUMMARY:${decodeURIComponent(title)}
+DESCRIPTION:${decodeURIComponent(description)}
+END:VEVENT
+END:VCALENDAR`
+    };
+  };
 
   // Create recipe mutation
   const createRecipeMutation = useMutation({
@@ -3583,11 +3612,35 @@ export default function Home() {
                                   {breakfastPlans.length > 0 ? (
                                     breakfastPlans.map((plan) => {
                                       const recipe = recipes?.find(r => r.id === plan.recipeId);
-                                      return (
-                                        <div key={plan.id} className="bg-blue-100 text-blue-800 rounded px-2 py-1 mb-1 text-xs truncate w-full text-center">
-                                          {recipe?.title || 'Recipe'}
+                                      return recipe ? (
+                                        <div key={plan.id} className="bg-blue-100 text-blue-800 rounded px-2 py-1 mb-1 text-xs w-full">
+                                          <div className="flex items-center justify-between">
+                                            <span className="truncate">{recipe.title}</span>
+                                            <div className="flex gap-1 ml-2">
+                                              <button
+                                                onClick={() => {
+                                                  const links = generateCalendarLink(recipe, date, 'breakfast');
+                                                  window.open(links.google, '_blank');
+                                                }}
+                                                className="text-blue-600 hover:text-blue-800"
+                                                title="Add to Google Calendar"
+                                                data-testid={`button-google-calendar-${plan.id}`}
+                                              >
+                                                📅
+                                              </button>
+                                              <a
+                                                href={generateCalendarLink(recipe, date, 'breakfast').apple}
+                                                download={`breakfast-${recipe.title.replace(/\s+/g, '-').toLowerCase()}.ics`}
+                                                className="text-blue-600 hover:text-blue-800"
+                                                title="Add to Apple Calendar"
+                                                data-testid={`link-apple-calendar-${plan.id}`}
+                                              >
+                                                🍎
+                                              </a>
+                                            </div>
+                                          </div>
                                         </div>
-                                      );
+                                      ) : null;
                                     })
                                   ) : (
                                     'Drop recipe here'
@@ -3638,11 +3691,35 @@ export default function Home() {
                                   {lunchPlans.length > 0 ? (
                                     lunchPlans.map((plan) => {
                                       const recipe = recipes?.find(r => r.id === plan.recipeId);
-                                      return (
-                                        <div key={plan.id} className="bg-green-100 text-green-800 rounded px-2 py-1 mb-1 text-xs truncate w-full text-center">
-                                          {recipe?.title || 'Recipe'}
+                                      return recipe ? (
+                                        <div key={plan.id} className="bg-green-100 text-green-800 rounded px-2 py-1 mb-1 text-xs w-full">
+                                          <div className="flex items-center justify-between">
+                                            <span className="truncate">{recipe.title}</span>
+                                            <div className="flex gap-1 ml-2">
+                                              <button
+                                                onClick={() => {
+                                                  const links = generateCalendarLink(recipe, date, 'lunch');
+                                                  window.open(links.google, '_blank');
+                                                }}
+                                                className="text-green-600 hover:text-green-800"
+                                                title="Add to Google Calendar"
+                                                data-testid={`button-google-calendar-${plan.id}`}
+                                              >
+                                                📅
+                                              </button>
+                                              <a
+                                                href={generateCalendarLink(recipe, date, 'lunch').apple}
+                                                download={`lunch-${recipe.title.replace(/\s+/g, '-').toLowerCase()}.ics`}
+                                                className="text-green-600 hover:text-green-800"
+                                                title="Add to Apple Calendar"
+                                                data-testid={`link-apple-calendar-${plan.id}`}
+                                              >
+                                                🍎
+                                              </a>
+                                            </div>
+                                          </div>
                                         </div>
-                                      );
+                                      ) : null;
                                     })
                                   ) : (
                                     'Drop recipe here'
@@ -3693,11 +3770,35 @@ export default function Home() {
                                   {dinnerPlans.length > 0 ? (
                                     dinnerPlans.map((plan) => {
                                       const recipe = recipes?.find(r => r.id === plan.recipeId);
-                                      return (
-                                        <div key={plan.id} className="bg-orange-100 text-orange-800 rounded px-2 py-1 mb-1 text-xs truncate w-full text-center">
-                                          {recipe?.title || 'Recipe'}
+                                      return recipe ? (
+                                        <div key={plan.id} className="bg-orange-100 text-orange-800 rounded px-2 py-1 mb-1 text-xs w-full">
+                                          <div className="flex items-center justify-between">
+                                            <span className="truncate">{recipe.title}</span>
+                                            <div className="flex gap-1 ml-2">
+                                              <button
+                                                onClick={() => {
+                                                  const links = generateCalendarLink(recipe, date, 'dinner');
+                                                  window.open(links.google, '_blank');
+                                                }}
+                                                className="text-orange-600 hover:text-orange-800"
+                                                title="Add to Google Calendar"
+                                                data-testid={`button-google-calendar-${plan.id}`}
+                                              >
+                                                📅
+                                              </button>
+                                              <a
+                                                href={generateCalendarLink(recipe, date, 'dinner').apple}
+                                                download={`dinner-${recipe.title.replace(/\s+/g, '-').toLowerCase()}.ics`}
+                                                className="text-orange-600 hover:text-orange-800"
+                                                title="Add to Apple Calendar"
+                                                data-testid={`link-apple-calendar-${plan.id}`}
+                                              >
+                                                🍎
+                                              </a>
+                                            </div>
+                                          </div>
                                         </div>
-                                      );
+                                      ) : null;
                                     })
                                   ) : (
                                     'Drop recipe here'
@@ -4805,10 +4906,16 @@ export default function Home() {
 
           {/* Account Settings */}
           <TabsContent value="account" className="space-y-6">
-            <h1 className="text-4xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-              <User className="h-8 w-8" />
-              Account Settings
-            </h1>
+            <div className="flex items-center justify-between">
+              <h1 className="text-4xl font-bold text-gray-900 flex items-center gap-2">
+                <User className="h-8 w-8" />
+                Account Settings
+              </h1>
+              <Button variant="outline" onClick={() => setActiveTab("meal-planner")} data-testid="button-back-to-app">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to App
+              </Button>
+            </div>
             
             <div className="grid lg:grid-cols-2 gap-6">
               {/* Profile */}
