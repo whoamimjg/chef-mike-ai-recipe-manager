@@ -875,8 +875,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getItemPricing(itemName: string, userStores: UserGroceryStore[]): Promise<GroceryStorePricing[]> {
+    // Try to get real-time pricing from grocery store APIs first
+    const realTimePricing = await this.getRealTimePricing(itemName, userStores);
+    
+    if (realTimePricing.length > 0) {
+      return realTimePricing;
+    }
+
+    // Fallback to cached database pricing
     if (userStores.length === 0) {
-      // Return general pricing if no user stores specified
       return await db.select()
         .from(groceryStorePricing)
         .where(ilike(groceryStorePricing.itemName, `%${itemName}%`))
@@ -894,6 +901,60 @@ export class DatabaseStorage implements IStorage {
         )
       )
       .orderBy(asc(groceryStorePricing.price));
+  }
+
+  private async getRealTimePricing(itemName: string, userStores: UserGroceryStore[]): Promise<GroceryStorePricing[]> {
+    const results: any[] = [];
+
+    try {
+      // Import and use Kroger API
+      const { krogerAPI } = await import('./kroger-api');
+      const krogerStores = userStores.filter(store => store.storeType === 'kroger').map(store => store.storeId);
+      const krogerPricing = await krogerAPI.getItemPricing(itemName, krogerStores);
+      
+      // Convert to our GroceryStorePricing format
+      for (const pricing of krogerPricing) {
+        results.push({
+          id: 0, // Not stored in DB
+          itemName: itemName,
+          storeName: pricing.storeName,
+          storeId: pricing.storeId,
+          price: pricing.price,
+          promoPrice: pricing.promoPrice,
+          inStock: pricing.inStock,
+          onSale: pricing.onSale,
+          lastUpdated: new Date(),
+          userId: userStores[0]?.userId || ''
+        });
+      }
+
+      // Try Target API if available
+      const { targetAPI } = await import('./target-api');
+      const targetStores = userStores.filter(store => store.storeType === 'target').map(store => store.storeId);
+      if (targetStores.length > 0) {
+        const targetPricing = await targetAPI.getItemPricing(itemName, targetStores);
+        
+        for (const pricing of targetPricing) {
+          results.push({
+            id: 0,
+            itemName: itemName,
+            storeName: pricing.storeName,
+            storeId: pricing.storeId,
+            price: pricing.price,
+            promoPrice: pricing.promoPrice,
+            inStock: pricing.inStock,
+            onSale: pricing.onSale,
+            lastUpdated: new Date(),
+            userId: userStores[0]?.userId || ''
+          });
+        }
+      }
+
+    } catch (error) {
+      console.error('Error fetching real-time pricing:', error);
+    }
+
+    return results;
   }
 
   async updateGroceryPricing(pricing: InsertGroceryStorePricing): Promise<GroceryStorePricing> {
