@@ -264,6 +264,39 @@ export const usedItems = pgTable("used_items", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Grocery store pricing and availability
+export const groceryStorePricing = pgTable("grocery_store_pricing", {
+  id: serial("id").primaryKey(),
+  storeName: varchar("store_name").notNull(),
+  storeChain: varchar("store_chain"), // Walmart, Target, Kroger, etc.
+  storeLocation: varchar("store_location"),
+  itemName: varchar("item_name").notNull(),
+  brand: varchar("brand"),
+  size: varchar("size"),
+  unit: varchar("unit"),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  originalPrice: decimal("original_price", { precision: 10, scale: 2 }), // For sale items
+  onSale: boolean("on_sale").default(false),
+  inStock: boolean("in_stock").default(true),
+  stockLevel: varchar("stock_level"), // low, medium, high, out_of_stock
+  category: varchar("category"),
+  upc: varchar("upc"),
+  lastUpdated: timestamp("last_updated").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// User's preferred grocery stores
+export const userGroceryStores = pgTable("user_grocery_stores", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  storeName: varchar("store_name").notNull(),
+  storeChain: varchar("store_chain"),
+  address: varchar("address"),
+  zipCode: varchar("zip_code"),
+  isPrimary: boolean("is_primary").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Define relations
 export const usersRelations = relations(users, ({ many, one }) => ({
   recipes: many(recipes),
@@ -351,6 +384,13 @@ export const purchaseReceiptsRelations = relations(purchaseReceipts, ({ one }) =
   }),
 }));
 
+export const userGroceryStoresRelations = relations(userGroceryStores, ({ one }) => ({
+  user: one(users, {
+    fields: [userGroceryStores.userId],
+    references: [users.id],
+  }),
+}));
+
 // Export insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -403,6 +443,17 @@ export const insertAiLearningSchema = createInsertSchema(aiLearning).omit({
 });
 
 export const insertMealSuggestionsSchema = createInsertSchema(mealSuggestions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertGroceryStorePricingSchema = createInsertSchema(groceryStorePricing).omit({
+  id: true,
+  createdAt: true,
+  lastUpdated: true,
+});
+
+export const insertUserGroceryStoreSchema = createInsertSchema(userGroceryStores).omit({
   id: true,
   createdAt: true,
 });
@@ -528,3 +579,7 @@ export type InsertAiLearning = z.infer<typeof insertAiLearningSchema>;
 export type AiLearning = typeof aiLearning.$inferSelect;
 export type InsertMealSuggestions = z.infer<typeof insertMealSuggestionsSchema>;
 export type MealSuggestions = typeof mealSuggestions.$inferSelect;
+export type InsertGroceryStorePricing = z.infer<typeof insertGroceryStorePricingSchema>;
+export type GroceryStorePricing = typeof groceryStorePricing.$inferSelect;
+export type InsertUserGroceryStore = z.infer<typeof insertUserGroceryStoreSchema>;
+export type UserGroceryStore = typeof userGroceryStores.$inferSelect;

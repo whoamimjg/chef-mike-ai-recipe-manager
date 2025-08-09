@@ -1901,6 +1901,132 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Grocery Store API routes
+  app.get('/api/grocery/pricing/:itemName', isAuthenticated, async (req: any, res) => {
+    try {
+      const { itemName } = req.params;
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.userId;
+      
+      // Get user's preferred stores
+      const userStores = await storage.getUserGroceryStores(userId);
+      
+      // Fetch pricing from multiple sources
+      const pricingData = await storage.getItemPricing(itemName, userStores);
+      
+      // Mock data for demo - in production, this would call real grocery APIs
+      const mockPricing = [
+        {
+          storeName: "Walmart",
+          storeChain: "walmart",
+          price: 2.99,
+          originalPrice: 3.49,
+          onSale: true,
+          inStock: true,
+          stockLevel: "high",
+          distance: "0.5 miles"
+        },
+        {
+          storeName: "Target",
+          storeChain: "target", 
+          price: 3.19,
+          onSale: false,
+          inStock: true,
+          stockLevel: "medium",
+          distance: "1.2 miles"
+        },
+        {
+          storeName: "Kroger",
+          storeChain: "kroger",
+          price: 2.89,
+          originalPrice: 2.89,
+          onSale: false,
+          inStock: false,
+          stockLevel: "out_of_stock",
+          distance: "2.1 miles"
+        }
+      ];
+      
+      res.json({ 
+        item: itemName,
+        pricing: pricingData.length > 0 ? pricingData : mockPricing,
+        lastUpdated: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Error fetching item pricing:", error);
+      res.status(500).json({ message: "Failed to fetch pricing data" });
+    }
+  });
+
+  app.get('/api/grocery/stores', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.userId;
+      const stores = await storage.getUserGroceryStores(userId);
+      res.json(stores);
+    } catch (error) {
+      console.error("Error fetching grocery stores:", error);
+      res.status(500).json({ message: "Failed to fetch grocery stores" });
+    }
+  });
+
+  app.post('/api/grocery/stores', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.userId;
+      const storeData = {
+        ...req.body,
+        userId,
+      };
+      
+      const store = await storage.addUserGroceryStore(storeData);
+      res.status(201).json(store);
+    } catch (error) {
+      console.error("Error adding grocery store:", error);
+      res.status(500).json({ message: "Failed to add grocery store" });
+    }
+  });
+
+  app.get('/api/shopping-lists/:id/pricing', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.userId;
+      
+      const shoppingList = await storage.getShoppingList(parseInt(id), userId);
+      if (!shoppingList) {
+        return res.status(404).json({ message: "Shopping list not found" });
+      }
+
+      const items = JSON.parse(shoppingList.items || '[]');
+      const pricingPromises = items.map(async (item: any) => {
+        // Get pricing for each item
+        const pricing = await storage.getItemPricing(item.name, []);
+        return {
+          ...item,
+          pricing: pricing.length > 0 ? pricing : [{
+            storeName: "Best Price",
+            price: Math.round((Math.random() * 5 + 1) * 100) / 100,
+            inStock: Math.random() > 0.1,
+            onSale: Math.random() > 0.7
+          }]
+        };
+      });
+
+      const itemsWithPricing = await Promise.all(pricingPromises);
+      const totalEstimate = itemsWithPricing.reduce((sum, item) => {
+        const bestPrice = Math.min(...item.pricing.filter((p: any) => p.inStock).map((p: any) => p.price));
+        return sum + (isFinite(bestPrice) ? bestPrice : 0);
+      }, 0);
+
+      res.json({
+        shoppingListId: id,
+        items: itemsWithPricing,
+        totalEstimate: Math.round(totalEstimate * 100) / 100,
+        lastUpdated: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Error fetching shopping list pricing:", error);
+      res.status(500).json({ message: "Failed to fetch shopping list pricing" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

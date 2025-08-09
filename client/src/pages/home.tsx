@@ -54,7 +54,8 @@ import {
   Pause,
   RotateCcw,
   Menu,
-  AlertTriangle
+  AlertTriangle,
+  DollarSign
 } from "lucide-react";
 import type { Recipe, MealPlan, ShoppingList, UserPreferences, UserInventory } from "@shared/schema";
 import KitchenTimer from '@/components/KitchenTimer';
@@ -137,6 +138,25 @@ export default function Home() {
   const [shoppingListName, setShoppingListName] = useState(`Week of ${new Date().toLocaleDateString()}`);
   const [isAddManualItemOpen, setIsAddManualItemOpen] = useState(false);
   const [showCompletedItems, setShowCompletedItems] = useState(false);
+  const [showPricing, setShowPricing] = useState(false);
+  const [pricingData, setPricingData] = useState<any>(null);
+
+  // Fetch pricing data for the current shopping list
+  const fetchPricingData = async () => {
+    if (!currentShoppingList) return;
+    
+    try {
+      const response = await apiRequest("GET", `/api/shopping-lists/${currentShoppingList.id}/pricing`);
+      setPricingData(response);
+    } catch (error) {
+      console.error('Error fetching pricing data:', error);
+      toast({
+        title: "Pricing Error",
+        description: "Could not fetch pricing information",
+        variant: "destructive",
+      });
+    }
+  };
   const [manualItem, setManualItem] = useState({
     name: '',
     quantity: '',
@@ -3875,6 +3895,18 @@ export default function Home() {
                 <p className="text-gray-600">Organized by grocery store sections with meal planning integration</p>
               </div>
               <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowPricing(!showPricing);
+                    if (!showPricing && !pricingData) {
+                      fetchPricingData();
+                    }
+                  }}
+                >
+                  <DollarSign className="h-4 w-4 mr-2" />
+                  {showPricing ? 'Hide' : 'Show'} Prices
+                </Button>
                 <Button variant="outline" onClick={() => window.print()}>
                   <Download className="h-4 w-4 mr-2" />
                   Print List
@@ -4225,6 +4257,11 @@ export default function Home() {
                             <Badge variant={listItems.filter(i => i.checked).length > 0 ? "default" : "secondary"}>
                               {listItems.filter(i => i.checked).length} completed
                             </Badge>
+                            {showPricing && pricingData?.totalEstimate && (
+                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                Est. ${pricingData.totalEstimate}
+                              </Badge>
+                            )}
                           </div>
                         </div>
                       </CardHeader>
@@ -4239,81 +4276,77 @@ export default function Home() {
                               }
                             </p>
                           </div>
-                        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 print:grid-cols-1 print:gap-0">
-                          {/* Grocery Store Categories */}
-                          {[
-                            { id: 'produce', name: 'Produce', icon: '🥬' },
-                            { id: 'deli', name: 'Deli', icon: '🧀' },
-                            { id: 'poultry', name: 'Poultry', icon: '🐔' },
-                            { id: 'pork', name: 'Pork', icon: '🥓' },
-                            { id: 'red-meat', name: 'Red Meat', icon: '🥩' },
-                            { id: 'seafood', name: 'Seafood', icon: '🐟' },
-                            { id: 'dairy', name: 'Dairy', icon: '🥛' },
-                            { id: 'frozen', name: 'Frozen', icon: '🧊' },
-                            { id: 'beverages', name: 'Beverages', icon: '🥤' },
-                            { id: 'snacks', name: 'Snacks', icon: '🍿' },
-                            { id: 'canned-goods', name: 'Canned Goods', icon: '🥫' },
-                            { id: 'dry-goods', name: 'Dry Goods', icon: '🌾' },
-                            { id: 'bread', name: 'Bread & Bakery', icon: '🍞' },
-                            { id: 'ethnic-foods', name: 'Ethnic Foods', icon: '🌶️' },
-                            { id: 'household-goods', name: 'Household', icon: '🏠' },
-                            { id: 'cleaning-supplies', name: 'Cleaning', icon: '🧽' },
-                            { id: 'pets', name: 'Pet Supplies', icon: '🐕' }
-                          ].map(category => {
-                            const categoryItems = listItems.filter(item => item.category === category.id);
-                            if (categoryItems.length === 0) return null;
-                            
-                            return (
-                              <div key={category.id} className="border rounded-lg p-4 print-category">
-                                <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2 print-category-title">
-                                  <span className="text-lg print:hidden">{category.icon}</span>
-                                  {category.name}
-                                  <Badge variant="outline" className="ml-auto print:hidden">
-                                    {categoryItems.filter(i => !i.checked).length}
-                                  </Badge>
-                                </h4>
-                                <div className="space-y-2">
-                                  {categoryItems.filter(item => !item.checked).map((item) => (
-                                    <div key={item.id} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded print-item">
-                                      <Checkbox 
-                                        checked={item.checked}
-                                        onCheckedChange={(checked) => {
-                                          const updatedItems = listItems.map(i => 
-                                            i.id === item.id ? { ...i, checked: !!checked } : i
-                                          );
-                                          updateShoppingListMutation.mutate({
-                                            ...list,
-                                            items: JSON.stringify(updatedItems)
-                                          });
-                                        }}
-                                        className="print:hidden"
-                                      />
-                                      <div className={`flex-1 ${item.checked ? "opacity-50 line-through" : ""}`}>
-                                        <div className="font-medium text-sm print-item-name">• {item.name}</div>
-                                        <div className="text-xs text-gray-500 print-item-details print:text-black">
-                                          {item.quantity} {item.unit}
-                                        </div>
-                                      </div>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => {
-                                          const updatedItems = listItems.filter(i => i.id !== item.id);
-                                          updateShoppingListMutation.mutate({
-                                            ...list,
-                                            items: JSON.stringify(updatedItems)
-                                          });
-                                        }}
-                                        className="text-red-600 hover:text-red-800 h-6 w-6 p-0 print:hidden"
-                                      >
-                                        <X className="h-3 w-3" />
-                                      </Button>
-                                    </div>
-                                  ))}
+                        {/* Unified Shopping List */}
+                        <div className="space-y-2">
+                          {listItems.filter(item => !item.checked).map((item) => (
+                            <div key={item.id} className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 print-item">
+                              <Checkbox 
+                                checked={item.checked}
+                                onCheckedChange={(checked) => {
+                                  const updatedItems = listItems.map(i => 
+                                    i.id === item.id ? { ...i, checked: !!checked } : i
+                                  );
+                                  updateShoppingListMutation.mutate({
+                                    ...list,
+                                    items: JSON.stringify(updatedItems)
+                                  });
+                                }}
+                                className="print:hidden"
+                              />
+                              <div className={`flex-1 ${item.checked ? "opacity-50 line-through" : ""}`}>
+                                <div className="font-medium print-item-name">• {item.name}</div>
+                                <div className="text-sm text-gray-500 print-item-details print:text-black">
+                                  {item.quantity} {item.unit} - {item.category}
                                 </div>
+                                {showPricing && pricingData?.items && (() => {
+                                  const pricingItem = pricingData.items.find((p: any) => p.name.toLowerCase() === item.name.toLowerCase());
+                                  if (pricingItem?.pricing?.length > 0) {
+                                    const bestPrice = pricingItem.pricing.reduce((min: any, store: any) => 
+                                      store.inStock && store.price < min.price ? store : min, 
+                                      pricingItem.pricing.find((p: any) => p.inStock) || pricingItem.pricing[0]
+                                    );
+                                    return (
+                                      <div className="text-xs text-green-600 mt-1 print:hidden">
+                                        <div className="flex items-center gap-2">
+                                          <span className="font-medium">${bestPrice.price}</span>
+                                          <span>at {bestPrice.storeName}</span>
+                                          {bestPrice.onSale && <Badge variant="destructive" className="text-xs">Sale</Badge>}
+                                          {!bestPrice.inStock && <Badge variant="outline" className="text-xs">Out of Stock</Badge>}
+                                        </div>
+                                        {pricingItem.pricing.length > 1 && (
+                                          <div className="text-gray-400 text-xs">
+                                            {pricingItem.pricing.length - 1} other store{pricingItem.pricing.length > 2 ? 's' : ''}
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  }
+                                  return null;
+                                })()}
                               </div>
-                            );
-                          })}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  const updatedItems = listItems.filter(i => i.id !== item.id);
+                                  updateShoppingListMutation.mutate({
+                                    ...list,
+                                    items: JSON.stringify(updatedItems)
+                                  });
+                                }}
+                                className="text-red-600 hover:text-red-800 h-6 w-6 p-0 print:hidden"
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+                          
+                          {listItems.filter(item => !item.checked).length === 0 && (
+                            <div className="text-center py-8 text-gray-500">
+                              <ShoppingCart className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+                              <p>All items checked off!</p>
+                            </div>
+                          )}
                         </div>
                         </div>
                         

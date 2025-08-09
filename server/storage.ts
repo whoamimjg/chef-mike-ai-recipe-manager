@@ -11,6 +11,8 @@ import {
   usedItems,
   aiLearning,
   mealSuggestions,
+  groceryStorePricing,
+  userGroceryStores,
   type User,
   type UpsertUser,
   type Recipe,
@@ -35,6 +37,10 @@ import {
   type InsertAiLearning,
   type MealSuggestions,
   type InsertMealSuggestions,
+  type GroceryStorePricing,
+  type InsertGroceryStorePricing,
+  type UserGroceryStore,
+  type InsertUserGroceryStore,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gte, lte, desc, asc, ilike, isNotNull, isNull, sql } from "drizzle-orm";
@@ -127,6 +133,14 @@ export interface IStorage {
   createMealSuggestions(suggestions: InsertMealSuggestions): Promise<MealSuggestions>;
   updateMealSuggestions(id: number, suggestions: Partial<InsertMealSuggestions>, userId: string): Promise<MealSuggestions | undefined>;
   getMealSuggestionsHistory(userId: string, limit?: number): Promise<MealSuggestions[]>;
+  
+  // Grocery store operations
+  getUserGroceryStores(userId: string): Promise<UserGroceryStore[]>;
+  addUserGroceryStore(store: InsertUserGroceryStore): Promise<UserGroceryStore>;
+  updateUserGroceryStore(id: number, store: Partial<InsertUserGroceryStore>, userId: string): Promise<UserGroceryStore | undefined>;
+  deleteUserGroceryStore(id: number, userId: string): Promise<boolean>;
+  getItemPricing(itemName: string, userStores: UserGroceryStore[]): Promise<GroceryStorePricing[]>;
+  updateGroceryPricing(pricing: InsertGroceryStorePricing): Promise<GroceryStorePricing>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -827,6 +841,81 @@ export class DatabaseStorage implements IStorage {
       .where(eq(mealSuggestions.userId, userId))
       .orderBy(desc(mealSuggestions.createdAt))
       .limit(limit);
+  }
+  // Grocery store operations
+  async getUserGroceryStores(userId: string): Promise<UserGroceryStore[]> {
+    return await db.select()
+      .from(userGroceryStores)
+      .where(eq(userGroceryStores.userId, userId))
+      .orderBy(desc(userGroceryStores.isPrimary), asc(userGroceryStores.storeName));
+  }
+
+  async addUserGroceryStore(store: InsertUserGroceryStore): Promise<UserGroceryStore> {
+    const [newStore] = await db
+      .insert(userGroceryStores)
+      .values(store)
+      .returning();
+    return newStore;
+  }
+
+  async updateUserGroceryStore(id: number, store: Partial<InsertUserGroceryStore>, userId: string): Promise<UserGroceryStore | undefined> {
+    const [updatedStore] = await db
+      .update(userGroceryStores)
+      .set(store)
+      .where(and(eq(userGroceryStores.id, id), eq(userGroceryStores.userId, userId)))
+      .returning();
+    return updatedStore;
+  }
+
+  async deleteUserGroceryStore(id: number, userId: string): Promise<boolean> {
+    const result = await db
+      .delete(userGroceryStores)
+      .where(and(eq(userGroceryStores.id, id), eq(userGroceryStores.userId, userId)));
+    return result.rowCount > 0;
+  }
+
+  async getItemPricing(itemName: string, userStores: UserGroceryStore[]): Promise<GroceryStorePricing[]> {
+    if (userStores.length === 0) {
+      // Return general pricing if no user stores specified
+      return await db.select()
+        .from(groceryStorePricing)
+        .where(ilike(groceryStorePricing.itemName, `%${itemName}%`))
+        .orderBy(asc(groceryStorePricing.price))
+        .limit(5);
+    }
+
+    const storeNames = userStores.map(store => store.storeName);
+    return await db.select()
+      .from(groceryStorePricing)
+      .where(
+        and(
+          ilike(groceryStorePricing.itemName, `%${itemName}%`),
+          sql`${groceryStorePricing.storeName} = ANY(${storeNames})`
+        )
+      )
+      .orderBy(asc(groceryStorePricing.price));
+  }
+
+  async updateGroceryPricing(pricing: InsertGroceryStorePricing): Promise<GroceryStorePricing> {
+    const [updatedPricing] = await db
+      .insert(groceryStorePricing)
+      .values({
+        ...pricing,
+        lastUpdated: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: [groceryStorePricing.storeName, groceryStorePricing.itemName],
+        set: {
+          price: pricing.price,
+          originalPrice: pricing.originalPrice,
+          onSale: pricing.onSale,
+          inStock: pricing.inStock,
+          stockLevel: pricing.stockLevel,
+          lastUpdated: new Date(),
+        },
+      })
+      .returning();
+    return updatedPricing;
   }
 }
 
