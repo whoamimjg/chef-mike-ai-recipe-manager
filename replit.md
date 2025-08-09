@@ -46,7 +46,7 @@ Preferred communication style: Simple, everyday language.
 - **Sessions**: Session storage for Replit authentication
 
 ### Core Application Features
-- **Recipe Management**: CRUD operations for recipes with image upload support
+- **Recipe Management**: CRUD operations for recipes with image upload support and enhanced multi-site image extraction
 - **Meal Planning**: Calendar-based interface for scheduling meals
 - **Shopping List Generation**: Automatic list creation from planned meals organized by 15 comprehensive grocery store categories
 - **Intelligent Ingredient Categorization**: Advanced system with 300+ categorized ingredients across produce, dairy, dry goods, oils, spices, and more
@@ -64,6 +64,7 @@ Preferred communication style: Simple, everyday language.
 - **Comprehensive Dietary Preferences**: Enhanced signup flow collects dietary restrictions, allergies, cuisine preferences, disliked ingredients, cooking experience, and cooking goals
 - **Account Management**: Full account settings page with dietary preferences management and profile updates (authenticated users only)
 - **Email System**: Welcome emails using Nodemailer (verification disabled for immediate access like PlanToEat)
+- **Enhanced Recipe Import**: Comprehensive image extraction system supporting 25+ popular recipe websites including AllRecipes, Food Network, Bon Appétit, BBC Good Food, NYTimes Cooking, and many food bloggers
 
 ### Authentication & Authorization
 - **Replit Auth**: Integrated authentication system with session management

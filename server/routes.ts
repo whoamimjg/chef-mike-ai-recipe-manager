@@ -581,31 +581,179 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         // Enhanced image extraction
-        const imageSelectors = [
-          /<img[^>]*class[^>]*recipe[^>]*[^>]*src=["']([^"']+)["']/gi,
-          /<img[^>]*src=["']([^"']*recipe[^"']*)[^>]*>/gi,
-          /<img[^>]*src=["']([^"']*food[^"']*)[^>]*>/gi,
-          /<img[^>]*alt=["'][^"']*recipe[^"']*[^>]*src=["']([^"']+)["']/gi,
-          /<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/gi,
-          // Try any high-resolution image
-          /<img[^>]*src=["']([^"']*\d{3,4}x\d{3,4}[^"']*)[^>]*>/gi,
-        ];
-
-        let imageUrl = '';
-        for (const selector of imageSelectors) {
-          const match = html.match(selector);
-          if (match && match[1]) {
-            imageUrl = match[1];
-            // Make sure it's a full URL
-            if (imageUrl.startsWith('//')) {
-              imageUrl = 'https:' + imageUrl;
-            } else if (imageUrl.startsWith('/')) {
-              imageUrl = new URL(url).origin + imageUrl;
+        // Enhanced image extraction for multiple recipe sites
+        const extractImage = (html: string, siteUrl: string) => {
+          const domain = new URL(siteUrl).hostname.toLowerCase();
+          
+          // Site-specific selectors (most reliable first)
+          const siteSpecificSelectors = [
+            // AllRecipes
+            /<img[^>]*class="recipe-summary__image[^"]*"[^>]*src=["']([^"']+)["']/gi,
+            /<img[^>]*class="primary-image[^"]*"[^>]*src=["']([^"']+)["']/gi,
+            
+            // Food Network
+            /<img[^>]*class="m-MediaBlock__a-Image[^"]*"[^>]*src=["']([^"']+)["']/gi,
+            /<img[^>]*class="recipe-lead-image[^"]*"[^>]*src=["']([^"']+)["']/gi,
+            
+            // Bon Appetit, Epicurious  
+            /<img[^>]*class="recipe__header-image[^"]*"[^>]*src=["']([^"']+)["']/gi,
+            /<picture[^>]*class="recipe-header-image[^"]*"[^>]*><img[^>]*src=["']([^"']+)["']/gi,
+            
+            // Tasty, BuzzFeed
+            /<img[^>]*class="recipe-thumbnail[^"]*"[^>]*src=["']([^"']+)["']/gi,
+            /<img[^>]*class="feed-item[^"]*"[^>]*src=["']([^"']+)["']/gi,
+            
+            // BBC Good Food
+            /<img[^>]*class="recipe-media__image[^"]*"[^>]*src=["']([^"']+)["']/gi,
+            /<div[^>]*class="recipe-header__media[^"]*"[^>]*><img[^>]*src=["']([^"']+)["']/gi,
+            
+            // Simply Recipes, Serious Eats
+            /<img[^>]*class="wp-image[^"]*"[^>]*src=["']([^"']+)["']/gi,
+            /<img[^>]*class="recipe-image[^"]*"[^>]*src=["']([^"']+)["']/gi,
+            
+            // King Arthur Baking
+            /<img[^>]*class="recipe-detail-image[^"]*"[^>]*src=["']([^"']+)["']/gi,
+            /<div[^>]*class="recipe-hero[^"]*"[^>]*><img[^>]*src=["']([^"']+)["']/gi,
+            
+            // Delish, Country Living
+            /<img[^>]*class="content-lede-image[^"]*"[^>]*src=["']([^"']+)["']/gi,
+            /<img[^>]*data-src=["']([^"']+)["'][^>]*class="[^"]*recipe[^"]*"/gi,
+            
+            // Taste of Home, Better Homes & Gardens
+            /<img[^>]*class="recipe-photo[^"]*"[^>]*src=["']([^"']+)["']/gi,
+            /<img[^>]*class="featured-image[^"]*"[^>]*src=["']([^"']+)["']/gi,
+            /<div[^>]*class="recipe-image-container[^"]*"[^>]*><img[^>]*src=["']([^"']+)["']/gi,
+            
+            // Martha Stewart, Real Simple
+            /<img[^>]*class="hero-image[^"]*"[^>]*src=["']([^"']+)["']/gi,
+            /<img[^>]*class="lead-photo[^"]*"[^>]*src=["']([^"']+)["']/gi,
+            /<picture[^>]*class="hero[^"]*"[^>]*><img[^>]*src=["']([^"']+)["']/gi,
+            
+            // Food52, Kitchn  
+            /<img[^>]*class="recipe__photo[^"]*"[^>]*src=["']([^"']+)["']/gi,
+            /<img[^>]*class="post-lead-image[^"]*"[^>]*src=["']([^"']+)["']/gi,
+            /<div[^>]*class="recipe-intro__photo[^"]*"[^>]*><img[^>]*src=["']([^"']+)["']/gi,
+            
+            // NYTimes Cooking
+            /<img[^>]*class="recipe-image[^"]*"[^>]*src=["']([^"']+)["']/gi,
+            /<img[^>]*class="media-viewer__media[^"]*"[^>]*src=["']([^"']+)["']/gi,
+            
+            // Pinterest, Yummly
+            /<img[^>]*class="recipe-card-image[^"]*"[^>]*src=["']([^"']+)["']/gi,
+            /<img[^>]*class="recipe-summary-image[^"]*"[^>]*src=["']([^"']+)["']/gi,
+            
+            // Bloggers and WordPress themes
+            /<img[^>]*class="recipe-card__image[^"]*"[^>]*src=["']([^"']+)["']/gi,
+            /<img[^>]*class="entry-featured-image[^"]*"[^>]*src=["']([^"']+)["']/gi,
+            /<img[^>]*class="post-thumbnail[^"]*"[^>]*src=["']([^"']+)["']/gi,
+          ];
+          
+          // Generic selectors (fallback)
+          const genericSelectors = [
+            // Open Graph image (most universal)
+            /<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/gi,
+            /<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/gi,
+            
+            // Twitter card image
+            /<meta[^>]*name=["']twitter:image["'][^>]*content=["']([^"']+)["']/gi,
+            
+            // Lazy loading images (data-src, data-original, etc.)
+            /<img[^>]*data-src=["']([^"']+)["'][^>]*class="[^"]*recipe[^"]*"/gi,
+            /<img[^>]*data-original=["']([^"']+)["'][^>]*>/gi,
+            /<img[^>]*data-lazy-src=["']([^"']+)["'][^>]*>/gi,
+            /<img[^>]*data-image-src=["']([^"']+)["'][^>]*>/gi,
+            /<img[^>]*data-full-src=["']([^"']+)["'][^>]*>/gi,
+            /<img[^>]*data-srcset=["']([^"',\s]+)[^"']*["'][^>]*>/gi,
+            
+            // JSON-LD structured data
+            /"image"\s*:\s*"([^"]+)"/gi,
+            /"image"\s*:\s*\[\s*"([^"]+)"/gi,
+            
+            // Recipe-specific patterns
+            /<img[^>]*class="[^"]*recipe[^"]*"[^>]*src=["']([^"']+)["']/gi,
+            /<img[^>]*alt="[^"]*recipe[^"]*"[^>]*src=["']([^"']+)["']/gi,
+            /<img[^>]*src=["']([^"']*recipe[^"']*)[^>]*>/gi,
+            /<img[^>]*src=["']([^"']*food[^"']*)[^>]*>/gi,
+            
+            // High-resolution images (likely main images)
+            /<img[^>]*src=["']([^"']*\d{3,4}x\d{3,4}[^"']*)[^>]*>/gi,
+            /<img[^>]*src=["']([^"']*-\d{3,4}x\d{3,4}[^"']*)[^>]*>/gi,
+            
+            // WordPress media
+            /<img[^>]*class="wp-post-image[^"]*"[^>]*src=["']([^"']+)["']/gi,
+            /<img[^>]*class="attachment[^"]*"[^>]*src=["']([^"']+)["']/gi,
+            
+            // Hero/featured images
+            /<img[^>]*class="[^"]*hero[^"]*"[^>]*src=["']([^"']+)["']/gi,
+            /<img[^>]*class="[^"]*featured[^"]*"[^>]*src=["']([^"']+)["']/gi,
+            /<img[^>]*class="[^"]*main[^"]*"[^>]*src=["']([^"']+)["']/gi,
+            
+            // Large images (likely content images)
+            /<img[^>]*width=["']\d{3,}["'][^>]*src=["']([^"']+)["']/gi,
+            /<img[^>]*height=["']\d{3,}["'][^>]*src=["']([^"']+)["']/gi,
+            
+            // Fallback: any image that might be reasonable
+            /<img[^>]*src=["']([^"']*[./](jpg|jpeg|png|webp)[^"']*?)["'][^>]*(?:width=["']\d{2,}|height=["']\d{2,}|class="[^"]*(?:image|photo|pic)[^"]*")/gi,
+            /<img[^>]*(?:width=["']\d{2,}|height=["']\d{2,}|class="[^"]*(?:image|photo|pic)[^"]*")[^>]*src=["']([^"']*[./](jpg|jpeg|png|webp)[^"']*?)["']/gi,
+          ];
+          
+          // Try site-specific selectors first
+          const allSelectors = [...siteSpecificSelectors, ...genericSelectors];
+          
+          for (const selector of allSelectors) {
+            const matches = [...html.matchAll(selector)];
+            for (const match of matches) {
+              let imageUrl = match[1];
+              if (imageUrl) {
+                // Clean up the URL
+                imageUrl = imageUrl.trim();
+                
+                // Skip tiny images, icons, and social media images
+                if (imageUrl.includes('icon') || 
+                    imageUrl.includes('logo') || 
+                    imageUrl.includes('favicon') ||
+                    imageUrl.includes('avatar') ||
+                    imageUrl.includes('profile') ||
+                    imageUrl.match(/\d+x\d+/) && imageUrl.match(/(\d+)x(\d+)/) && 
+                    (parseInt(imageUrl.match(/(\d+)x(\d+)/)?.[1] || '0') < 200 ||
+                     parseInt(imageUrl.match(/(\d+)x(\d+)/)?.[2] || '0') < 200)) {
+                  continue;
+                }
+                
+                // Make sure it's a full URL
+                if (imageUrl.startsWith('//')) {
+                  imageUrl = 'https:' + imageUrl;
+                } else if (imageUrl.startsWith('/')) {
+                  imageUrl = new URL(siteUrl).origin + imageUrl;
+                } else if (!imageUrl.startsWith('http')) {
+                  imageUrl = new URL(siteUrl).origin + '/' + imageUrl;
+                }
+                
+                // Validate it's a reasonable image URL (with more formats and validation)
+                if (imageUrl.match(/\.(jpg|jpeg|png|webp|avif|svg)(\?|$)/i) || 
+                    imageUrl.includes('image') || 
+                    imageUrl.includes('photo') ||
+                    imageUrl.includes('recipe')) {
+                  
+                  // Additional validation: ensure it's not a placeholder or broken image
+                  if (!imageUrl.includes('placeholder') && 
+                      !imageUrl.includes('default') &&
+                      !imageUrl.includes('no-image') &&
+                      !imageUrl.includes('missing') &&
+                      imageUrl.length > 20) {
+                    console.log(`Found recipe image from ${domain}: ${imageUrl}`);
+                    return imageUrl;
+                  }
+                }
+              }
             }
-            console.log(`Found image: ${imageUrl}`);
-            break;
           }
-        }
+          
+          console.log(`No recipe image found for ${domain}`);
+          return '';
+        };
+
+        const imageUrl = extractImage(html, url);
 
         // Try to extract time information
         const prepTimeMatch = html.match(/prep[^:]*:?\s*(\d+)\s*min/i) || html.match(/preparation[^:]*:?\s*(\d+)\s*min/i);
