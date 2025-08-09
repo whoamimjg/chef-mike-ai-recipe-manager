@@ -321,11 +321,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/recipes', isAuthenticated, upload.single('image'), async (req: any, res) => {
+  app.post('/api/recipes', isAuthenticated, upload.fields([{ name: 'image', maxCount: 1 }]), async (req: any, res) => {
     try {
       console.log("Recipe creation request received");
       console.log("Request body:", req.body);
-      console.log("Request file:", req.file);
+      console.log("Request files:", req.files);
       
       const userId = req.user?.claims?.sub || req.user?.id || req.session?.userId;
       console.log("User ID:", userId);
@@ -343,6 +343,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       console.log("Parsing recipe data...");
+      const imageFile = req.files && req.files['image'] ? req.files['image'][0] : null;
       const recipeData = insertRecipeSchema.parse({
         ...req.body,
         userId,
@@ -350,7 +351,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         instructions: JSON.parse(req.body.instructions || '[]'),
         tags: JSON.parse(req.body.tags || '[]'),
         nutritionInfo: req.body.nutritionInfo ? JSON.parse(req.body.nutritionInfo) : null,
-        imageUrl: req.file ? `/uploads/${req.file.filename}` : null,
+        imageUrl: imageFile ? `/uploads/${imageFile.filename}` : (req.body.imageUrl || null),
       });
 
       console.log("Parsed recipe data:", recipeData);
