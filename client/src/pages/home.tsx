@@ -973,18 +973,13 @@ END:VCALENDAR`
       // Clear all cached data
       queryClient.clear();
       
-      // Make logout request
-      await fetch("/api/logout", {
-        method: "GET",
-        credentials: "include",
-      });
-      
-      // Force reload to ensure clean state
-      window.location.href = "/";
+      // For Replit Auth, we need to redirect directly to the logout endpoint
+      // This allows the OAuth provider to properly clear the session
+      window.location.href = "/api/logout";
     } catch (error) {
       console.error("Logout error:", error);
-      // Fallback: still redirect to homepage
-      window.location.href = "/";
+      // Fallback: still redirect to logout endpoint
+      window.location.href = "/api/logout";
     }
   };
 
