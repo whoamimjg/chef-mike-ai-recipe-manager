@@ -4162,6 +4162,54 @@ export default function Home() {
                             ))}
                           </div>
                         </div>
+
+                        {/* Checked Items */}
+                        {(() => {
+                          const checkedItems = listItems.filter(item => item.checked);
+                          if (checkedItems.length === 0) return null;
+                          
+                          return (
+                            <div className="border-t pt-3 mt-4">
+                              <h4 className="text-sm font-medium text-gray-700 mb-2">
+                                Checked Items ({checkedItems.length})
+                              </h4>
+                              <div className="space-y-1 max-h-40 overflow-y-auto">
+                                {checkedItems.map(item => (
+                                  <div
+                                    key={item.id}
+                                    className="flex items-center justify-between p-2 bg-green-50 rounded border text-xs"
+                                  >
+                                    <div className="flex-1">
+                                      <div className="font-medium text-green-800 line-through">
+                                        {item.name}
+                                      </div>
+                                      <div className="text-green-600">
+                                        {item.quantity} {item.unit}
+                                      </div>
+                                    </div>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        const updatedItems = listItems.map(i => 
+                                          i.id === item.id ? { ...i, checked: false } : i
+                                        );
+                                        updateShoppingListMutation.mutate({
+                                          ...list,
+                                          items: JSON.stringify(updatedItems)
+                                        });
+                                      }}
+                                      className="text-green-700 hover:text-green-900 h-6 w-6 p-0"
+                                      title="Uncheck item"
+                                    >
+                                      <RotateCcw className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </CardContent>
                     </Card>
 
