@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -18,6 +18,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
+import { BrowserMultiFormatReader } from '@zxing/library';
 import { 
   ChefHat, 
   Calendar as CalendarIcon, 
@@ -100,6 +101,71 @@ export default function Home() {
     expiryDate: ""
   });
   const [isBarcodeScanning, setIsBarcodeScanning] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const codeReaderRef = useRef<BrowserMultiFormatReader | null>(null);
+
+  // Barcode scanning functions
+  const startScanning = async () => {
+    try {
+      setIsScanning(true);
+      codeReaderRef.current = new BrowserMultiFormatReader();
+      
+      const videoInputDevices = await codeReaderRef.current.listVideoInputDevices();
+      
+      if (videoInputDevices.length === 0) {
+        throw new Error('No camera found');
+      }
+
+      // Use the back camera if available, otherwise use the first available camera
+      const selectedDevice = videoInputDevices.find(device => 
+        device.label.toLowerCase().includes('back') || 
+        device.label.toLowerCase().includes('rear')
+      ) || videoInputDevices[0];
+
+      const previewElem = videoRef.current;
+      if (!previewElem) return;
+
+      codeReaderRef.current.decodeFromVideoDevice(
+        selectedDevice.deviceId,
+        previewElem,
+        (result, err) => {
+          if (result) {
+            const barcodeText = result.getText();
+            setNewInventoryItem({...newInventoryItem, upcBarcode: barcodeText});
+            stopScanning();
+            toast({
+              title: "Barcode Scanned!",
+              description: `Found barcode: ${barcodeText}`,
+            });
+          }
+        }
+      );
+    } catch (error) {
+      console.error('Error starting barcode scanner:', error);
+      toast({
+        title: "Camera Error",
+        description: "Unable to access camera. Please check permissions and try again.",
+        variant: "destructive",
+      });
+      setIsScanning(false);
+    }
+  };
+
+  const stopScanning = () => {
+    if (codeReaderRef.current) {
+      codeReaderRef.current.reset();
+      codeReaderRef.current = null;
+    }
+    setIsScanning(false);
+  };
+
+  // Cleanup camera when component unmounts
+  useEffect(() => {
+    return () => {
+      stopScanning();
+    };
+  }, []);
   const [isReceiptScanning, setIsReceiptScanning] = useState(false);
   const [receiptItems, setReceiptItems] = useState<any[]>([]);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
@@ -5312,18 +5378,53 @@ END:VCALENDAR`
       </Dialog>
 
       {/* Barcode Scanner Dialog */}
-      <Dialog open={isBarcodeScanning} onOpenChange={setIsBarcodeScanning}>
+      <Dialog open={isBarcodeScanning} onOpenChange={(open) => {
+        setIsBarcodeScanning(open);
+        if (!open) {
+          stopScanning();
+        }
+      }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Scan Barcode</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="text-center p-8 border-2 border-dashed border-gray-300 rounded-lg">
-              <Search className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-              <p className="text-gray-600 mb-4">Position barcode in front of camera</p>
-              <div className="bg-gray-100 h-32 rounded-lg flex items-center justify-center">
-                <p className="text-gray-500">Camera preview would appear here</p>
-              </div>
+            <div className="text-center p-4 border-2 border-dashed border-gray-300 rounded-lg">
+              {isScanning ? (
+                <>
+                  <p className="text-gray-600 mb-4">Position barcode in front of camera</p>
+                  <div className="relative bg-black rounded-lg overflow-hidden">
+                    <video 
+                      ref={videoRef}
+                      className="w-full h-64 object-cover"
+                      autoPlay
+                      playsInline
+                      muted
+                    />
+                    <div className="absolute inset-0 border-2 border-red-500 rounded-lg pointer-events-none">
+                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-48 h-24 border-2 border-white rounded-lg"></div>
+                    </div>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    onClick={stopScanning}
+                    className="mt-4"
+                  >
+                    Stop Scanning
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Search className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                  <p className="text-gray-600 mb-4">Start camera to scan barcodes</p>
+                  <Button 
+                    onClick={startScanning}
+                    className="mb-4"
+                  >
+                    Start Camera
+                  </Button>
+                </>
+              )}
             </div>
             <Input 
               placeholder="Or enter barcode manually" 
@@ -5337,12 +5438,16 @@ END:VCALENDAR`
               <Button 
                 onClick={() => {
                   setIsBarcodeScanning(false);
-                  toast({
-                    title: "Barcode Added",
-                    description: "Barcode has been added to the item form",
-                  });
+                  stopScanning();
+                  if (newInventoryItem.upcBarcode) {
+                    toast({
+                      title: "Barcode Added",
+                      description: `Barcode ${newInventoryItem.upcBarcode} has been added to the item form`,
+                    });
+                  }
                 }}
                 className="flex-1"
+                disabled={!newInventoryItem.upcBarcode}
               >
                 Use Barcode
               </Button>
