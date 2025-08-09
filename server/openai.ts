@@ -183,9 +183,10 @@ USER'S AVAILABLE INGREDIENTS:`;
     if (existingRecipes?.length) {
       prompt += `\nUSER'S EXISTING SAVED RECIPES (analyze these against inventory first):\n`;
       existingRecipes.forEach((recipe, index) => {
-        let ingredients = [];
+        let ingredients: any[] = [];
         try {
-          ingredients = JSON.parse(recipe.ingredients);
+          // Ingredients is already parsed as JSONB from the database
+          ingredients = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
         } catch {
           ingredients = [];
         }
@@ -408,7 +409,8 @@ function getFallbackRecommendations(request: RecommendationRequest): RecipeRecom
             matchReason: `This is one of your saved recipes. You have ${matchPercentage}% of the ingredients needed.${matchedIngredients.length > 0 ? ` You can use your: ${matchedIngredients.join(', ')}.` : ''}`,
             matchType: matchPercentage >= 80 ? 'full' : 'partial',
             missingIngredients,
-            inventoryMatch: matchPercentage
+            inventoryMatch: matchPercentage,
+            personalizationScore: matchPercentage * 0.01 // Convert percentage to score 0-1
           });
         }
       }
@@ -436,7 +438,8 @@ function getFallbackRecommendations(request: RecommendationRequest): RecipeRecom
       matchReason: "Simple recipe that works with most fish and basic seasonings",
       matchType: "partial" as const,
       missingIngredients: ["lemon", "herbs"],
-      inventoryMatch: 60
+      inventoryMatch: 60,
+      personalizationScore: 0.6
     },
     {
       title: "Basic Stir Fry",
@@ -457,7 +460,8 @@ function getFallbackRecommendations(request: RecommendationRequest): RecipeRecom
       matchReason: "Flexible recipe that adapts to whatever ingredients you have",
       matchType: "partial" as const,
       missingIngredients: ["soy sauce", "garlic"],
-      inventoryMatch: 50
+      inventoryMatch: 50,
+      personalizationScore: 0.5
     }
   ];
 
