@@ -2371,7 +2371,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[Pricing API] Successfully parsed ${items.length} items`);
       if (items.length > 0) {
-        console.log(`[Pricing API] First item structure:`, items[0]);
+        console.log(`[Pricing API] First item structure:`, JSON.stringify(items[0], null, 2));
       }
       
       // Generate store-specific mock data if no real pricing available
@@ -2382,6 +2382,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'target': 1.1,
           'walmart': 0.9,
           'safeway': 1.15,
+          'meijer': 0.95,
+          'giant-eagle': 1.05,
           'costco': 0.85,
           'wholefoods': 1.3
         };
@@ -2413,7 +2415,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               finalPricing = generateMockPricing(store);
             } else {
               // Generate mock data for multiple stores
-              const stores = ['Kroger', 'Target', 'Walmart', 'Safeway'];
+              const stores = ['Kroger', 'Target', 'Walmart', 'Safeway', 'Meijer', 'Giant Eagle'];
               finalPricing = stores.map(storeName => ({
                 storeName,
                 price: Math.round((Math.random() * 5 + 1) * 100) / 100,
@@ -2456,6 +2458,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const itemsWithPricing = await Promise.all(pricingPromises);
+      console.log(`[Pricing API] Final response - ${itemsWithPricing.length} items with pricing data`);
+      console.log(`[Pricing API] Sample pricing data:`, JSON.stringify(itemsWithPricing[0], null, 2));
+      
       const totalEstimate = itemsWithPricing.reduce((sum, item) => {
         const inStockPrices = item.pricing.filter((p: any) => p.inStock).map((p: any) => p.price);
         if (inStockPrices.length === 0) return sum;
@@ -2463,12 +2468,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return sum + (isFinite(bestPrice) ? bestPrice : 0);
       }, 0);
 
-      res.json({
+      const responseData = {
         shoppingListId: id,
         items: itemsWithPricing,
         totalEstimate: Math.round(totalEstimate * 100) / 100,
         lastUpdated: new Date().toISOString()
-      });
+      };
+      
+      console.log(`[Pricing API] Sending response with total estimate: ${responseData.totalEstimate}`);
+      res.json(responseData);
     } catch (error) {
       console.error("Error fetching shopping list pricing:", error);
       res.status(500).json({ message: "Failed to fetch shopping list pricing" });

@@ -161,9 +161,15 @@ export default function Home() {
     
     try {
       console.log(`Fetching pricing data for list ${currentList.id} from store: ${selectedStore}`);
-      const response = await apiRequest("GET", `/api/shopping-lists/${currentList.id}/pricing?store=${selectedStore}`);
-      setPricingData(response);
-      console.log('Pricing data received:', response);
+      const data = await apiRequest("GET", `/api/shopping-lists/${currentList.id}/pricing?store=${selectedStore}`);
+      console.log('Pricing data received:', data);
+      console.log('Pricing data structure:', {
+        hasItems: !!data?.items,
+        itemsCount: data?.items?.length || 0,
+        totalEstimate: data?.totalEstimate,
+        sampleItem: data?.items?.[0]
+      });
+      setPricingData(data);
     } catch (error) {
       console.error('Error fetching pricing data:', error);
       toast({
@@ -4155,6 +4161,8 @@ export default function Home() {
                         <SelectItem value="target">Target</SelectItem>
                         <SelectItem value="walmart">Walmart</SelectItem>
                         <SelectItem value="safeway">Safeway</SelectItem>
+                        <SelectItem value="meijer">Meijer</SelectItem>
+                        <SelectItem value="giant-eagle">Giant Eagle</SelectItem>
                         <SelectItem value="costco">Costco</SelectItem>
                         <SelectItem value="wholefoods">Whole Foods</SelectItem>
                       </SelectContent>
