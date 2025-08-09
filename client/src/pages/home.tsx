@@ -266,6 +266,7 @@ export default function Home() {
   // Create recipe mutation
   const createRecipeMutation = useMutation({
     mutationFn: async (formData: FormData) => {
+      console.log("Creating recipe with FormData:", Object.fromEntries(formData.entries()));
       await apiRequest("POST", "/api/recipes", formData);
     },
     onSuccess: () => {
@@ -279,6 +280,8 @@ export default function Home() {
       });
     },
     onError: (error) => {
+      console.error("Recipe creation error:", error);
+      
       if (isUnauthorizedError(error)) {
         toast({
           title: "Unauthorized",
@@ -304,7 +307,7 @@ export default function Home() {
       
       toast({
         title: "Error",
-        description: "Failed to create recipe",
+        description: `Failed to create recipe: ${error.message}`,
         variant: "destructive",
       });
     },

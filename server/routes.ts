@@ -323,11 +323,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/recipes', isAuthenticated, upload.single('image'), async (req: any, res) => {
     try {
+      console.log("Recipe creation request received");
+      console.log("Request body:", req.body);
+      console.log("Request file:", req.file);
+      
       const userId = req.user?.claims?.sub || req.user?.id || req.session?.userId;
+      console.log("User ID:", userId);
       
       // Check plan limits before creating recipe
       const limitCheck = await checkPlanLimits(userId, 'recipes');
       if (!limitCheck.allowed) {
+        console.log("Recipe limit reached for user:", userId);
         return res.status(403).json({ 
           message: "Recipe limit reached", 
           current: limitCheck.current,
@@ -336,6 +342,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      console.log("Parsing recipe data...");
       const recipeData = insertRecipeSchema.parse({
         ...req.body,
         userId,
@@ -346,11 +353,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         imageUrl: req.file ? `/uploads/${req.file.filename}` : null,
       });
 
+      console.log("Parsed recipe data:", recipeData);
       const recipe = await storage.createRecipe(recipeData);
+      console.log("Recipe created successfully:", recipe.id);
       res.status(201).json(recipe);
     } catch (error) {
       console.error("Error creating recipe:", error);
-      res.status(500).json({ message: "Failed to create recipe" });
+      console.error("Error stack:", error.stack);
+      res.status(500).json({ message: "Failed to create recipe", error: error.message });
     }
   });
 
