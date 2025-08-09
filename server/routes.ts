@@ -347,6 +347,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const recipeData = insertRecipeSchema.parse({
         ...req.body,
         userId,
+        // Convert string numbers to actual numbers
+        prepTime: req.body.prepTime ? parseInt(req.body.prepTime) : null,
+        cookTime: req.body.cookTime ? parseInt(req.body.cookTime) : null,
+        servings: req.body.servings ? parseInt(req.body.servings) : null,
+        // Parse JSON fields
         ingredients: JSON.parse(req.body.ingredients || '[]'),
         instructions: JSON.parse(req.body.instructions || '[]'),
         tags: JSON.parse(req.body.tags || '[]'),
