@@ -1,6 +1,6 @@
 // Target RedCard API integration for pricing
 // Target offers a partners API but requires approval for retail pricing
-const fetch = require('node-fetch');
+import fetch from 'node-fetch';
 
 export class TargetAPI {
   private apiKey: string;

@@ -161,7 +161,8 @@ export default function Home() {
     
     try {
       console.log(`Fetching pricing data for list ${currentList.id} from store: ${selectedStore}`);
-      const data = await apiRequest("GET", `/api/shopping-lists/${currentList.id}/pricing?store=${selectedStore}`);
+      const response = await apiRequest("GET", `/api/shopping-lists/${currentList.id}/pricing?store=${selectedStore}`);
+      const data = await response.json();
       console.log('Pricing data received:', data);
       console.log('Pricing data structure:', {
         hasItems: !!data?.items,
