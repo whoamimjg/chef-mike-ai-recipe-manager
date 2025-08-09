@@ -108,6 +108,13 @@ export default function Home() {
   const [recipeInstructions, setRecipeInstructions] = useState(['']);
   const [selectedCuisine, setSelectedCuisine] = useState('');
   const [selectedMealType, setSelectedMealType] = useState('');
+  const [recipeTitle, setRecipeTitle] = useState('');
+  const [recipeDescription, setRecipeDescription] = useState('');
+  const [recipePrepTime, setRecipePrepTime] = useState('');
+  const [recipeCookTime, setRecipeCookTime] = useState('');
+  const [recipeServings, setRecipeServings] = useState('');
+  const [recipeDifficulty, setRecipeDifficulty] = useState('');
+  const [editingRecipeId, setEditingRecipeId] = useState<number | null>(null);
   const [filterCuisine, setFilterCuisine] = useState('');
   const [filterMealType, setFilterMealType] = useState('');
   const [imageOption, setImageOption] = useState('upload'); // 'upload' or 'url'
@@ -269,8 +276,14 @@ export default function Home() {
   // Create recipe mutation
   const createRecipeMutation = useMutation({
     mutationFn: async (formData: FormData) => {
-      console.log("Creating recipe with FormData:", Object.fromEntries(formData.entries()));
-      await apiRequest("POST", "/api/recipes", formData);
+      const isEditing = editingRecipeId !== null;
+      console.log(isEditing ? "Updating recipe with FormData:" : "Creating recipe with FormData:", Object.fromEntries(formData.entries()));
+      
+      if (isEditing) {
+        await apiRequest("PUT", `/api/recipes/${editingRecipeId}`, formData);
+      } else {
+        await apiRequest("POST", "/api/recipes", formData);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/recipes"] });
@@ -279,7 +292,7 @@ export default function Home() {
       resetRecipeForm();
       toast({
         title: "Success",
-        description: "Recipe created successfully!",
+        description: editingRecipeId ? "Recipe updated successfully!" : "Recipe created successfully!",
       });
     },
     onError: (error) => {
@@ -1034,8 +1047,15 @@ export default function Home() {
     setRecipeInstructions(['']);
     setSelectedCuisine('');
     setSelectedMealType('');
+    setRecipeTitle('');
+    setRecipeDescription('');
+    setRecipePrepTime('');
+    setRecipeCookTime('');
+    setRecipeServings('');
+    setRecipeDifficulty('');
     setImageOption('upload');
     setImageUrl('');
+    setEditingRecipeId(null);
   };
 
   const handleAddRecipe = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -1046,7 +1066,17 @@ export default function Home() {
       return;
     }
     
-    const formData = new FormData(event.currentTarget);
+    const formData = new FormData();
+    
+    // Add all recipe data from state variables
+    formData.set("title", recipeTitle);
+    formData.set("description", recipeDescription);
+    formData.set("prepTime", recipePrepTime);
+    formData.set("cookTime", recipeCookTime);
+    formData.set("servings", recipeServings);
+    formData.set("difficulty", recipeDifficulty);
+    formData.set("cuisine", selectedCuisine);
+    formData.set("mealType", selectedMealType);
     
     // Filter out empty ingredients and instructions
     const validIngredients = recipeIngredients.filter(ing => ing.item.trim());
@@ -1054,13 +1084,23 @@ export default function Home() {
     
     formData.set("ingredients", JSON.stringify(validIngredients));
     formData.set("instructions", JSON.stringify(validInstructions));
-    formData.set("cuisine", selectedCuisine);
-    formData.set("mealType", selectedMealType);
     formData.set("tags", JSON.stringify([]));
+
+    // Handle image file from form if uploaded
+    const form = event.currentTarget;
+    const imageFile = form.image as HTMLInputElement;
+    if (imageFile && imageFile.files && imageFile.files[0]) {
+      formData.set("image", imageFile.files[0]);
+    }
 
     // Handle image URL if selected
     if (imageOption === 'url' && imageUrl.trim()) {
       formData.set("imageUrl", imageUrl);
+    }
+
+    // If editing, add the ID
+    if (editingRecipeId) {
+      formData.set("id", editingRecipeId.toString());
     }
 
     createRecipeMutation.mutate(formData);
@@ -1160,11 +1200,19 @@ export default function Home() {
 
   const handleEditRecipe = (recipe: Recipe) => {
     // Populate form with recipe data for editing
+    setEditingRecipeId(recipe.id);
+    setRecipeTitle(recipe.title || '');
+    setRecipeDescription(recipe.description || '');
+    setRecipePrepTime(recipe.prepTime ? recipe.prepTime.toString() : '');
+    setRecipeCookTime(recipe.cookTime ? recipe.cookTime.toString() : '');
+    setRecipeServings(recipe.servings ? recipe.servings.toString() : '');
+    setRecipeDifficulty(recipe.difficulty || '');
     setRecipeIngredients(recipe.ingredients || [{ unit: '', amount: '', item: '', notes: '' }]);
     setRecipeInstructions(recipe.instructions || ['']);
     setSelectedCuisine(recipe.cuisine || '');
     setSelectedMealType(recipe.mealType || '');
     setImageUrl(recipe.imageUrl || '');
+    setImageOption(recipe.imageUrl ? 'url' : 'upload');
     setIsAddRecipeOpen(true);
   };
 
@@ -1593,7 +1641,14 @@ export default function Home() {
                           <div className="grid grid-cols-2 gap-4">
                             <div>
                               <Label htmlFor="title">Recipe Title *</Label>
-                              <Input id="title" name="title" placeholder="e.g., Grandma's Chocolate Chip Cookies" required />
+                              <Input 
+                                id="title" 
+                                name="title" 
+                                placeholder="e.g., Grandma's Chocolate Chip Cookies" 
+                                value={recipeTitle}
+                                onChange={(e) => setRecipeTitle(e.target.value)}
+                                required 
+                              />
                             </div>
                             <div>
                               <Label htmlFor="cuisine">Cuisine Type</Label>
@@ -1639,7 +1694,7 @@ export default function Home() {
                             </div>
                             <div>
                               <Label htmlFor="difficulty">Difficulty</Label>
-                              <Select>
+                              <Select value={recipeDifficulty} onValueChange={setRecipeDifficulty}>
                                 <SelectTrigger>
                                   <SelectValue placeholder="Select difficulty..." />
                                 </SelectTrigger>
@@ -1658,6 +1713,8 @@ export default function Home() {
                               id="description" 
                               name="description" 
                               placeholder="Brief description of your recipe..."
+                              value={recipeDescription}
+                              onChange={(e) => setRecipeDescription(e.target.value)}
                               rows={3}
                             />
                           </div>
@@ -1665,15 +1722,36 @@ export default function Home() {
                           <div className="grid grid-cols-3 gap-4">
                             <div>
                               <Label htmlFor="prepTime">Prep Time (min)</Label>
-                              <Input id="prepTime" name="prepTime" type="number" placeholder="15" />
+                              <Input 
+                                id="prepTime" 
+                                name="prepTime" 
+                                type="number" 
+                                placeholder="15" 
+                                value={recipePrepTime}
+                                onChange={(e) => setRecipePrepTime(e.target.value)}
+                              />
                             </div>
                             <div>
                               <Label htmlFor="cookTime">Cook Time (min)</Label>
-                              <Input id="cookTime" name="cookTime" type="number" placeholder="30" />
+                              <Input 
+                                id="cookTime" 
+                                name="cookTime" 
+                                type="number" 
+                                placeholder="30" 
+                                value={recipeCookTime}
+                                onChange={(e) => setRecipeCookTime(e.target.value)}
+                              />
                             </div>
                             <div>
                               <Label htmlFor="servings">Servings</Label>
-                              <Input id="servings" name="servings" type="number" placeholder="4" />
+                              <Input 
+                                id="servings" 
+                                name="servings" 
+                                type="number" 
+                                placeholder="4" 
+                                value={recipeServings}
+                                onChange={(e) => setRecipeServings(e.target.value)}
+                              />
                             </div>
                           </div>
                         </div>

@@ -370,28 +370,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/recipes/:id', isAuthenticated, upload.single('image'), async (req: any, res) => {
+  app.put('/api/recipes/:id', isAuthenticated, upload.fields([{ name: 'image', maxCount: 1 }]), async (req: any, res) => {
     try {
       const userId = req.user?.claims?.sub || req.user?.id || req.session?.userId;
       const recipeId = parseInt(req.params.id);
       
-      const updateData: any = { ...req.body };
-      if (req.body.ingredients) updateData.ingredients = JSON.parse(req.body.ingredients);
-      if (req.body.instructions) updateData.instructions = JSON.parse(req.body.instructions);
-      if (req.body.tags) updateData.tags = JSON.parse(req.body.tags);
-      if (req.body.nutritionInfo) updateData.nutritionInfo = JSON.parse(req.body.nutritionInfo);
-      if (req.file) updateData.imageUrl = `/uploads/${req.file.filename}`;
+      console.log("Recipe update request received for ID:", recipeId);
+      console.log("Request body:", req.body);
+      console.log("Request files:", req.files);
+      
+      const imageFile = req.files && req.files['image'] ? req.files['image'][0] : null;
+      const updateData: any = {
+        ...req.body,
+        // Convert string numbers to actual numbers
+        prepTime: req.body.prepTime ? parseInt(req.body.prepTime) : null,
+        cookTime: req.body.cookTime ? parseInt(req.body.cookTime) : null,
+        servings: req.body.servings ? parseInt(req.body.servings) : null,
+        // Parse JSON fields
+        ingredients: JSON.parse(req.body.ingredients || '[]'),
+        instructions: JSON.parse(req.body.instructions || '[]'),
+        tags: JSON.parse(req.body.tags || '[]'),
+        nutritionInfo: req.body.nutritionInfo ? JSON.parse(req.body.nutritionInfo) : null,
+      };
+      
+      // Handle image update
+      if (imageFile) {
+        updateData.imageUrl = `/uploads/${imageFile.filename}`;
+      } else if (req.body.imageUrl) {
+        updateData.imageUrl = req.body.imageUrl;
+      }
 
+      console.log("Parsed update data:", updateData);
       const recipe = await storage.updateRecipe(recipeId, updateData, userId);
       
       if (!recipe) {
         return res.status(404).json({ message: "Recipe not found" });
       }
       
+      console.log("Recipe updated successfully:", recipe.id);
       res.json(recipe);
     } catch (error) {
       console.error("Error updating recipe:", error);
-      res.status(500).json({ message: "Failed to update recipe" });
+      console.error("Error stack:", error.stack);
+      res.status(500).json({ message: "Failed to update recipe", error: error.message });
     }
   });
 
