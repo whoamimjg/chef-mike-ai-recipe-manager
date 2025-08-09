@@ -1,7 +1,7 @@
 import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./auth";
+import { setupAuth, isAuthenticated } from "./replitAuth";
 import { sendEmail, generateVerificationEmailHtml, generateWelcomeEmailHtml } from "./email";
 import crypto from "crypto";
 import { 
