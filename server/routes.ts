@@ -1514,9 +1514,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
             mealPlanIds.push(mealPlan.id);
             
             recipe.ingredients.forEach((ingredient, index) => {
-              const ingredientName = typeof ingredient === 'string' ? ingredient : ingredient.item;
-              const quantity = typeof ingredient === 'object' && ingredient.amount ? ingredient.amount : "1";
-              const unit = typeof ingredient === 'object' && ingredient.unit ? ingredient.unit : "item";
+              // Debug logging to see what ingredient structure we're getting
+              console.log(`Processing ingredient ${index} for recipe "${recipe.title}":`, ingredient);
+              
+              let ingredientName = '';
+              let quantity = '1';
+              let unit = 'item';
+              
+              if (typeof ingredient === 'string') {
+                ingredientName = ingredient;
+              } else if (typeof ingredient === 'object' && ingredient !== null) {
+                // Try different possible property names for ingredient name
+                ingredientName = ingredient.item || ingredient.name || ingredient.ingredientName || '';
+                quantity = ingredient.amount || ingredient.quantity || '1';
+                unit = ingredient.unit || 'item';
+              }
+              
+              // Skip if we don't have a valid ingredient name
+              if (!ingredientName || ingredientName.trim() === '') {
+                console.log(`Skipping ingredient ${index} - no name found`);
+                return;
+              }
+              
               const category = categorizeIngredient(ingredientName);
               
               // Skip items categorized as 'skip' (like plain water)
