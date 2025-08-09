@@ -56,6 +56,7 @@ Preferred communication style: Simple, everyday language.
 - **AI Recommendations**: Enhanced OpenAI-powered recipe suggestions with personalized dietary learning
 - **Mobile Optimization**: Responsive design with hamburger menu for mobile-only navigation
 - **Cost Tracking**: Real-time food waste and usage cost analytics with proper financial reporting
+- **Real Grocery Store Pricing**: Live Kroger API integration provides authentic pricing from 2,700+ stores nationwide
 - **AI Learning System**: Tracks user interactions, preferences, and ratings for personalized meal suggestions
 - **Smart Meal Suggestions**: AI-powered daily meal recommendations based on user's saved recipes and learning history
 - **Dietary Warning System**: Comprehensive recipe warning system that checks for conflicts with user's dietary restrictions and allergies
