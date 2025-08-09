@@ -4446,6 +4446,78 @@ export default function Home() {
                           </div>
                         </div>
 
+                        {/* Pricing Summary */}
+                        {showPricing && pricingData?.items && (
+                          <div className="border-t pt-3 mt-4">
+                            <h4 className="text-sm font-medium text-gray-700 mb-3">Price Summary</h4>
+                            <div className="space-y-2">
+                              {(() => {
+                                const uncheckedItems = listItems.filter(item => !item.checked);
+                                const categoryOrder = getStoreCategoryOrder(selectedStore);
+                                
+                                // Group items by category and calculate totals
+                                const itemsByCategory = uncheckedItems.reduce((acc, item) => {
+                                  const category = item.category || 'other';
+                                  if (!acc[category]) acc[category] = [];
+                                  acc[category].push(item);
+                                  return acc;
+                                }, {} as Record<string, typeof uncheckedItems>);
+
+                                let grandTotal = 0;
+                                const categoryTotals = categoryOrder.map(category => {
+                                  const categoryItems = itemsByCategory[category] || [];
+                                  if (categoryItems.length === 0) return null;
+                                  
+                                  const categoryTotal = categoryItems.reduce((total, item) => {
+                                    const pricingItem = pricingData.items.find((p: any) => p.name.toLowerCase() === item.name.toLowerCase());
+                                    if (pricingItem?.pricing?.length > 0) {
+                                      const bestPrice = pricingItem.pricing.reduce((min: any, store: any) => 
+                                        store.inStock && store.price < min.price ? store : min, 
+                                        pricingItem.pricing.find((p: any) => p.inStock) || pricingItem.pricing[0]
+                                      );
+                                      return total + (bestPrice.price || 0);
+                                    }
+                                    return total;
+                                  }, 0);
+                                  
+                                  grandTotal += categoryTotal;
+                                  
+                                  if (categoryTotal > 0) {
+                                    return (
+                                      <div key={category} className="flex justify-between items-center text-xs">
+                                        <span className="text-gray-600">
+                                          {getStoreCategoryName(category, selectedStore)}
+                                        </span>
+                                        <span className="font-medium text-green-700">
+                                          ${categoryTotal.toFixed(2)}
+                                        </span>
+                                      </div>
+                                    );
+                                  }
+                                  return null;
+                                }).filter(Boolean);
+                                
+                                return (
+                                  <>
+                                    {categoryTotals}
+                                    <div className="border-t pt-2 mt-2">
+                                      <div className="flex justify-between items-center font-semibold">
+                                        <span className="text-gray-900">Total Estimate:</span>
+                                        <span className="text-lg text-green-700">
+                                          ${grandTotal.toFixed(2)}
+                                        </span>
+                                      </div>
+                                      <div className="text-xs text-gray-500 mt-1">
+                                        Based on best prices across stores
+                                      </div>
+                                    </div>
+                                  </>
+                                );
+                              })()}
+                            </div>
+                          </div>
+                        )}
+
                         {/* Checked Items */}
                         {(() => {
                           const checkedItems = listItems.filter(item => item.checked);
@@ -4456,7 +4528,7 @@ export default function Home() {
                               <h4 className="text-sm font-medium text-gray-700 mb-2">
                                 Checked Items ({checkedItems.length})
                               </h4>
-                              <div className="space-y-1 max-h-40 overflow-y-auto">
+                              <div className="space-y-1 max-h-32 overflow-y-auto">
                                 {checkedItems.map(item => (
                                   <div
                                     key={item.id}
@@ -4548,12 +4620,39 @@ export default function Home() {
                               return (
                                 <div key={category} className="category-section">
                                   <div className="category-header mb-3 pb-2 border-b-2 border-orange-200">
-                                    <h3 className="text-lg font-semibold text-gray-800 print:text-black">
-                                      {getStoreCategoryName(category, selectedStore)}
-                                    </h3>
-                                    <p className="text-sm text-gray-500 print:text-gray-700">
-                                      {categoryItems.length} item{categoryItems.length !== 1 ? 's' : ''}
-                                    </p>
+                                    <div className="flex justify-between items-center">
+                                      <div>
+                                        <h3 className="text-lg font-semibold text-gray-800 print:text-black">
+                                          {getStoreCategoryName(category, selectedStore)}
+                                        </h3>
+                                        <p className="text-sm text-gray-500 print:text-gray-700">
+                                          {categoryItems.length} item{categoryItems.length !== 1 ? 's' : ''}
+                                        </p>
+                                      </div>
+                                      {showPricing && pricingData?.items && (() => {
+                                        // Calculate category total
+                                        const categoryTotal = categoryItems.reduce((total, item) => {
+                                          const pricingItem = pricingData.items.find((p: any) => p.name.toLowerCase() === item.name.toLowerCase());
+                                          if (pricingItem?.pricing?.length > 0) {
+                                            const bestPrice = pricingItem.pricing.reduce((min: any, store: any) => 
+                                              store.inStock && store.price < min.price ? store : min, 
+                                              pricingItem.pricing.find((p: any) => p.inStock) || pricingItem.pricing[0]
+                                            );
+                                            return total + (bestPrice.price || 0);
+                                          }
+                                          return total;
+                                        }, 0);
+                                        
+                                        if (categoryTotal > 0) {
+                                          return (
+                                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 print:hidden">
+                                              ${categoryTotal.toFixed(2)}
+                                            </Badge>
+                                          );
+                                        }
+                                        return null;
+                                      })()}
+                                    </div>
                                   </div>
                                   <div className="space-y-2">
                                     {categoryItems.map((item) => (
@@ -4586,14 +4685,14 @@ export default function Home() {
                                     return (
                                       <div className="text-xs text-green-600 mt-1 print:hidden">
                                         <div className="flex items-center gap-2">
-                                          <span className="font-medium">${bestPrice.price}</span>
-                                          <span>at {bestPrice.storeName}</span>
+                                          <span className="font-semibold text-lg">${bestPrice.price}</span>
+                                          <span className="text-gray-500">at {bestPrice.storeName}</span>
                                           {bestPrice.onSale && <Badge variant="destructive" className="text-xs">Sale</Badge>}
                                           {!bestPrice.inStock && <Badge variant="outline" className="text-xs">Out of Stock</Badge>}
                                         </div>
                                         {pricingItem.pricing.length > 1 && (
                                           <div className="text-gray-400 text-xs">
-                                            {pricingItem.pricing.length - 1} other store{pricingItem.pricing.length > 2 ? 's' : ''}
+                                            {pricingItem.pricing.length - 1} other store{pricingItem.pricing.length > 2 ? 's' : ''} available
                                           </div>
                                         )}
                                       </div>
