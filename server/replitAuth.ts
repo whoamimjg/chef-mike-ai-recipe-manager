@@ -122,17 +122,16 @@ export async function setupAuth(app: Express) {
         return res.redirect("/");
       }
       
-      try {
-        const endSessionUrl = client.buildEndSessionUrl(config, {
-          client_id: process.env.REPL_ID!,
-          post_logout_redirect_uri: `${req.protocol}://${req.hostname}`,
-        }).href;
+      // Destroy the session
+      req.session.destroy((destroyErr) => {
+        if (destroyErr) {
+          console.error("Session destroy error:", destroyErr);
+        }
         
-        res.redirect(endSessionUrl);
-      } catch (error) {
-        console.error("Error building end session URL:", error);
+        // Simply redirect to home page instead of external OAuth logout
+        // This ensures a clean logout without 404 errors
         res.redirect("/");
-      }
+      });
     });
   });
 }
