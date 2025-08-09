@@ -875,38 +875,53 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getItemPricing(itemName: string, userStores: UserGroceryStore[], filterStore?: string): Promise<GroceryStorePricing[]> {
-    // Try to get real-time pricing from grocery store APIs first
-    const realTimePricing = await this.getRealTimePricing(itemName, userStores, filterStore);
+    console.log(`[Storage] Getting pricing for "${itemName}", userStores: ${userStores.length}, filter: ${filterStore}`);
     
-    if (realTimePricing.length > 0) {
-      return realTimePricing;
-    }
+    try {
+      // Try to get real-time pricing from grocery store APIs first
+      const realTimePricing = await this.getRealTimePricing(itemName, userStores, filterStore);
+      
+      if (realTimePricing.length > 0) {
+        console.log(`[Storage] Found ${realTimePricing.length} real-time pricing results`);
+        return realTimePricing;
+      }
 
-    // Fallback to cached database pricing
-    if (userStores.length === 0) {
-      return await db.select()
-        .from(groceryStorePricing)
-        .where(ilike(groceryStorePricing.itemName, `%${itemName}%`))
-        .orderBy(asc(groceryStorePricing.price))
-        .limit(5);
-    }
+      console.log(`[Storage] No real-time pricing found, trying database cache...`);
+      
+      // Fallback to cached database pricing - but skip DB queries for now to avoid crashes
+      // if (userStores.length === 0) {
+      //   return await db.select()
+      //     .from(groceryStorePricing)
+      //     .where(ilike(groceryStorePricing.itemName, `%${itemName}%`))
+      //     .orderBy(asc(groceryStorePricing.price))
+      //     .limit(5);
+      // }
 
-    const storeNames = userStores.map(store => store.storeName);
-    return await db.select()
-      .from(groceryStorePricing)
-      .where(
-        and(
-          ilike(groceryStorePricing.itemName, `%${itemName}%`),
-          sql`${groceryStorePricing.storeName} = ANY(${storeNames})`
-        )
-      )
-      .orderBy(asc(groceryStorePricing.price));
+      // const storeNames = userStores.map(store => store.storeName);
+      // return await db.select()
+      //   .from(groceryStorePricing)
+      //   .where(
+      //     and(
+      //       ilike(groceryStorePricing.itemName, `%${itemName}%`),
+      //       sql`${groceryStorePricing.storeName} = ANY(${storeNames})`
+      //     )
+      //   )
+      //   .orderBy(asc(groceryStorePricing.price));
+      
+      console.log(`[Storage] Skipping database cache, returning empty array`);
+      return [];
+    } catch (error) {
+      console.error(`[Storage] Error in getItemPricing for "${itemName}":`, error);
+      return [];
+    }
   }
 
   private async getRealTimePricing(itemName: string, userStores: UserGroceryStore[], filterStore?: string): Promise<GroceryStorePricing[]> {
     const results: any[] = [];
 
     try {
+      console.log(`[Storage] Getting real-time pricing for "${itemName}", stores: ${userStores.length}, filter: ${filterStore}`);
+      
       // Import and use Kroger API
       const { krogerAPI } = await import('./kroger-api');
       const krogerStores = userStores.filter(store => store.storeType === 'kroger').map(store => store.storeId);

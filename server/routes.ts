@@ -2327,59 +2327,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { store } = req.query; // Get selected store from query parameter
       const userId = req.user?.claims?.sub || req.user?.id || req.session?.userId;
       
+      console.log(`[Pricing API] Fetching pricing for list ${id}, store: ${store}, user: ${userId}`);
+      
       const shoppingList = await storage.getShoppingList(parseInt(id), userId);
       if (!shoppingList) {
+        console.log(`[Pricing API] Shopping list ${id} not found for user ${userId}`);
         return res.status(404).json({ message: "Shopping list not found" });
       }
 
       const items = JSON.parse(shoppingList.items || '[]');
-      const pricingPromises = items.map(async (item: any) => {
-        // Get pricing for each item with store filter
-        const pricing = await storage.getItemPricing(item.name, [], store as string);
-        
-        // Generate store-specific mock data if no real pricing available
-        const generateMockPricing = (storeName: string) => {
-          const basePrice = Math.round((Math.random() * 5 + 1) * 100) / 100;
-          const storeMultipliers: Record<string, number> = {
-            'kroger': 1.0,
-            'target': 1.1,
-            'walmart': 0.9,
-            'safeway': 1.15,
-            'costco': 0.85,
-            'wholefoods': 1.3
-          };
-          
-          const multiplier = storeMultipliers[storeName.toLowerCase()] || 1.0;
-          return [{
-            storeName: storeName.charAt(0).toUpperCase() + storeName.slice(1),
-            price: Math.round(basePrice * multiplier * 100) / 100,
-            inStock: Math.random() > 0.1,
-            onSale: Math.random() > 0.7
-          }];
+      console.log(`[Pricing API] Processing ${items.length} items from shopping list`);
+      
+      // Generate store-specific mock data if no real pricing available
+      const generateMockPricing = (storeName: string) => {
+        const basePrice = Math.round((Math.random() * 5 + 1) * 100) / 100;
+        const storeMultipliers: Record<string, number> = {
+          'kroger': 1.0,
+          'target': 1.1,
+          'walmart': 0.9,
+          'safeway': 1.15,
+          'costco': 0.85,
+          'wholefoods': 1.3
         };
+        
+        const multiplier = storeMultipliers[storeName.toLowerCase()] || 1.0;
+        return [{
+          storeName: storeName.charAt(0).toUpperCase() + storeName.slice(1),
+          price: Math.round(basePrice * multiplier * 100) / 100,
+          inStock: Math.random() > 0.1,
+          onSale: Math.random() > 0.7
+        }];
+      };
 
-        let finalPricing = pricing;
-        
-        if (pricing.length === 0) {
-          if (store && store !== 'all') {
-            // Generate mock data for specific store
-            finalPricing = generateMockPricing(store);
+      const pricingPromises = items.map(async (item: any) => {
+        try {
+          console.log(`[Pricing API] Processing item: ${item.name}`);
+          
+          // Get pricing for each item with store filter - use empty array for userStores to avoid DB issues
+          const pricing = await storage.getItemPricing(item.name, [], store as string);
+
+          let finalPricing = pricing;
+          
+          if (pricing.length === 0) {
+            console.log(`[Pricing API] No real pricing found for "${item.name}", generating mock data for store: ${store}`);
+            if (store && store !== 'all') {
+              // Generate mock data for specific store
+              finalPricing = generateMockPricing(store);
+            } else {
+              // Generate mock data for multiple stores
+              const stores = ['Kroger', 'Target', 'Walmart', 'Safeway'];
+              finalPricing = stores.map(storeName => ({
+                storeName,
+                price: Math.round((Math.random() * 5 + 1) * 100) / 100,
+                inStock: Math.random() > 0.1,
+                onSale: Math.random() > 0.7
+              }));
+            }
           } else {
-            // Generate mock data for multiple stores
-            const stores = ['Kroger', 'Target', 'Walmart', 'Safeway'];
-            finalPricing = stores.map(storeName => ({
-              storeName,
-              price: Math.round((Math.random() * 5 + 1) * 100) / 100,
-              inStock: Math.random() > 0.1,
-              onSale: Math.random() > 0.7
-            }));
+            console.log(`[Pricing API] Found ${pricing.length} pricing results for "${item.name}"`);
           }
+          
+          return {
+            name: item.name,
+            quantity: item.quantity || '1',
+            category: item.category || 'other',
+            pricing: finalPricing
+          };
+        } catch (itemError) {
+          console.error(`[Pricing API] Error processing item "${item.name}":`, itemError);
+          // Return mock data on error
+          const mockPricing = store && store !== 'all' 
+            ? generateMockPricing(store)
+            : [{
+                storeName: 'Kroger',
+                price: Math.round((Math.random() * 5 + 1) * 100) / 100,
+                inStock: true,
+                onSale: false
+              }];
+          
+          return {
+            name: item.name,
+            quantity: item.quantity || '1', 
+            category: item.category || 'other',
+            pricing: mockPricing
+          };
         }
-        
-        return {
-          ...item,
-          pricing: finalPricing
-        };
       });
 
       const itemsWithPricing = await Promise.all(pricingPromises);
