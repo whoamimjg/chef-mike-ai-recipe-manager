@@ -154,16 +154,21 @@ export default function Home() {
 
   // Fetch pricing data for the current shopping list
   const fetchPricingData = async () => {
-    if (!currentShoppingList) return;
+    if (!shoppingLists || shoppingLists.length === 0) return;
+    
+    const currentList = shoppingLists[0]; // Get the first/most recent shopping list
+    if (!currentList) return;
     
     try {
-      const response = await apiRequest("GET", `/api/shopping-lists/${currentShoppingList.id}/pricing?store=${selectedStore}`);
+      console.log(`Fetching pricing data for list ${currentList.id} from store: ${selectedStore}`);
+      const response = await apiRequest("GET", `/api/shopping-lists/${currentList.id}/pricing?store=${selectedStore}`);
       setPricingData(response);
+      console.log('Pricing data received:', response);
     } catch (error) {
       console.error('Error fetching pricing data:', error);
       toast({
         title: "Pricing Error",
-        description: "Could not fetch pricing information",
+        description: "Could not fetch pricing information from Kroger API",
         variant: "destructive",
       });
     }
@@ -4120,7 +4125,7 @@ export default function Home() {
                       onValueChange={(value) => {
                         setSelectedStore(value);
                         // Refresh pricing when store changes
-                        if (currentShoppingList) {
+                        if (shoppingLists && shoppingLists.length > 0) {
                           fetchPricingData();
                         }
                       }}
