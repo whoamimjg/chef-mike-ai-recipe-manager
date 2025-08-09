@@ -3382,8 +3382,20 @@ END:VCALENDAR`
                       <Label htmlFor="quantity">Quantity</Label>
                       <Input
                         id="quantity"
+                        type="number"
+                        step="0.01"
                         value={newInventoryItem.quantity}
-                        onChange={(e) => setNewInventoryItem({...newInventoryItem, quantity: e.target.value})}
+                        onChange={(e) => {
+                          const quantity = e.target.value;
+                          const pricePerUnit = parseFloat(newInventoryItem.pricePerUnit) || 0;
+                          const qty = parseFloat(quantity) || 0;
+                          const totalCost = qty * pricePerUnit;
+                          setNewInventoryItem({
+                            ...newInventoryItem, 
+                            quantity,
+                            totalCost: totalCost > 0 ? totalCost.toFixed(2) : ""
+                          });
+                        }}
                         placeholder="e.g., 2, 1.5"
                         required
                       />
@@ -3433,18 +3445,30 @@ END:VCALENDAR`
                         type="number"
                         step="0.01"
                         value={newInventoryItem.pricePerUnit}
-                        onChange={(e) => setNewInventoryItem({...newInventoryItem, pricePerUnit: e.target.value})}
+                        onChange={(e) => {
+                          const pricePerUnit = e.target.value;
+                          const quantity = parseFloat(newInventoryItem.quantity) || 0;
+                          const price = parseFloat(pricePerUnit) || 0;
+                          const totalCost = quantity * price;
+                          setNewInventoryItem({
+                            ...newInventoryItem, 
+                            pricePerUnit,
+                            totalCost: totalCost > 0 ? totalCost.toFixed(2) : ""
+                          });
+                        }}
                       />
                     </div>
                     <div>
-                      <Label htmlFor="total-cost">Total Cost ($)</Label>
+                      <Label htmlFor="total-cost">Total Cost ($) - Auto-calculated</Label>
                       <Input 
                         id="total-cost" 
-                        placeholder="17.94"
+                        placeholder="Auto-calculated from quantity × price per unit"
                         type="number"
                         step="0.01"
                         value={newInventoryItem.totalCost}
                         onChange={(e) => setNewInventoryItem({...newInventoryItem, totalCost: e.target.value})}
+                        className="bg-gray-50 text-gray-700"
+                        readOnly
                       />
                     </div>
                     <div>
