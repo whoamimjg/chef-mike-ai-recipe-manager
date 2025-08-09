@@ -66,6 +66,7 @@ Preferred communication style: Simple, everyday language.
 - **Account Management**: Full account settings page with dietary preferences management and profile updates (authenticated users only)
 - **Email System**: Welcome emails using Nodemailer (verification disabled for immediate access like PlanToEat)
 - **Enhanced Recipe Import**: Comprehensive image extraction system supporting 25+ popular recipe websites including AllRecipes, Food Network, Bon Appétit, BBC Good Food, NYTimes Cooking, and many food bloggers
+- **Fixed Logout System**: Proper session clearing and redirect to airecipemanager.com with complete cache cleanup
 
 ### Authentication & Authorization
 - **Replit Auth**: Integrated authentication system with session management

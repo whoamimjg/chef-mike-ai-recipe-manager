@@ -116,21 +116,32 @@ export async function setupAuth(app: Express) {
   });
 
   app.get("/api/logout", (req, res) => {
+    console.log("Logout request received");
+    
     req.logout((err) => {
       if (err) {
         console.error("Logout error:", err);
-        return res.redirect("/");
+        return res.redirect("https://airecipemanager.com/");
       }
       
       // Destroy the session
-      req.session.destroy((destroyErr) => {
-        if (destroyErr) {
-          console.error("Session destroy error:", destroyErr);
-        }
-        
-        // Redirect to the actual landing page domain
+      if (req.session) {
+        req.session.destroy((destroyErr) => {
+          if (destroyErr) {
+            console.error("Session destroy error:", destroyErr);
+          }
+          console.log("Session destroyed, redirecting to landing page");
+          
+          // Clear the session cookie
+          res.clearCookie('connect.sid');
+          
+          // Redirect to the actual landing page domain
+          res.redirect("https://airecipemanager.com/");
+        });
+      } else {
+        console.log("No session to destroy, redirecting to landing page");
         res.redirect("https://airecipemanager.com/");
-      });
+      }
     });
   });
 }

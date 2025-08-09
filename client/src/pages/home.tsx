@@ -970,14 +970,25 @@ END:VCALENDAR`
 
   const handleLogout = async () => {
     try {
+      console.log("Starting logout process...");
+      
       // Clear all cached data and local storage
       queryClient.clear();
       localStorage.clear();
       sessionStorage.clear();
       
-      // For Replit Auth, we need to redirect directly to the logout endpoint
-      // This will clear the session and redirect to airecipemanager.com
-      window.location.href = "/api/logout";
+      // Make a fetch request to logout endpoint first
+      const response = await fetch("/api/logout", {
+        method: "GET",
+        credentials: "include",
+        redirect: "manual" // Prevent automatic redirect
+      });
+      
+      console.log("Logout response:", response.status);
+      
+      // Redirect to landing page regardless of response
+      window.location.href = "https://airecipemanager.com/";
+      
     } catch (error) {
       console.error("Logout error:", error);
       // Fallback: clear everything and redirect to main site
