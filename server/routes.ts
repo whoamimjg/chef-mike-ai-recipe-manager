@@ -2335,8 +2335,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Shopping list not found" });
       }
 
-      const items = JSON.parse(shoppingList.items || '[]');
-      console.log(`[Pricing API] Processing ${items.length} items from shopping list`);
+      console.log(`[Pricing API] Raw items data type:`, typeof shoppingList.items);
+      console.log(`[Pricing API] Raw items length:`, typeof shoppingList.items === 'string' ? shoppingList.items.length : 'N/A');
+      
+      let items = [];
+      try {
+        if (typeof shoppingList.items === 'string') {
+          // Clean up the string - remove extra quotes and fix escaping
+          let itemsString = shoppingList.items;
+          
+          // Handle double-escaped JSON (common issue)
+          if (itemsString.startsWith('"""') && itemsString.endsWith('"""')) {
+            itemsString = itemsString.slice(3, -3);
+          } else if (itemsString.startsWith('"') && itemsString.endsWith('"')) {
+            itemsString = itemsString.slice(1, -1);
+          }
+          
+          // Fix escaped quotes
+          itemsString = itemsString.replace(/\\"/g, '"');
+          
+          console.log(`[Pricing API] Cleaned items string (first 200 chars):`, itemsString.substring(0, 200));
+          
+          items = JSON.parse(itemsString);
+        } else if (Array.isArray(shoppingList.items)) {
+          items = shoppingList.items;
+        } else {
+          console.log(`[Pricing API] Unexpected items type:`, typeof shoppingList.items);
+          items = [];
+        }
+      } catch (parseError) {
+        console.error(`[Pricing API] Error parsing items:`, parseError);
+        console.log(`[Pricing API] Failed string:`, shoppingList.items?.substring(0, 500));
+        items = [];
+      }
+      
+      console.log(`[Pricing API] Successfully parsed ${items.length} items`);
+      if (items.length > 0) {
+        console.log(`[Pricing API] First item structure:`, items[0]);
+      }
       
       // Generate store-specific mock data if no real pricing available
       const generateMockPricing = (storeName: string) => {
@@ -2361,15 +2397,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const pricingPromises = items.map(async (item: any) => {
         try {
-          console.log(`[Pricing API] Processing item: ${item.name}`);
+          // Handle different item name formats (name vs item)
+          const itemName = item.name || item.item || 'Unknown Item';
+          console.log(`[Pricing API] Processing item: "${itemName}"`);
           
-          // Get pricing for each item with store filter - use empty array for userStores to avoid DB issues
-          const pricing = await storage.getItemPricing(item.name, [], store as string);
+          // Get pricing for each item with store filter - use empty array for userStores to avoid DB issues  
+          const pricing = await storage.getItemPricing(itemName, [], store as string);
 
           let finalPricing = pricing;
           
           if (pricing.length === 0) {
-            console.log(`[Pricing API] No real pricing found for "${item.name}", generating mock data for store: ${store}`);
+            console.log(`[Pricing API] No real pricing found for "${itemName}", generating mock data for store: ${store}`);
             if (store && store !== 'all') {
               // Generate mock data for specific store
               finalPricing = generateMockPricing(store);
@@ -2384,17 +2422,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }));
             }
           } else {
-            console.log(`[Pricing API] Found ${pricing.length} pricing results for "${item.name}"`);
+            console.log(`[Pricing API] Found ${pricing.length} pricing results for "${itemName}"`);
           }
           
           return {
-            name: item.name,
-            quantity: item.quantity || '1',
+            name: itemName,
+            quantity: item.quantity || item.amount || '1',
             category: item.category || 'other',
+            unit: item.unit || 'item',
             pricing: finalPricing
           };
         } catch (itemError) {
-          console.error(`[Pricing API] Error processing item "${item.name}":`, itemError);
+          const itemName = item.name || item.item || 'Unknown Item';
+          console.error(`[Pricing API] Error processing item "${itemName}":`, itemError);
           // Return mock data on error
           const mockPricing = store && store !== 'all' 
             ? generateMockPricing(store)
@@ -2406,9 +2446,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }];
           
           return {
-            name: item.name,
-            quantity: item.quantity || '1', 
+            name: itemName,
+            quantity: item.quantity || item.amount || '1', 
             category: item.category || 'other',
+            unit: item.unit || 'item',
             pricing: mockPricing
           };
         }
