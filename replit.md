@@ -1,8 +1,8 @@
-# Chef Mike's Culinary Classroom
+# Chef Mike's AI Recipe Manager
 
 ## Overview
 
-Chef Mike's Culinary Classroom is a full-stack recipe management and meal planning application built with React and Express.js. The application provides users with comprehensive tools for managing recipes, planning meals on a calendar, generating shopping lists, and maintaining dietary preferences. It features a modern UI with ShadCN components, PostgreSQL database integration via Drizzle ORM, and Replit authentication.
+Chef Mike's AI Recipe Manager is a full-stack recipe management and meal planning application built with React and Express.js. The application provides users with comprehensive tools for managing recipes, planning meals on a calendar, generating shopping lists, and maintaining dietary preferences. It features a modern UI with ShadCN components, PostgreSQL database integration via Drizzle ORM, and Replit authentication.
 
 ## User Preferences
 

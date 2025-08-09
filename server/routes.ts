@@ -2061,6 +2061,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Contact form submission
+  app.post('/api/contact', async (req: any, res) => {
+    try {
+      const { name, email, subject, message } = req.body;
+      
+      // Log the contact form submission
+      console.log('Contact form submission:', {
+        name,
+        email,
+        subject: subject || 'Contact Form Submission',
+        message,
+        timestamp: new Date().toISOString()
+      });
+
+      // In a real implementation, you would send email to mike@chefmikesculinaryclass.com
+      // using a service like SendGrid or Nodemailer
+      
+      res.status(200).json({ 
+        message: 'Contact form submitted successfully',
+        success: true 
+      });
+    } catch (error) {
+      console.error("Error processing contact form:", error);
+      res.status(500).json({ 
+        message: "Failed to submit contact form",
+        success: false 
+      });
+    }
+  });
+
   // Stripe payment routes
   app.post("/api/create-payment-intent", async (req, res) => {
     try {
@@ -2114,9 +2144,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const welcomeEmailHtml = generateWelcomeEmailHtml(firstName, loginUrl);
 
         const emailSent = await sendEmail({
-          from: '"Chef Mike\'s Culinary Classroom" <noreply@chefmike.app>',
+          from: '"Chef Mike\'s AI Recipe Manager" <noreply@chefmike.app>',
           to: email,
-          subject: 'Welcome to Chef Mike\'s Culinary Classroom!',
+          subject: 'Welcome to Chef Mike\'s AI Recipe Manager!',
           html: welcomeEmailHtml,
         });
 

@@ -318,7 +318,7 @@ export default function Signup() {
   const renderPlanSelection = () => (
     <div className="space-y-8">
       <div className="text-center">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">Join Chef Mike's Culinary Classroom</h1>
+        <h1 className="text-4xl font-bold text-gray-900 mb-4">Join Chef Mike's AI Recipe Manager</h1>
         <p className="text-xl text-gray-600 max-w-3xl mx-auto">
           Start your culinary journey with the perfect plan for your cooking needs
         </p>

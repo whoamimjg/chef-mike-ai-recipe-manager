@@ -65,7 +65,7 @@ export function PlanUsageWidget() {
             <Button 
               size="sm" 
               className="bg-orange-500 hover:bg-orange-600"
-              onClick={() => window.location.href = '/api/login'}
+              onClick={() => window.location.href = '/signup'}
             >
               Upgrade
             </Button>

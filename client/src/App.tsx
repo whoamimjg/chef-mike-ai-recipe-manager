@@ -13,6 +13,8 @@ import SignupSuccess from "@/pages/signup-success";
 import Login from "@/pages/login";
 import VerifyEmail from "@/pages/verify-email";
 import NotFound from "@/pages/not-found";
+import Contact from "@/pages/contact";
+import Help from "@/pages/help";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -35,6 +37,8 @@ function Router() {
           <Route path="/signup/success" component={SignupSuccess} />
           <Route path="/login" component={Login} />
           <Route path="/verify-email" component={VerifyEmail} />
+          <Route path="/contact" component={Contact} />
+          <Route path="/help" component={Help} />
           {/* Redirect protected routes to login */}
           <Route path="/account">
             {() => {
@@ -55,6 +59,8 @@ function Router() {
           <Route path="/app" component={Home} />
           <Route path="/account" component={Account} />
           <Route path="/admin" component={Admin} />
+          <Route path="/contact" component={Contact} />
+          <Route path="/help" component={Help} />
         </>
       )}
       <Route component={NotFound} />

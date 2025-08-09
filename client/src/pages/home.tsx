@@ -1614,7 +1614,7 @@ END:VCALENDAR`
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center gap-3">
               <ChefHat className="h-8 w-8 text-primary-600" />
-              <h1 className="text-xl md:text-2xl font-bold text-gray-900">Chef Mike's Culinary Classroom</h1>
+              <h1 className="text-xl md:text-2xl font-bold text-gray-900">Chef Mike's AI Recipe Manager</h1>
             </div>
             
             {/* Desktop Navigation */}

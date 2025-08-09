@@ -18,13 +18,14 @@ export default function Landing() {
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center gap-3">
               <ChefHat className="h-8 w-8" style={{ color: '#ffffff' }} />
-              <h1 className="text-2xl font-bold" style={{ color: '#ffffff' }}>Chef Mike's Culinary Classroom</h1>
+              <h1 className="text-2xl font-bold" style={{ color: '#ffffff' }}>Chef Mike's AI Recipe Manager</h1>
             </div>
             <div className="flex items-center gap-6">
               <div className="hidden md:flex items-center gap-6">
                 <a href="#features" className="transition-colors hover:text-white" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>Features</a>
                 <a href="#pricing" className="transition-colors hover:text-white" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>Pricing</a>
-                <a href="#about" className="transition-colors hover:text-white" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>About</a>
+                <a href="/help" className="transition-colors hover:text-white" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>Help</a>
+                <a href="/contact" className="transition-colors hover:text-white" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>Contact</a>
               </div>
               <Button onClick={() => window.location.href = "/login"} variant="secondary" className="bg-white hover:bg-gray-100" style={{ color: '#ea580c', backgroundColor: '#ffffff' }}>
                 Sign In
@@ -45,7 +46,7 @@ export default function Landing() {
               </span>
             </h1>
             <p className="text-xl lg:text-2xl mb-8 leading-relaxed" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>
-              Transform your kitchen into a culinary classroom with AI-powered recipe recommendations, smart meal planning, and automated shopping lists.
+              Transform your cooking experience with AI-powered recipe management, smart meal planning, intelligent grocery lists, and personalized recommendations.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Button 
