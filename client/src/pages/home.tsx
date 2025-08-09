@@ -4244,9 +4244,6 @@ export default function Home() {
                                         <div className="font-medium text-sm print-item-name">• {item.name}</div>
                                         <div className="text-xs text-gray-500 print-item-details print:text-black">
                                           {item.quantity} {item.unit}
-                                          {item.recipeTitle && (
-                                            <span className="ml-2 text-blue-600 print:text-gray-600">• {item.recipeTitle}</span>
-                                          )}
                                         </div>
                                       </div>
                                       <Button

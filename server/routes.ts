@@ -946,12 +946,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Add the new item
+      const autoCategory = categorizeIngredient(item);
       const newItem = {
         id: Date.now().toString(),
         name: item,
         quantity: quantity || '1',
         unit: 'item',
-        category: category || 'other',
+        category: category || (autoCategory !== 'skip' ? autoCategory : 'other'),
         checked: false,
         manuallyAdded: true
       };
@@ -1154,17 +1155,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get meal plans for the date range
       const mealPlans = await storage.getMealPlans(userId, startDate, endDate);
       
-      const items: Array<{
+      // Use a Map to consolidate duplicate items
+      const itemsMap = new Map<string, {
         id: string;
         name: string;
         quantity: string;
         unit: string;
         category: string;
-        recipeId?: number;
-        recipeTitle?: string;
         checked: boolean;
         manuallyAdded: boolean;
-      }> = [];
+        count: number;
+      }>();
 
       const mealPlanIds: number[] = [];
 
@@ -1183,22 +1184,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               // Skip items categorized as 'skip' (like plain water)
               if (category !== 'skip') {
-                items.push({
-                  id: `${mealPlan.id}-${index}`,
-                  name: ingredientName,
-                  quantity,
-                  unit,
-                  category,
-                  recipeId: recipe.id,
-                  recipeTitle: recipe.title,
-                  checked: false,
-                  manuallyAdded: false,
-                });
+                const itemKey = `${ingredientName.toLowerCase()}-${category}`;
+                
+                if (itemsMap.has(itemKey)) {
+                  // Item already exists, increment count and combine quantities if numeric
+                  const existingItem = itemsMap.get(itemKey)!;
+                  existingItem.count += 1;
+                  
+                  // Try to combine quantities if both are numeric
+                  const existingQty = parseFloat(existingItem.quantity);
+                  const newQty = parseFloat(quantity);
+                  
+                  if (!isNaN(existingQty) && !isNaN(newQty) && existingItem.unit === unit) {
+                    existingItem.quantity = (existingQty + newQty).toString();
+                  } else if (existingItem.quantity !== quantity || existingItem.unit !== unit) {
+                    // Different quantities/units, show combined format
+                    existingItem.quantity = `${existingItem.quantity} ${existingItem.unit} + ${quantity} ${unit}`;
+                    existingItem.unit = "";
+                  }
+                } else {
+                  // New item
+                  itemsMap.set(itemKey, {
+                    id: `${mealPlan.id}-${index}`,
+                    name: ingredientName,
+                    quantity,
+                    unit,
+                    category,
+                    checked: false,
+                    manuallyAdded: false,
+                    count: 1,
+                  });
+                }
               }
             });
           }
         }
       }
+
+      // Convert map to array
+      const items = Array.from(itemsMap.values()).map(item => ({
+        id: item.id,
+        name: item.name,
+        quantity: item.quantity,
+        unit: item.unit,
+        category: item.category,
+        checked: item.checked,
+        manuallyAdded: item.manuallyAdded,
+      }));
 
       const shoppingListData = {
         userId,
