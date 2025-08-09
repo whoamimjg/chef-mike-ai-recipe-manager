@@ -179,6 +179,98 @@ export default function Home() {
     allergies: [] as string[]
   });
 
+  // Store-specific category organization
+  const getStoreCategoryOrder = (store: string) => {
+    const categoryOrders: Record<string, string[]> = {
+      'kroger': [
+        'produce', 'deli', 'bakery', 'meat-poultry', 'seafood', 'dairy', 'frozen',
+        'pantry', 'canned-goods', 'condiments', 'snacks', 'beverages', 'personal-care', 'household', 'other'
+      ],
+      'target': [
+        'produce', 'meat-poultry', 'dairy', 'frozen', 'pantry', 'canned-goods', 
+        'snacks', 'beverages', 'personal-care', 'household', 'deli', 'bakery', 'other'
+      ],
+      'walmart': [
+        'produce', 'meat-poultry', 'dairy', 'frozen', 'pantry', 'canned-goods',
+        'condiments', 'snacks', 'beverages', 'household', 'personal-care', 'deli', 'bakery', 'other'
+      ],
+      'safeway': [
+        'produce', 'deli', 'bakery', 'meat-poultry', 'seafood', 'dairy', 'frozen',
+        'pantry', 'canned-goods', 'condiments', 'snacks', 'beverages', 'personal-care', 'household', 'other'
+      ],
+      'costco': [
+        'produce', 'meat-poultry', 'dairy', 'frozen', 'pantry', 'canned-goods',
+        'snacks', 'beverages', 'household', 'personal-care', 'deli', 'bakery', 'other'
+      ],
+      'wholefoods': [
+        'produce', 'deli', 'bakery', 'meat-poultry', 'seafood', 'dairy', 'frozen',
+        'pantry', 'canned-goods', 'condiments', 'snacks', 'beverages', 'personal-care', 'household', 'other'
+      ],
+      'all': [
+        'produce', 'deli', 'bakery', 'meat-poultry', 'seafood', 'dairy', 'frozen',
+        'pantry', 'canned-goods', 'condiments', 'snacks', 'beverages', 'personal-care', 'household', 'other'
+      ]
+    };
+    
+    return categoryOrders[store] || categoryOrders['all'];
+  };
+
+  const getStoreCategoryName = (category: string, store: string) => {
+    const categoryNames: Record<string, Record<string, string>> = {
+      'kroger': {
+        'produce': '🥬 Fresh Produce',
+        'deli': '🥪 Deli & Prepared Foods',
+        'bakery': '🥖 Bakery',
+        'meat-poultry': '🥩 Meat & Poultry',
+        'seafood': '🐟 Seafood',
+        'dairy': '🥛 Dairy & Eggs',
+        'frozen': '🧊 Frozen Foods',
+        'pantry': '🍞 Pantry Staples',
+        'canned-goods': '🥫 Canned & Jarred',
+        'condiments': '🍯 Condiments & Sauces',
+        'snacks': '🍿 Snacks & Candy',
+        'beverages': '🥤 Beverages',
+        'personal-care': '🧴 Personal Care',
+        'household': '🧽 Household Items',
+        'other': '📦 Other Items'
+      },
+      'target': {
+        'produce': '🥬 Fresh Market',
+        'meat-poultry': '🥩 Fresh Meat',
+        'dairy': '🥛 Dairy Cooler',
+        'frozen': '🧊 Frozen Aisles',
+        'pantry': '🍞 Grocery Essentials',
+        'canned-goods': '🥫 Pantry Items',
+        'snacks': '🍿 Snacks & Treats',
+        'beverages': '🥤 Beverages',
+        'personal-care': '🧴 Beauty & Personal Care',
+        'household': '🧽 Household Essentials',
+        'deli': '🥪 Deli',
+        'bakery': '🥖 Bakery',
+        'other': '📦 Other'
+      },
+      'walmart': {
+        'produce': '🥬 Fresh Produce',
+        'meat-poultry': '🥩 Fresh Meat & Seafood',
+        'dairy': '🥛 Dairy & Eggs',
+        'frozen': '🧊 Frozen',
+        'pantry': '🍞 Pantry',
+        'canned-goods': '🥫 Canned Goods',
+        'condiments': '🍯 Condiments',
+        'snacks': '🍿 Snacks',
+        'beverages': '🥤 Beverages',
+        'household': '🧽 Household',
+        'personal-care': '🧴 Health & Beauty',
+        'deli': '🥪 Deli',
+        'bakery': '🥖 Bakery',
+        'other': '📦 Other'
+      }
+    };
+    
+    const storeCategories = categoryNames[store] || categoryNames['kroger'];
+    return storeCategories[category] || `📦 ${category.charAt(0).toUpperCase() + category.slice(1)}`;
+  };
+
   // Close mobile menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -4016,7 +4108,7 @@ export default function Home() {
                   <ShoppingCart className="h-8 w-8" />
                   Smart Shopping List
                 </h1>
-                <p className="text-gray-600">Organized by grocery store sections with meal planning integration</p>
+                <p className="text-gray-600">Organized by {selectedStore === 'all' ? 'grocery store' : selectedStore.charAt(0).toUpperCase() + selectedStore.slice(1)} sections with meal planning integration</p>
               </div>
               <div className="flex gap-2 items-center">
                 {/* Store Selection Dropdown */}
@@ -4430,10 +4522,37 @@ export default function Home() {
                               }
                             </p>
                           </div>
-                        {/* Unified Shopping List */}
-                        <div className="space-y-2">
-                          {listItems.filter(item => !item.checked).map((item) => (
-                            <div key={item.id} className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 print-item">
+                        {/* Store-Organized Shopping List */}
+                        <div className="space-y-6">
+                          {(() => {
+                            const uncheckedItems = listItems.filter(item => !item.checked);
+                            const categoryOrder = getStoreCategoryOrder(selectedStore);
+                            
+                            // Group items by category
+                            const itemsByCategory = uncheckedItems.reduce((acc, item) => {
+                              const category = item.category || 'other';
+                              if (!acc[category]) acc[category] = [];
+                              acc[category].push(item);
+                              return acc;
+                            }, {} as Record<string, typeof uncheckedItems>);
+
+                            return categoryOrder.map(category => {
+                              const categoryItems = itemsByCategory[category] || [];
+                              if (categoryItems.length === 0) return null;
+
+                              return (
+                                <div key={category} className="category-section">
+                                  <div className="category-header mb-3 pb-2 border-b-2 border-orange-200">
+                                    <h3 className="text-lg font-semibold text-gray-800 print:text-black">
+                                      {getStoreCategoryName(category, selectedStore)}
+                                    </h3>
+                                    <p className="text-sm text-gray-500 print:text-gray-700">
+                                      {categoryItems.length} item{categoryItems.length !== 1 ? 's' : ''}
+                                    </p>
+                                  </div>
+                                  <div className="space-y-2">
+                                    {categoryItems.map((item) => (
+                                      <div key={item.id} className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 print-item">
                               <Checkbox 
                                 checked={item.checked}
                                 onCheckedChange={(checked) => {
@@ -4489,11 +4608,16 @@ export default function Home() {
                                   });
                                 }}
                                 className="text-red-600 hover:text-red-800 h-6 w-6 p-0 print:hidden"
-                              >
-                                <X className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          ))}
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </Button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            }).filter(Boolean);
+                          })()}
                           
                           {listItems.filter(item => !item.checked).length === 0 && (
                             <div className="text-center py-8 text-gray-500">
