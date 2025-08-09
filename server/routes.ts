@@ -523,62 +523,215 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!recipeData.title || recipeData.ingredients?.length === 0 || recipeData.ingredients?.[0]?.item === 'See original recipe') {
         console.log('Using enhanced HTML parsing fallback...');
         
-        // Enhanced ingredient extraction patterns
-        const ingredientSelectors = [
-          /<li[^>]*class[^>]*ingredient[^>]*>([^<]+)<\/li>/gi,
-          /<div[^>]*class[^>]*ingredient[^>]*>([^<]+)<\/div>/gi,
-          /<p[^>]*class[^>]*ingredient[^>]*>([^<]+)<\/p>/gi,
-          /<li[^>]*data-ingredient[^>]*>([^<]+)<\/li>/gi,
-          /<span[^>]*class[^>]*ingredient[^>]*>([^<]+)<\/span>/gi,
-          // Common recipe site patterns
-          /<li[^>]*class="recipe-ingredient[^"]*"[^>]*>([^<]+)<\/li>/gi,
-          /<div[^>]*class="ingredient[^"]*"[^>]*>([^<]+)<\/div>/gi,
-          // Allrecipes specific patterns
-          /<span[^>]*class="recipe-summary__item[^"]*"[^>]*>([^<]+)<\/span>/gi,
-          /<li[^>]*class="mntl-structured-ingredients__list-item[^"]*"[^>]*>([^<]+)<\/li>/gi,
-        ];
-        
-        let ingredientMatches: string[] = [];
-        for (const selector of ingredientSelectors) {
-          const matches = html.match(selector);
-          if (matches && matches.length > 0) {
-            ingredientMatches = matches;
-            console.log(`Found ${matches.length} ingredients with pattern: ${selector}`);
-            break;
-          }
-        }
-
-        // Enhanced instruction extraction patterns
-        const instructionSelectors = [
-          /<li[^>]*class[^>]*instruction[^>]*>([^<]+)<\/li>/gi,
-          /<div[^>]*class[^>]*instruction[^>]*>([^<]+)<\/div>/gi,
-          /<p[^>]*class[^>]*instruction[^>]*>([^<]+)<\/p>/gi,
-          /<li[^>]*class="recipe-instruction[^"]*"[^>]*>([^<]+)<\/li>/gi,
-          /<div[^>]*class="instruction[^"]*"[^>]*>([^<]+)<\/div>/gi,
-          /<ol[^>]*class[^>]*instruction[^>]*>[\s\S]*?<\/ol>/gi,
-          /<div[^>]*class="directions[^"]*"[^>]*>[\s\S]*?<\/div>/gi,
-          // Allrecipes specific patterns
-          /<li[^>]*class="mntl-sc-block-group--LI[^"]*"[^>]*>([^<]+)<\/li>/gi,
-          /<p[^>]*class="comp[^"]*mntl-sc-block[^"]*"[^>]*>([^<]+)<\/p>/gi,
-        ];
-
-        let instructionMatches: string[] = [];
-        for (const selector of instructionSelectors) {
-          const matches = html.match(selector);
-          if (matches && matches.length > 0) {
-            // If we found an ol or div container, extract li items from it
-            if (selector.includes('ol') || selector.includes('directions')) {
-              const liMatches = matches[0].match(/<li[^>]*>([^<]+)<\/li>/gi);
-              if (liMatches) {
-                instructionMatches = liMatches;
+        // Enhanced ingredient extraction patterns for multiple sites
+        const extractIngredients = (html: string, siteUrl: string) => {
+          const domain = new URL(siteUrl).hostname.toLowerCase();
+          
+          const siteSpecificSelectors = [
+            // AllRecipes
+            /<li[^>]*class="mntl-structured-ingredients__list-item[^"]*"[^>]*><p[^>]*>(.*?)<\/p><\/li>/gi,
+            /<span[^>]*class="recipe-summary__item[^"]*"[^>]*>([^<]+)<\/span>/gi,
+            
+            // Food Network  
+            /<li[^>]*class="o-RecipeIngredient__a-Ingredient[^"]*"[^>]*>([^<]+)<\/li>/gi,
+            /<p[^>]*class="o-RecipeIngredient__a-Ingredient[^"]*"[^>]*>([^<]+)<\/p>/gi,
+            
+            // Delish, Country Living, Good Housekeeping
+            /<li[^>]*class="ingredient[^"]*"[^>]*data-ingredient[^>]*>([^<]+)<\/li>/gi,
+            /<li[^>]*class="recipe-ingredient[^"]*"[^>]*>([^<]*?)<\/li>/gi,
+            /<div[^>]*class="ingredient-list[^"]*"[^>]*>[\s\S]*?<\/div>/gi,
+            /<li[^>]*data-module="recipe-ingredients"[^>]*>([^<]+)<\/li>/gi,
+            
+            // Bon Appetit, Epicurious
+            /<li[^>]*class="BaseIngredient-[^"]*"[^>]*>([^<]+)<\/li>/gi,
+            /<div[^>]*class="recipe__ingredient[^"]*"[^>]*>([^<]+)<\/div>/gi,
+            
+            // Tasty, BuzzFeed  
+            /<li[^>]*class="xs-mb1[^"]*ingredient[^"]*"[^>]*>([^<]+)<\/li>/gi,
+            /<li[^>]*class="recipe-summary-item[^"]*"[^>]*>([^<]+)<\/li>/gi,
+            
+            // BBC Good Food
+            /<li[^>]*class="recipe-ingredients__list-item[^"]*"[^>]*>([^<]+)<\/li>/gi,
+            /<li[^>]*class="ingredients-section__list-item[^"]*"[^>]*>([^<]+)<\/li>/gi,
+            
+            // Simply Recipes, Serious Eats
+            /<li[^>]*class="structured-ingredients__list-item[^"]*"[^>]*>([^<]+)<\/li>/gi,
+            /<li[^>]*class="recipe-ingredient[^"]*"[^>]*>([^<]+)<\/li>/gi,
+            
+            // NYTimes Cooking
+            /<li[^>]*class="recipe-ingredient[^"]*"[^>]*><span[^>]*>([^<]+)<\/span><\/li>/gi,
+            /<li[^>]*data-ingredient[^>]*>([^<]+)<\/li>/gi,
+            
+            // Martha Stewart, Real Simple
+            /<li[^>]*class="recipe-ingredients-item[^"]*"[^>]*>([^<]+)<\/li>/gi,
+            /<div[^>]*class="ingredients-item-name[^"]*"[^>]*>([^<]+)<\/div>/gi,
+            
+            // King Arthur Baking
+            /<div[^>]*class="recipe-ingredient[^"]*"[^>]*>([^<]+)<\/div>/gi,
+            /<li[^>]*class="recipe-ingredients-item[^"]*"[^>]*>([^<]+)<\/li>/gi,
+          ];
+          
+          const genericSelectors = [
+            // Generic patterns (fallback)
+            /<li[^>]*class[^>]*ingredient[^>]*>([^<]+)<\/li>/gi,
+            /<div[^>]*class[^>]*ingredient[^>]*>([^<]+)<\/div>/gi,
+            /<p[^>]*class[^>]*ingredient[^>]*>([^<]+)<\/p>/gi,
+            /<li[^>]*data-ingredient[^>]*>([^<]+)<\/li>/gi,
+            /<span[^>]*class[^>]*ingredient[^>]*>([^<]+)<\/span>/gi,
+            
+            // Common patterns
+            /<li[^>]*class="[^"]*ingredient[^"]*"[^>]*>([^<]+)<\/li>/gi,
+            /<div[^>]*class="[^"]*ingredient[^"]*"[^>]*>([^<]+)<\/div>/gi,
+            
+            // WordPress recipe plugins
+            /<li[^>]*class="wp-recipe-ingredient[^"]*"[^>]*>([^<]+)<\/li>/gi,
+            /<div[^>]*class="recipe-card-ingredient[^"]*"[^>]*>([^<]+)<\/div>/gi,
+            
+            // Fallback: look for lists that might be ingredients
+            /<li[^>]*>([^<]*(?:cup|tbsp|tsp|pound|oz|gram|ml|liter|clove|dash|pinch)[^<]*)<\/li>/gi,
+          ];
+          
+          const allSelectors = [...siteSpecificSelectors, ...genericSelectors];
+          
+          for (const selector of allSelectors) {
+            const matches = Array.from(html.matchAll(selector));
+            if (matches.length > 0) {
+              const ingredients = matches.map(match => {
+                // Clean up the ingredient text
+                let ingredient = match[1].trim();
+                ingredient = ingredient.replace(/<[^>]*>/g, ''); // Remove HTML tags
+                ingredient = ingredient.replace(/&nbsp;/g, ' '); // Replace nbsp
+                ingredient = ingredient.replace(/&amp;/g, '&'); // Replace encoded ampersand
+                return ingredient;
+              }).filter((ing: string) => ing.length > 2 && !ing.toLowerCase().includes('advertisement'));
+              
+              if (ingredients.length > 0) {
+                console.log(`Found ${ingredients.length} ingredients from ${domain} using pattern`);
+                return ingredients;
               }
-            } else {
-              instructionMatches = matches;
             }
-            console.log(`Found ${instructionMatches.length} instructions with pattern: ${selector}`);
-            break;
           }
-        }
+          
+          console.log(`No ingredients found for ${domain}`);
+          return [];
+        };
+        
+        const extractedIngredients = extractIngredients(html, url);
+
+        // Enhanced instruction extraction patterns for multiple sites  
+        const extractInstructions = (html: string, siteUrl: string) => {
+          const domain = new URL(siteUrl).hostname.toLowerCase();
+          
+          const siteSpecificSelectors = [
+            // AllRecipes
+            /<li[^>]*class="mntl-sc-block-group--LI[^"]*"[^>]*><div[^>]*class="mntl-sc-block[^"]*"[^>]*><p[^>]*>(.*?)<\/p><\/div><\/li>/gi,
+            /<p[^>]*class="comp[^"]*mntl-sc-block[^"]*"[^>]*>([^<]+)<\/p>/gi,
+            
+            // Food Network
+            /<li[^>]*class="o-Method__m-Step[^"]*"[^>]*>([^<]+)<\/li>/gi,
+            /<div[^>]*class="o-Method__a-Description[^"]*"[^>]*>([^<]+)<\/div>/gi,
+            
+            // Delish, Country Living, Good Housekeeping
+            /<li[^>]*class="direction[^"]*"[^>]*data-direction[^>]*>([^<]+)<\/li>/gi,
+            /<div[^>]*class="direction-list[^"]*"[^>]*>[\s\S]*?<\/div>/gi,
+            /<li[^>]*class="recipe-instruction[^"]*"[^>]*>([^<]*?)<\/li>/gi,
+            /<li[^>]*data-module="recipe-instructions"[^>]*>([^<]+)<\/li>/gi,
+            
+            // Bon Appetit, Epicurious
+            /<li[^>]*class="BaseWrap-[^"]*"[^>]*><div[^>]*>([^<]+)<\/div><\/li>/gi,
+            /<div[^>]*class="recipe__instruction[^"]*"[^>]*>([^<]+)<\/div>/gi,
+            
+            // Tasty, BuzzFeed
+            /<li[^>]*class="xs-mb1[^"]*instruction[^"]*"[^>]*>([^<]+)<\/li>/gi,
+            /<li[^>]*class="recipe-instructions-item[^"]*"[^>]*>([^<]+)<\/li>/gi,
+            
+            // BBC Good Food
+            /<li[^>]*class="recipe-method__list-item[^"]*"[^>]*>([^<]+)<\/li>/gi,
+            /<li[^>]*class="method-section__list-item[^"]*"[^>]*>([^<]+)<\/li>/gi,
+            
+            // Simply Recipes, Serious Eats
+            /<li[^>]*class="structured-instructions__list-item[^"]*"[^>]*>([^<]+)<\/li>/gi,
+            /<li[^>]*class="recipe-instruction[^"]*"[^>]*>([^<]+)<\/li>/gi,
+            
+            // NYTimes Cooking
+            /<li[^>]*class="recipe-instruction[^"]*"[^>]*><span[^>]*>([^<]+)<\/span><\/li>/gi,
+            /<li[^>]*data-step[^>]*>([^<]+)<\/li>/gi,
+            
+            // Martha Stewart, Real Simple
+            /<li[^>]*class="recipe-instructions-item[^"]*"[^>]*>([^<]+)<\/li>/gi,
+            /<div[^>]*class="instructions-item-text[^"]*"[^>]*>([^<]+)<\/div>/gi,
+            
+            // King Arthur Baking
+            /<div[^>]*class="recipe-instruction[^"]*"[^>]*>([^<]+)<\/div>/gi,
+            /<li[^>]*class="recipe-instructions-item[^"]*"[^>]*>([^<]+)<\/li>/gi,
+          ];
+          
+          const genericSelectors = [
+            // Generic patterns (fallback)
+            /<li[^>]*class[^>]*instruction[^>]*>([^<]+)<\/li>/gi,
+            /<div[^>]*class[^>]*instruction[^>]*>([^<]+)<\/div>/gi,
+            /<p[^>]*class[^>]*instruction[^>]*>([^<]+)<\/p>/gi,
+            /<li[^>]*class="recipe-instruction[^"]*"[^>]*>([^<]+)<\/li>/gi,
+            /<div[^>]*class="instruction[^"]*"[^>]*>([^<]+)<\/div>/gi,
+            
+            // Common patterns
+            /<li[^>]*class="[^"]*instruction[^"]*"[^>]*>([^<]+)<\/li>/gi,
+            /<li[^>]*class="[^"]*direction[^"]*"[^>]*>([^<]+)<\/li>/gi,
+            /<li[^>]*class="[^"]*method[^"]*"[^>]*>([^<]+)<\/li>/gi,
+            /<li[^>]*class="[^"]*step[^"]*"[^>]*>([^<]+)<\/li>/gi,
+            
+            // WordPress recipe plugins
+            /<li[^>]*class="wp-recipe-instruction[^"]*"[^>]*>([^<]+)<\/li>/gi,
+            /<div[^>]*class="recipe-card-instruction[^"]*"[^>]*>([^<]+)<\/div>/gi,
+            
+            // Container-based extraction (extract from ol/div containers)
+            /<ol[^>]*class[^>]*(?:instruction|direction|method)[^>]*>([\s\S]*?)<\/ol>/gi,
+            /<div[^>]*class="directions[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
+            
+            // Numbered lists that might be instructions
+            /<li[^>]*>\s*\d+\.?\s+([^<]+)<\/li>/gi,
+          ];
+          
+          const allSelectors = [...siteSpecificSelectors, ...genericSelectors];
+          
+          for (const selector of allSelectors) {
+            const matches = Array.from(html.matchAll(selector));
+            if (matches.length > 0) {
+              let instructions = [];
+              
+              // Handle container-based selectors (ol, div)
+              if (selector.source.includes('ol>') || selector.source.includes('div>')) {
+                for (const match of matches) {
+                  const containerContent = match[1];
+                  const liMatches = Array.from(containerContent.matchAll(/<li[^>]*>([^<]+)<\/li>/gi));
+                  if (liMatches.length > 0) {
+                    instructions = liMatches.map(li => li[1].trim());
+                    break;
+                  }
+                }
+              } else {
+                instructions = matches.map(match => {
+                  let instruction = match[1].trim();
+                  instruction = instruction.replace(/<[^>]*>/g, ''); // Remove HTML tags
+                  instruction = instruction.replace(/&nbsp;/g, ' '); // Replace nbsp
+                  instruction = instruction.replace(/&amp;/g, '&'); // Replace encoded ampersand
+                  instruction = instruction.replace(/^\d+\.?\s*/, ''); // Remove leading numbers
+                  return instruction;
+                }).filter((inst: string) => inst.length > 10 && !inst.toLowerCase().includes('advertisement'));
+              }
+              
+              if (instructions.length > 0) {
+                console.log(`Found ${instructions.length} instructions from ${domain} using pattern`);
+                return instructions;
+              }
+            }
+          }
+          
+          console.log(`No instructions found for ${domain}`);
+          return [];
+        };
+        
+        const extractedInstructions = extractInstructions(html, url);
 
         // Enhanced image extraction
         // Enhanced image extraction for multiple recipe sites
@@ -701,7 +854,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const allSelectors = [...siteSpecificSelectors, ...genericSelectors];
           
           for (const selector of allSelectors) {
-            const matches = [...html.matchAll(selector)];
+            const matches = Array.from(html.matchAll(selector));
             for (const match of matches) {
               let imageUrl = match[1];
               if (imageUrl) {
@@ -763,11 +916,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         recipeData = {
           title: title || 'Imported Recipe',
           description: `Recipe imported from ${new URL(url).hostname}`,
-          ingredients: ingredientMatches && ingredientMatches.length > 0 ? 
-            ingredientMatches.map((match: string) => {
-              const cleanText = match.replace(/<[^>]*>/g, '').trim();
+          ingredients: extractedIngredients && extractedIngredients.length > 0 ? 
+            extractedIngredients.map((ingredient: string) => {
               // Try to parse amount, unit, and item
-              const parseMatch = cleanText.match(/^(\d+(?:\/\d+)?(?:\.\d+)?)\s*(\w+)?\s+(.+)$/);
+              const parseMatch = ingredient.match(/^(\d+(?:\/\d+)?(?:\.\d+)?)\s*(\w+)?\s+(.+)$/);
               if (parseMatch) {
                 return {
                   amount: parseMatch[1],
@@ -776,11 +928,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   notes: ''
                 };
               }
-              return { unit: '', amount: '', item: cleanText, notes: '' };
+              return { unit: '', amount: '', item: ingredient, notes: '' };
             }) : 
             [{ unit: '', amount: '', item: 'See original recipe', notes: '' }],
-          instructions: instructionMatches && instructionMatches.length > 0 ? 
-            instructionMatches.map((match: string) => match.replace(/<[^>]*>/g, '').trim()).filter(inst => inst.length > 10) : 
+          instructions: extractedInstructions && extractedInstructions.length > 0 ? 
+            extractedInstructions : 
             ['See original recipe for instructions'],
           prepTime: prepTimeMatch ? parseInt(prepTimeMatch[1]) : null,
           cookTime: cookTimeMatch ? parseInt(cookTimeMatch[1]) : null,
