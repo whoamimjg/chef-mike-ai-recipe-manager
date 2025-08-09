@@ -4127,7 +4127,7 @@ export default function Home() {
                       nextMonth.setMonth(today.getMonth() + 1);
                       setShoppingListStartDate(today.toISOString().split('T')[0]);
                       setShoppingListEndDate(nextMonth.toISOString().split('T')[0]);
-                      setShoppingListName(`Month of ${today.toLocaleDateString()}`);
+                      setShoppingListName(`Next Month`);
                     }}
                   >
                     Next Month
@@ -4152,7 +4152,7 @@ export default function Home() {
               </Card>
             ) : (
               <div className="space-y-6">
-                {shoppingLists.map((list: ShoppingList) => {
+                {shoppingLists.slice(0, 1).map((list: ShoppingList) => {
                   // Parse items from JSON string if needed
                   const listItems = typeof list.items === 'string' 
                     ? JSON.parse(list.items || '[]') 

@@ -2348,7 +2348,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const itemsWithPricing = await Promise.all(pricingPromises);
       const totalEstimate = itemsWithPricing.reduce((sum, item) => {
-        const bestPrice = Math.min(...item.pricing.filter((p: any) => p.inStock).map((p: any) => p.price));
+        const inStockPrices = item.pricing.filter((p: any) => p.inStock).map((p: any) => p.price);
+        if (inStockPrices.length === 0) return sum;
+        const bestPrice = Math.min(...inStockPrices);
         return sum + (isFinite(bestPrice) ? bestPrice : 0);
       }, 0);
 

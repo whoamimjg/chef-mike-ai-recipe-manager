@@ -77,7 +77,7 @@ export const recipes = pgTable("recipes", {
   tags: jsonb("tags").$type<string[]>().default([]),
   isPublic: boolean("is_public").default(false),
   rating: integer("rating"), // User's personal rating 1-10
-  averageRating: numeric("average_rating", { precision: 3, scale: 2 }), // Community average rating
+  averageRating: numeric("average_rating", { precision: 4, scale: 2 }), // Community average rating
   ratingCount: integer("rating_count").default(0), // Number of ratings
   sourceUrl: varchar("source_url"),
   createdAt: timestamp("created_at").defaultNow(),
