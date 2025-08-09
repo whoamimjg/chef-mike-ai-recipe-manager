@@ -1239,9 +1239,7 @@ export default function Home() {
 
 
   const handleDeleteRecipe = (recipeId: number) => {
-    if (confirm("Are you sure you want to delete this recipe?")) {
-      deleteRecipeMutation.mutate(recipeId);
-    }
+    deleteRecipeMutation.mutate(recipeId);
   };
 
   // Recipe dietary warnings function
@@ -4101,7 +4099,7 @@ export default function Home() {
                       nextWeek.setDate(today.getDate() + 7);
                       setShoppingListStartDate(today.toISOString().split('T')[0]);
                       setShoppingListEndDate(nextWeek.toISOString().split('T')[0]);
-                      setShoppingListName(`Week of ${today.toLocaleDateString()}`);
+                      setShoppingListName(`Next 7 Days`);
                     }}
                   >
                     Next 7 Days
@@ -4115,7 +4113,7 @@ export default function Home() {
                       twoWeeks.setDate(today.getDate() + 14);
                       setShoppingListStartDate(today.toISOString().split('T')[0]);
                       setShoppingListEndDate(twoWeeks.toISOString().split('T')[0]);
-                      setShoppingListName(`2 Weeks from ${today.toLocaleDateString()}`);
+                      setShoppingListName(`Next 2 Weeks`);
                     }}
                   >
                     Next 2 Weeks
@@ -4737,7 +4735,7 @@ export default function Home() {
 
       {/* Rating Dialog */}
       <Dialog open={isRatingDialogOpen} onOpenChange={setIsRatingDialogOpen}>
-        <DialogContent className="max-w-md" aria-describedby="rating-dialog-description">
+        <DialogContent className="max-w-lg" aria-describedby="rating-dialog-description">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Star className="h-5 w-5 text-yellow-500" />
@@ -4751,9 +4749,9 @@ export default function Home() {
                 <p id="rating-dialog-description" className="text-sm text-gray-600">How would you rate this recipe? Click the stars to select your rating from 1 to 10.</p>
               </div>
               
-              <div className="flex items-center gap-2">
+              <div className="space-y-3">
                 <Label>Rating (1-10):</Label>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center justify-center gap-1 flex-wrap">
                   {[...Array(10)].map((_, i) => (
                     <button
                       key={i}
@@ -4764,14 +4762,17 @@ export default function Home() {
                           ? 'text-yellow-400 hover:text-yellow-500'
                           : 'text-gray-300 hover:text-gray-400'
                       }`}
+                      data-testid={`star-${i + 1}`}
                     >
-                      <Star className={`h-6 w-6 ${i < selectedRecipeRating ? 'fill-current' : ''}`} />
+                      <Star className={`h-5 w-5 ${i < selectedRecipeRating ? 'fill-current' : ''}`} />
                     </button>
                   ))}
                 </div>
-                <span className="text-sm text-gray-600 ml-2">
-                  {selectedRecipeRating > 0 ? `${selectedRecipeRating}/10` : 'Select rating'}
-                </span>
+                <div className="text-center">
+                  <span className="text-sm text-gray-600">
+                    {selectedRecipeRating > 0 ? `${selectedRecipeRating}/10 stars` : 'Select rating'}
+                  </span>
+                </div>
               </div>
 
               <div className="flex gap-2 pt-4">
@@ -4783,6 +4784,7 @@ export default function Home() {
                     setSelectedRecipeRating(0);
                   }}
                   className="flex-1"
+                  data-testid="button-cancel-rating"
                 >
                   Cancel
                 </Button>
@@ -4797,6 +4799,7 @@ export default function Home() {
                   }}
                   disabled={selectedRecipeRating === 0 || rateRecipeMutation.isPending}
                   className="flex-1"
+                  data-testid="button-submit-rating"
                 >
                   {rateRecipeMutation.isPending ? 'Rating...' : 'Submit Rating'}
                 </Button>
