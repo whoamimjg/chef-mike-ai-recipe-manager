@@ -762,8 +762,24 @@ export default function Home() {
     },
   });
 
-  const handleLogout = () => {
-    window.location.href = "/api/logout";
+  const handleLogout = async () => {
+    try {
+      // Clear all cached data
+      queryClient.clear();
+      
+      // Make logout request
+      await fetch("/api/logout", {
+        method: "GET",
+        credentials: "include",
+      });
+      
+      // Force reload to ensure clean state
+      window.location.href = "/";
+    } catch (error) {
+      console.error("Logout error:", error);
+      // Fallback: still redirect to homepage
+      window.location.href = "/";
+    }
   };
 
   // Check for missing ingredients and add to shopping list

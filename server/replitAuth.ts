@@ -116,13 +116,23 @@ export async function setupAuth(app: Express) {
   });
 
   app.get("/api/logout", (req, res) => {
-    req.logout(() => {
-      res.redirect(
-        client.buildEndSessionUrl(config, {
+    req.logout((err) => {
+      if (err) {
+        console.error("Logout error:", err);
+        return res.redirect("/");
+      }
+      
+      try {
+        const endSessionUrl = client.buildEndSessionUrl(config, {
           client_id: process.env.REPL_ID!,
           post_logout_redirect_uri: `${req.protocol}://${req.hostname}`,
-        }).href
-      );
+        }).href;
+        
+        res.redirect(endSessionUrl);
+      } catch (error) {
+        console.error("Error building end session URL:", error);
+        res.redirect("/");
+      }
     });
   });
 }
