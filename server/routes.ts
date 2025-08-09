@@ -2299,36 +2299,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Fetch pricing from multiple sources
       const pricingData = await storage.getItemPricing(itemName, userStores);
       
-      // Mock data for demo - in production, this would call real grocery APIs
+      // Mock data for demo - only showing Kroger for now
       const mockPricing = [
-        {
-          storeName: "Walmart",
-          storeChain: "walmart",
-          price: 2.99,
-          originalPrice: 3.49,
-          onSale: true,
-          inStock: true,
-          stockLevel: "high",
-          distance: "0.5 miles"
-        },
-        {
-          storeName: "Target",
-          storeChain: "target", 
-          price: 3.19,
-          onSale: false,
-          inStock: true,
-          stockLevel: "medium",
-          distance: "1.2 miles"
-        },
         {
           storeName: "Kroger",
           storeChain: "kroger",
           price: 2.89,
-          originalPrice: 2.89,
-          onSale: false,
-          inStock: false,
-          stockLevel: "out_of_stock",
-          distance: "2.1 miles"
+          originalPrice: 3.19,
+          onSale: true,
+          inStock: true,
+          stockLevel: "high",
+          distance: "1.2 miles"
         }
       ];
       
