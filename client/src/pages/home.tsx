@@ -55,7 +55,10 @@ import {
   RotateCcw,
   Menu,
   AlertTriangle,
-  DollarSign
+  DollarSign,
+  GripVertical,
+  ChevronUp,
+  ChevronDown
 } from "lucide-react";
 import type { Recipe, MealPlan, ShoppingList, UserPreferences, UserInventory } from "@shared/schema";
 import KitchenTimer from '@/components/KitchenTimer';
@@ -1010,6 +1013,22 @@ export default function Home() {
     setRecipeInstructions(updated);
   };
 
+  const moveInstructionUp = (index: number) => {
+    if (index > 0) {
+      const updated = [...recipeInstructions];
+      [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
+      setRecipeInstructions(updated);
+    }
+  };
+
+  const moveInstructionDown = (index: number) => {
+    if (index < recipeInstructions.length - 1) {
+      const updated = [...recipeInstructions];
+      [updated[index], updated[index + 1]] = [updated[index + 1], updated[index]];
+      setRecipeInstructions(updated);
+    }
+  };
+
   const resetRecipeForm = () => {
     setRecipeIngredients([{ unit: '', amount: '', item: '', notes: '' }]);
     setRecipeInstructions(['']);
@@ -1696,6 +1715,7 @@ export default function Home() {
                                     <SelectItem value="ml">Milliliter</SelectItem>
                                     <SelectItem value="liter">Liter</SelectItem>
                                     <SelectItem value="piece">Piece</SelectItem>
+                                    <SelectItem value="each">Each</SelectItem>
                                     <SelectItem value="clove">Clove</SelectItem>
                                     <SelectItem value="pinch">Pinch</SelectItem>
                                     <SelectItem value="dash">Dash</SelectItem>
@@ -1758,6 +1778,30 @@ export default function Home() {
                                 className="flex-1"
                                 required={index === 0}
                               />
+                              <div className="flex flex-col gap-1 mt-1">
+                                <Button 
+                                  type="button" 
+                                  onClick={() => moveInstructionUp(index)}
+                                  variant="outline" 
+                                  size="sm"
+                                  disabled={index === 0}
+                                  className="h-6 w-6 p-0"
+                                  title="Move up"
+                                >
+                                  <ChevronUp className="h-3 w-3" />
+                                </Button>
+                                <Button 
+                                  type="button" 
+                                  onClick={() => moveInstructionDown(index)}
+                                  variant="outline" 
+                                  size="sm"
+                                  disabled={index === recipeInstructions.length - 1}
+                                  className="h-6 w-6 p-0"
+                                  title="Move down"
+                                >
+                                  <ChevronDown className="h-3 w-3" />
+                                </Button>
+                              </div>
                               <Button 
                                 type="button" 
                                 onClick={() => removeInstruction(index)}
