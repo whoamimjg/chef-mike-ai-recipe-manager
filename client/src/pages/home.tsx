@@ -407,6 +407,110 @@ END:VCALENDAR`
     };
   };
 
+  // Handle data export as CSV
+  const handleExportData = async () => {
+    try {
+      // Gather all user data
+      const allData = {
+        recipes: recipes || [],
+        mealPlans: mealPlans || [],
+        shoppingLists: shoppingLists || [],
+        inventory: inventory || [],
+        preferences: preferences || {}
+      };
+
+      // Convert to CSV format
+      let csvContent = "data:text/csv;charset=utf-8,";
+      
+      // Export recipes
+      if (allData.recipes.length > 0) {
+        csvContent += "RECIPES\n";
+        csvContent += "Title,Description,Ingredients,Instructions,PrepTime,CookTime,Servings,Rating\n";
+        allData.recipes.forEach(recipe => {
+          const ingredients = Array.isArray(recipe.ingredients) ? recipe.ingredients.join('; ') : '';
+          const instructions = Array.isArray(recipe.instructions) ? recipe.instructions.join('; ') : '';
+          csvContent += `"${recipe.title || ''}","${recipe.description || ''}","${ingredients}","${instructions}","${recipe.prepTime || ''}","${recipe.cookTime || ''}","${recipe.servings || ''}","${recipe.rating || ''}"\n`;
+        });
+        csvContent += "\n";
+      }
+
+      // Export meal plans
+      if (allData.mealPlans.length > 0) {
+        csvContent += "MEAL PLANS\n";
+        csvContent += "Date,MealType,RecipeId,RecipeTitle\n";
+        allData.mealPlans.forEach(plan => {
+          const recipe = allData.recipes.find(r => r.id === plan.recipeId);
+          csvContent += `"${plan.date}","${plan.mealType}","${plan.recipeId}","${recipe?.title || 'Unknown Recipe'}"\n`;
+        });
+        csvContent += "\n";
+      }
+
+      // Export inventory
+      if (allData.inventory.length > 0) {
+        csvContent += "INVENTORY\n";
+        csvContent += "Name,Quantity,Unit,Category,ExpiryDate,PricePerUnit,TotalCost\n";
+        allData.inventory.forEach(item => {
+          csvContent += `"${item.ingredientName || ''}","${item.quantity || ''}","${item.unit || ''}","${item.category || ''}","${item.expiryDate || ''}","${item.pricePerUnit || ''}","${item.totalCost || ''}"\n`;
+        });
+        csvContent += "\n";
+      }
+
+      // Export preferences
+      if (allData.preferences && Object.keys(allData.preferences).length > 0) {
+        csvContent += "PREFERENCES\n";
+        csvContent += "DietaryRestrictions,Allergies\n";
+        const restrictions = Array.isArray((allData.preferences as any).dietaryRestrictions) ? (allData.preferences as any).dietaryRestrictions.join('; ') : '';
+        const allergies = Array.isArray((allData.preferences as any).allergies) ? (allData.preferences as any).allergies.join('; ') : '';
+        csvContent += `"${restrictions}","${allergies}"\n`;
+      }
+
+      // Create and download file
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `chef-mikes-backup-${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast({
+        title: "Export Complete",
+        description: "Your data has been downloaded as a CSV file",
+      });
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: "There was an error exporting your data",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle data import from CSV
+  const handleImportData = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const csvData = e.target?.result as string;
+        toast({
+          title: "CSV Import",
+          description: "CSV import functionality is ready for development. This would parse and restore your data.",
+        });
+        console.log("CSV data received:", csvData);
+      } catch (error) {
+        toast({
+          title: "Import Failed",
+          description: "There was an error reading the CSV file",
+          variant: "destructive",
+        });
+      }
+    };
+    reader.readAsText(file);
+  };
+
   // Create recipe mutation
   const createRecipeMutation = useMutation({
     mutationFn: async (formData: FormData) => {
@@ -5086,10 +5190,15 @@ END:VCALENDAR`
                       Export Data
                     </h4>
                     <p className="text-gray-600 text-sm mb-4">
-                      Download all your recipes, meal plans, and preferences as a JSON file.
+                      Download all your recipes, meal plans, and preferences as a CSV file.
                     </p>
-                    <Button variant="outline" className="w-full">
-                      Download Backup
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={handleExportData}
+                      data-testid="button-download-backup"
+                    >
+                      Download CSV Backup
                     </Button>
                   </div>
                   
@@ -5100,16 +5209,18 @@ END:VCALENDAR`
                       Import Data
                     </h4>
                     <p className="text-gray-600 text-sm mb-4">
-                      Restore your data from a previously exported JSON file.
+                      Upload a CSV file to restore your data from a previous backup.
                     </p>
-                    <Textarea 
-                      placeholder="Paste your exported JSON data here..." 
-                      rows={4} 
-                      className="mb-3"
+                    <input
+                      type="file"
+                      accept=".csv"
+                      onChange={handleImportData}
+                      className="mb-3 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                      data-testid="input-import-csv"
                     />
-                    <Button variant="destructive" className="w-full">
-                      Import Data (Replaces Current)
-                    </Button>
+                    <div className="text-xs text-gray-500">
+                      Select a CSV file exported from this app
+                    </div>
                   </div>
                 </div>
                 
