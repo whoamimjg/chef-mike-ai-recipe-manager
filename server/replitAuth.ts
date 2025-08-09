@@ -78,14 +78,20 @@ export async function setupAuth(app: Express) {
     tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
     verified: passport.AuthenticateCallback
   ) => {
+    console.log("OAuth verify callback triggered");
+    console.log("Token claims:", tokens.claims());
+    
     const user = {};
     updateUserSession(user, tokens);
     await upsertUser(tokens.claims());
+    
+    console.log("User session created, calling verified callback");
     verified(null, user);
   };
 
   for (const domain of process.env
     .REPLIT_DOMAINS!.split(",")) {
+    console.log("Setting up Replit Auth strategy for domain:", domain);
     const strategy = new Strategy(
       {
         name: `replitauth:${domain}`,
@@ -96,6 +102,7 @@ export async function setupAuth(app: Express) {
       verify,
     );
     passport.use(strategy);
+    console.log(`Strategy registered: replitauth:${domain}`);
   }
 
   passport.serializeUser((user: Express.User, cb) => cb(null, user));
@@ -104,8 +111,25 @@ export async function setupAuth(app: Express) {
   app.get("/api/login", (req, res, next) => {
     console.log("Login request received for domain:", req.hostname);
     console.log("Available strategy:", `replitauth:${req.hostname}`);
+    console.log("Available domains:", process.env.REPLIT_DOMAINS);
+    console.log("Request headers host:", req.get('host'));
     
-    passport.authenticate(`replitauth:${req.hostname}`, {
+    // Try to find a matching strategy
+    const availableDomains = process.env.REPLIT_DOMAINS!.split(",");
+    let matchingDomain = availableDomains.find(domain => 
+      req.hostname === domain || req.get('host')?.includes(domain)
+    );
+    
+    if (!matchingDomain) {
+      console.error("No matching domain found for hostname:", req.hostname);
+      console.log("Using first available domain as fallback:", availableDomains[0]);
+      matchingDomain = availableDomains[0];
+    }
+    
+    const strategyName = `replitauth:${matchingDomain}`;
+    console.log("Using strategy:", strategyName);
+    
+    passport.authenticate(strategyName, {
       prompt: "login consent",
       scope: ["openid", "email", "profile", "offline_access"],
     })(req, res, next);
@@ -115,10 +139,31 @@ export async function setupAuth(app: Express) {
     console.log("OAuth callback received for domain:", req.hostname);
     console.log("Callback URL query params:", req.query);
     
-    passport.authenticate(`replitauth:${req.hostname}`, {
+    // Find matching domain for callback too
+    const availableDomains = process.env.REPLIT_DOMAINS!.split(",");
+    let matchingDomain = availableDomains.find(domain => 
+      req.hostname === domain || req.get('host')?.includes(domain)
+    );
+    
+    if (!matchingDomain) {
+      console.error("No matching domain found for callback hostname:", req.hostname);
+      matchingDomain = availableDomains[0];
+    }
+    
+    const strategyName = `replitauth:${matchingDomain}`;
+    console.log("Using callback strategy:", strategyName);
+    
+    passport.authenticate(strategyName, {
       successReturnToOrRedirect: "/",
       failureRedirect: "/api/login",
-    })(req, res, next);
+      failureFlash: false
+    })(req, res, (err: any) => {
+      if (err) {
+        console.error("OAuth callback error:", err);
+        return res.redirect("/api/login");
+      }
+      console.log("OAuth callback completed successfully");
+    });
   });
 
   app.get("/api/logout", (req, res) => {
