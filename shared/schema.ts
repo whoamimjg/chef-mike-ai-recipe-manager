@@ -120,7 +120,7 @@ export const shoppingLists = pgTable("shopping_lists", {
     name: string;
     quantity: string;
     unit: string;
-    category: "produce" | "deli" | "poultry" | "pork" | "red-meat" | "seafood" | "dairy" | "frozen" | "beverages" | "snacks" | "canned-goods" | "bread" | "ethnic-foods" | "household-goods" | "cleaning-supplies" | "pets";
+    category: "produce" | "deli" | "poultry" | "pork" | "red-meat" | "seafood" | "dairy" | "frozen" | "beverages" | "snacks" | "canned-goods" | "bread" | "dry-goods" | "ethnic-foods" | "household-goods" | "cleaning-supplies" | "pets";
     recipeId?: number;
     recipeTitle?: string;
     checked: boolean;

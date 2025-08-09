@@ -385,22 +385,57 @@ export default function Home() {
   // Helper function to categorize items
   const getItemCategory = (itemName: string): string => {
     const name = itemName.toLowerCase();
-    if (name.includes('lettuce') || name.includes('tomato') || name.includes('onion') || name.includes('carrot') || name.includes('banana') || name.includes('apple')) return 'produce';
-    if (name.includes('cheese') || name.includes('ham') || name.includes('turkey')) return 'deli';
-    if (name.includes('chicken') || name.includes('turkey breast')) return 'poultry';
-    if (name.includes('pork') || name.includes('bacon') || name.includes('ham')) return 'pork';
-    if (name.includes('beef') || name.includes('steak') || name.includes('ground beef')) return 'red-meat';
-    if (name.includes('fish') || name.includes('salmon') || name.includes('shrimp')) return 'seafood';
-    if (name.includes('milk') || name.includes('yogurt') || name.includes('butter') || name.includes('eggs')) return 'dairy';
-    if (name.includes('frozen') || name.includes('ice cream')) return 'frozen';
-    if (name.includes('juice') || name.includes('soda') || name.includes('water')) return 'beverages';
-    if (name.includes('chips') || name.includes('crackers') || name.includes('nuts')) return 'snacks';
-    if (name.includes('canned') || name.includes('beans') || name.includes('sauce')) return 'canned-goods';
-    if (name.includes('bread') || name.includes('bagel') || name.includes('muffin')) return 'bread';
-    if (name.includes('rice') || name.includes('pasta') || name.includes('spices')) return 'ethnic-foods';
-    if (name.includes('soap') || name.includes('shampoo') || name.includes('paper')) return 'household-goods';
-    if (name.includes('detergent') || name.includes('cleaner')) return 'cleaning-supplies';
-    if (name.includes('dog') || name.includes('cat') || name.includes('pet')) return 'pets';
+    
+    // Produce - Fresh fruits and vegetables
+    const produceItems = ['lettuce', 'tomato', 'onion', 'carrot', 'banana', 'apple', 'potato', 'garlic', 'celery', 'bell pepper', 'broccoli', 'spinach', 'cucumber', 'zucchini', 'mushroom', 'avocado', 'lime', 'lemon', 'orange', 'strawberry', 'grape', 'pear', 'peach', 'mango', 'pineapple', 'cabbage', 'cauliflower', 'asparagus', 'corn', 'green bean', 'pea', 'radish', 'beet', 'turnip', 'parsnip', 'sweet potato', 'kale', 'arugula', 'cilantro', 'parsley', 'basil', 'mint', 'dill', 'rosemary', 'thyme', 'sage', 'oregano', 'chive', 'scallion', 'leek', 'shallot', 'ginger', 'jalapeño', 'serrano', 'habanero', 'poblano'];
+    
+    // Dairy - Milk products and eggs
+    const dairyItems = ['milk', 'yogurt', 'butter', 'eggs', 'cream', 'sour cream', 'cottage cheese', 'ricotta', 'mozzarella', 'cheddar', 'parmesan', 'swiss', 'goat cheese', 'feta', 'brie', 'camembert', 'blue cheese', 'cream cheese', 'half and half', 'heavy cream', 'whipping cream', 'buttermilk', 'condensed milk', 'evaporated milk'];
+    
+    // Dry Goods - Non-perishable pantry staples
+    const dryGoodsItems = ['flour', 'sugar', 'salt', 'pepper', 'rice', 'pasta', 'quinoa', 'barley', 'oats', 'lentil', 'chickpea', 'black bean', 'kidney bean', 'pinto bean', 'navy bean', 'split pea', 'couscous', 'bulgur', 'farro', 'millet', 'amaranth', 'buckwheat', 'cornmeal', 'breadcrumb', 'panko', 'baking powder', 'baking soda', 'vanilla extract', 'almond extract', 'coconut extract', 'vinegar', 'olive oil', 'vegetable oil', 'canola oil', 'sesame oil', 'coconut oil', 'honey', 'maple syrup', 'molasses', 'brown sugar', 'powdered sugar', 'cocoa powder', 'chocolate chip', 'raisin', 'date', 'fig', 'apricot', 'cranberry', 'almond', 'walnut', 'pecan', 'cashew', 'pistachio', 'peanut', 'sunflower seed', 'pumpkin seed', 'chia seed', 'flax seed', 'sesame seed'];
+    
+    // Canned Goods - Shelf-stable canned/jarred items
+    const cannedGoodsItems = ['canned', 'sauce', 'tomato sauce', 'tomato paste', 'diced tomato', 'crushed tomato', 'tomato puree', 'marinara', 'salsa', 'bean', 'corn', 'pea', 'carrot', 'green bean', 'artichoke', 'olive', 'pickle', 'jam', 'jelly', 'preserve', 'peanut butter', 'almond butter', 'tahini', 'hummus', 'coconut milk', 'broth', 'stock', 'soup', 'chili', 'tuna', 'salmon', 'sardine', 'anchovy', 'chicken broth', 'beef broth', 'vegetable broth'];
+    
+    // Meat categories
+    const poultryItems = ['chicken', 'turkey', 'duck', 'goose', 'cornish hen', 'chicken breast', 'chicken thigh', 'chicken wing', 'chicken leg', 'ground chicken', 'ground turkey', 'turkey breast', 'turkey leg'];
+    const porkItems = ['pork', 'bacon', 'ham', 'sausage', 'pork chop', 'pork loin', 'pork shoulder', 'pork belly', 'ground pork', 'chorizo', 'pepperoni', 'salami', 'prosciutto', 'pancetta'];
+    const redMeatItems = ['beef', 'steak', 'ground beef', 'roast beef', 'brisket', 'ribs', 'lamb', 'veal', 'venison', 'sirloin', 'ribeye', 'filet mignon', 'chuck roast', 'round roast'];
+    const seafoodItems = ['fish', 'salmon', 'shrimp', 'crab', 'lobster', 'scallop', 'mussel', 'clam', 'oyster', 'cod', 'halibut', 'mahi mahi', 'tilapia', 'trout', 'bass', 'snapper', 'sole', 'flounder', 'mackerel', 'herring'];
+    
+    // Deli items
+    const deliItems = ['deli', 'sliced', 'lunch meat', 'cold cut', 'roast beef', 'roast turkey', 'pastrami', 'corned beef', 'mortadella', 'bologna', 'liverwurst'];
+    
+    // Other categories
+    const frozenItems = ['frozen', 'ice cream', 'gelato', 'sorbet', 'popsicle', 'frozen yogurt', 'frozen fruit', 'frozen vegetable', 'frozen meal', 'frozen pizza', 'frozen waffle', 'frozen berries'];
+    const beverageItems = ['juice', 'soda', 'water', 'coffee', 'tea', 'beer', 'wine', 'liquor', 'energy drink', 'sports drink', 'kombucha', 'sparkling water', 'coconut water'];
+    const snackItems = ['chips', 'crackers', 'nuts', 'popcorn', 'pretzel', 'granola bar', 'energy bar', 'trail mix', 'dried fruit', 'jerky', 'candy', 'chocolate', 'cookie', 'cake', 'muffin', 'donut'];
+    const breadItems = ['bread', 'bagel', 'muffin', 'bun', 'roll', 'baguette', 'croissant', 'pita', 'tortilla', 'wrap', 'naan', 'flatbread', 'sourdough', 'whole wheat', 'rye bread', 'pumpernickel'];
+    const ethnicItems = ['soy sauce', 'fish sauce', 'miso', 'kimchi', 'wasabi', 'nori', 'mirin', 'sake', 'sriracha', 'gochujang', 'curry powder', 'garam masala', 'turmeric', 'cumin', 'coriander', 'cardamom', 'cinnamon', 'nutmeg', 'allspice', 'bay leaf', 'paprika', 'chili powder', 'cayenne', 'red pepper flake'];
+    const householdItems = ['soap', 'shampoo', 'paper', 'toilet paper', 'paper towel', 'napkin', 'tissue', 'aluminum foil', 'plastic wrap', 'garbage bag', 'storage bag', 'laundry detergent', 'fabric softener', 'dish soap', 'hand soap', 'body wash', 'toothpaste', 'toothbrush', 'deodorant', 'shaving cream', 'razor'];
+    const cleaningItems = ['detergent', 'cleaner', 'bleach', 'disinfectant', 'window cleaner', 'floor cleaner', 'bathroom cleaner', 'kitchen cleaner', 'all purpose cleaner', 'scrub brush', 'sponge', 'mop', 'broom', 'vacuum bag'];
+    const petItems = ['dog', 'cat', 'pet', 'dog food', 'cat food', 'pet food', 'dog treat', 'cat treat', 'pet treat', 'cat litter', 'dog toy', 'cat toy', 'pet toy', 'leash', 'collar'];
+    
+    // Check each category
+    if (produceItems.some(item => name.includes(item))) return 'produce';
+    if (dairyItems.some(item => name.includes(item))) return 'dairy';
+    if (dryGoodsItems.some(item => name.includes(item))) return 'dry-goods';
+    if (cannedGoodsItems.some(item => name.includes(item))) return 'canned-goods';
+    if (poultryItems.some(item => name.includes(item))) return 'poultry';
+    if (porkItems.some(item => name.includes(item))) return 'pork';
+    if (redMeatItems.some(item => name.includes(item))) return 'red-meat';
+    if (seafoodItems.some(item => name.includes(item))) return 'seafood';
+    if (deliItems.some(item => name.includes(item))) return 'deli';
+    if (frozenItems.some(item => name.includes(item))) return 'frozen';
+    if (beverageItems.some(item => name.includes(item))) return 'beverages';
+    if (snackItems.some(item => name.includes(item))) return 'snacks';
+    if (breadItems.some(item => name.includes(item))) return 'bread';
+    if (ethnicItems.some(item => name.includes(item))) return 'ethnic-foods';
+    if (householdItems.some(item => name.includes(item))) return 'household-goods';
+    if (cleaningItems.some(item => name.includes(item))) return 'cleaning-supplies';
+    if (petItems.some(item => name.includes(item))) return 'pets';
+    
     return 'produce'; // Default category
   };
 
@@ -4145,6 +4180,7 @@ export default function Home() {
                             { id: 'beverages', name: 'Beverages', icon: '🥤' },
                             { id: 'snacks', name: 'Snacks', icon: '🍿' },
                             { id: 'canned-goods', name: 'Canned Goods', icon: '🥫' },
+                            { id: 'dry-goods', name: 'Dry Goods', icon: '🌾' },
                             { id: 'bread', name: 'Bread & Bakery', icon: '🍞' },
                             { id: 'ethnic-foods', name: 'Ethnic Foods', icon: '🌶️' },
                             { id: 'household-goods', name: 'Household', icon: '🏠' },
