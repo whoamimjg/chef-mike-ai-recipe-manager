@@ -150,13 +150,14 @@ export default function Home() {
   const [showCompletedItems, setShowCompletedItems] = useState(false);
   const [showPricing, setShowPricing] = useState(false);
   const [pricingData, setPricingData] = useState<any>(null);
+  const [selectedStore, setSelectedStore] = useState<string>('all'); // 'all', 'kroger', 'target', 'walmart', etc.
 
   // Fetch pricing data for the current shopping list
   const fetchPricingData = async () => {
     if (!currentShoppingList) return;
     
     try {
-      const response = await apiRequest("GET", `/api/shopping-lists/${currentShoppingList.id}/pricing`);
+      const response = await apiRequest("GET", `/api/shopping-lists/${currentShoppingList.id}/pricing?store=${selectedStore}`);
       setPricingData(response);
     } catch (error) {
       console.error('Error fetching pricing data:', error);
@@ -4017,7 +4018,37 @@ export default function Home() {
                 </h1>
                 <p className="text-gray-600">Organized by grocery store sections with meal planning integration</p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
+                {/* Store Selection Dropdown */}
+                {showPricing && (
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="store-select" className="text-sm font-medium whitespace-nowrap">Store:</Label>
+                    <Select 
+                      value={selectedStore} 
+                      onValueChange={(value) => {
+                        setSelectedStore(value);
+                        // Refresh pricing when store changes
+                        if (currentShoppingList) {
+                          fetchPricingData();
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="w-40" id="store-select">
+                        <SelectValue placeholder="Select store" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Stores</SelectItem>
+                        <SelectItem value="kroger">Kroger</SelectItem>
+                        <SelectItem value="target">Target</SelectItem>
+                        <SelectItem value="walmart">Walmart</SelectItem>
+                        <SelectItem value="safeway">Safeway</SelectItem>
+                        <SelectItem value="costco">Costco</SelectItem>
+                        <SelectItem value="wholefoods">Whole Foods</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                
                 <Button 
                   variant="outline" 
                   onClick={() => {

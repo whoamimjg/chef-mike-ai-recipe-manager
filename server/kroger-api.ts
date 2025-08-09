@@ -145,7 +145,7 @@ export class KrogerAPI {
   }
 
   // Convert grocery item name to pricing data for shopping list
-  async getItemPricing(itemName: string, userStores: string[] = []): Promise<Array<{
+  async getItemPricing(itemName: string, userStores: string[] = [], filterStore?: string): Promise<Array<{
     storeName: string;
     storeId: string;
     price: number;

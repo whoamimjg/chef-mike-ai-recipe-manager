@@ -2324,6 +2324,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/shopping-lists/:id/pricing', isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
+      const { store } = req.query; // Get selected store from query parameter
       const userId = req.user?.claims?.sub || req.user?.id || req.session?.userId;
       
       const shoppingList = await storage.getShoppingList(parseInt(id), userId);
@@ -2333,16 +2334,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const items = JSON.parse(shoppingList.items || '[]');
       const pricingPromises = items.map(async (item: any) => {
-        // Get pricing for each item
-        const pricing = await storage.getItemPricing(item.name, []);
-        return {
-          ...item,
-          pricing: pricing.length > 0 ? pricing : [{
-            storeName: "Best Price",
-            price: Math.round((Math.random() * 5 + 1) * 100) / 100,
+        // Get pricing for each item with store filter
+        const pricing = await storage.getItemPricing(item.name, [], store as string);
+        
+        // Generate store-specific mock data if no real pricing available
+        const generateMockPricing = (storeName: string) => {
+          const basePrice = Math.round((Math.random() * 5 + 1) * 100) / 100;
+          const storeMultipliers: Record<string, number> = {
+            'kroger': 1.0,
+            'target': 1.1,
+            'walmart': 0.9,
+            'safeway': 1.15,
+            'costco': 0.85,
+            'wholefoods': 1.3
+          };
+          
+          const multiplier = storeMultipliers[storeName.toLowerCase()] || 1.0;
+          return [{
+            storeName: storeName.charAt(0).toUpperCase() + storeName.slice(1),
+            price: Math.round(basePrice * multiplier * 100) / 100,
             inStock: Math.random() > 0.1,
             onSale: Math.random() > 0.7
-          }]
+          }];
+        };
+
+        let finalPricing = pricing;
+        
+        if (pricing.length === 0) {
+          if (store && store !== 'all') {
+            // Generate mock data for specific store
+            finalPricing = generateMockPricing(store);
+          } else {
+            // Generate mock data for multiple stores
+            const stores = ['Kroger', 'Target', 'Walmart', 'Safeway'];
+            finalPricing = stores.map(storeName => ({
+              storeName,
+              price: Math.round((Math.random() * 5 + 1) * 100) / 100,
+              inStock: Math.random() > 0.1,
+              onSale: Math.random() > 0.7
+            }));
+          }
+        }
+        
+        return {
+          ...item,
+          pricing: finalPricing
         };
       });
 

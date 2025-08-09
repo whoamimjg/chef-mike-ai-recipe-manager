@@ -874,9 +874,9 @@ export class DatabaseStorage implements IStorage {
     return result.rowCount > 0;
   }
 
-  async getItemPricing(itemName: string, userStores: UserGroceryStore[]): Promise<GroceryStorePricing[]> {
+  async getItemPricing(itemName: string, userStores: UserGroceryStore[], filterStore?: string): Promise<GroceryStorePricing[]> {
     // Try to get real-time pricing from grocery store APIs first
-    const realTimePricing = await this.getRealTimePricing(itemName, userStores);
+    const realTimePricing = await this.getRealTimePricing(itemName, userStores, filterStore);
     
     if (realTimePricing.length > 0) {
       return realTimePricing;
@@ -903,14 +903,14 @@ export class DatabaseStorage implements IStorage {
       .orderBy(asc(groceryStorePricing.price));
   }
 
-  private async getRealTimePricing(itemName: string, userStores: UserGroceryStore[]): Promise<GroceryStorePricing[]> {
+  private async getRealTimePricing(itemName: string, userStores: UserGroceryStore[], filterStore?: string): Promise<GroceryStorePricing[]> {
     const results: any[] = [];
 
     try {
       // Import and use Kroger API
       const { krogerAPI } = await import('./kroger-api');
       const krogerStores = userStores.filter(store => store.storeType === 'kroger').map(store => store.storeId);
-      const krogerPricing = await krogerAPI.getItemPricing(itemName, krogerStores);
+      const krogerPricing = await krogerAPI.getItemPricing(itemName, krogerStores, filterStore);
       
       // Convert to our GroceryStorePricing format
       for (const pricing of krogerPricing) {
