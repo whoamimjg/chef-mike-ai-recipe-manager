@@ -970,16 +970,21 @@ END:VCALENDAR`
 
   const handleLogout = async () => {
     try {
-      // Clear all cached data
+      // Clear all cached data and local storage
       queryClient.clear();
+      localStorage.clear();
+      sessionStorage.clear();
       
       // For Replit Auth, we need to redirect directly to the logout endpoint
-      // This allows the OAuth provider to properly clear the session
+      // This will clear the session and redirect to airecipemanager.com
       window.location.href = "/api/logout";
     } catch (error) {
       console.error("Logout error:", error);
-      // Fallback: still redirect to logout endpoint
-      window.location.href = "/api/logout";
+      // Fallback: clear everything and redirect to main site
+      queryClient.clear();
+      localStorage.clear();
+      sessionStorage.clear();
+      window.location.href = "https://airecipemanager.com/";
     }
   };
 

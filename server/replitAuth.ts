@@ -128,9 +128,8 @@ export async function setupAuth(app: Express) {
           console.error("Session destroy error:", destroyErr);
         }
         
-        // Simply redirect to home page instead of external OAuth logout
-        // This ensures a clean logout without 404 errors
-        res.redirect("/");
+        // Redirect to the actual landing page domain
+        res.redirect("https://airecipemanager.com/");
       });
     });
   });
