@@ -35,20 +35,25 @@ function Router() {
           <Route path="/" component={Landing} />
           <Route path="/signup" component={SignUp} />
           <Route path="/signup/success" component={SignupSuccess} />
-          <Route path="/login" component={Login} />
+          <Route path="/login">
+            {() => {
+              window.location.href = "/api/login";
+              return null;
+            }}
+          </Route>
           <Route path="/verify-email" component={VerifyEmail} />
           <Route path="/contact" component={Contact} />
           <Route path="/help" component={Help} />
           {/* Redirect protected routes to login */}
           <Route path="/account">
             {() => {
-              window.location.href = "/login";
+              window.location.href = "/api/login";
               return null;
             }}
           </Route>
           <Route path="/admin">
             {() => {
-              window.location.href = "/login";
+              window.location.href = "/api/login";
               return null;
             }}
           </Route>

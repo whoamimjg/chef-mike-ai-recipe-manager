@@ -27,7 +27,7 @@ export default function Landing() {
                 <a href="/help" className="transition-colors hover:text-white" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>Help</a>
                 <a href="/contact" className="transition-colors hover:text-white" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>Contact</a>
               </div>
-              <Button onClick={() => window.location.href = "/login"} variant="secondary" className="bg-white hover:bg-gray-100" style={{ color: '#ea580c', backgroundColor: '#ffffff' }}>
+              <Button onClick={handleSignIn} variant="secondary" className="bg-white hover:bg-gray-100" style={{ color: '#ea580c', backgroundColor: '#ffffff' }}>
                 Sign In
               </Button>
             </div>
