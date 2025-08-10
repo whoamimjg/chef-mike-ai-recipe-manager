@@ -140,6 +140,7 @@ export async function setupAuth(app: Express) {
     passport.authenticate(strategyName, {
       prompt: "login consent",
       scope: ["openid", "email", "profile", "offline_access"],
+      max_age: 0 // Force fresh authentication
     })(req, res, next);
   });
 
