@@ -82,10 +82,11 @@ export async function setupAuth(app: Express) {
     console.log("OAuth verify callback triggered");
     console.log("Token claims:", tokens.claims());
     
-    const user = {};
+    const user = { isAuthenticated: true };
     updateUserSession(user, tokens);
     await upsertUser(tokens.claims());
     
+    console.log("User session updated:", JSON.stringify(user, null, 2));
     console.log("User session created, calling verified callback");
     verified(null, user);
   };
@@ -106,8 +107,14 @@ export async function setupAuth(app: Express) {
     console.log(`Strategy registered: replitauth:${domain}`);
   }
 
-  passport.serializeUser((user: Express.User, cb) => cb(null, user));
-  passport.deserializeUser((user: Express.User, cb) => cb(null, user));
+  passport.serializeUser((user: any, cb) => {
+    console.log("Serializing user:", user);
+    cb(null, user);
+  });
+  passport.deserializeUser((user: any, cb) => {
+    console.log("Deserializing user:", user);
+    cb(null, user);
+  });
 
   app.get("/api/login", (req, res, next) => {
     console.log("Login request received for domain:", req.hostname);
