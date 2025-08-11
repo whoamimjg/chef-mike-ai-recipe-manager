@@ -3,11 +3,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ChefHat, Calendar, ShoppingCart, Brain, Clock, Users } from "lucide-react";
+import { SiAuth0, SiReplit } from "react-icons/si";
+import { AuthDialog } from "@/components/AuthDialog";
+import { useState } from "react";
 import chefMikeImage from "@assets/AdobeStock_779778898_1753990317537.jpeg";
 
 export default function Landing() {
+  const [authDialogOpen, setAuthDialogOpen] = useState(false);
+  
   const handleSignIn = () => {
-    window.location.href = "/api/login";
+    setAuthDialogOpen(true);
   };
 
   return (
@@ -35,21 +40,24 @@ export default function Landing() {
                   <div className="py-1">
                     <button 
                       onClick={() => window.location.href = '/api/login'}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
                     >
-                      🔗 Sign In with Replit
+                      <SiReplit className="w-4 h-4 text-orange-600" />
+                      Sign In with Replit
                     </button>
                     <button 
                       onClick={() => window.location.href = '/auth0/login'}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
                     >
-                      🌐 Sign In with Auth0
+                      <SiAuth0 className="w-4 h-4 text-orange-600" />
+                      Sign In with Auth0
                     </button>
                     <button 
                       onClick={() => window.location.href = '/login'}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
                     >
-                      👤 Local Account Login
+                      <ChefHat className="w-4 h-4 text-orange-600" />
+                      Local Account Login
                     </button>
                   </div>
                 </div>
@@ -712,6 +720,12 @@ export default function Landing() {
           </div>
         </div>
       </footer>
+      {/* Auth Dialog */}
+      <AuthDialog 
+        open={authDialogOpen} 
+        onOpenChange={setAuthDialogOpen}
+        title="Welcome to Chef Mike's"
+      />
     </div>
   );
 }
