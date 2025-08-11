@@ -31,19 +31,25 @@ export default function Landing() {
                 <Button onClick={handleSignIn} variant="secondary" className="bg-white hover:bg-gray-100" style={{ color: '#ea580c', backgroundColor: '#ffffff' }}>
                   Sign In
                 </Button>
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                   <div className="py-1">
                     <button 
                       onClick={() => window.location.href = '/api/login'}
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
-                      Sign In with Replit
+                      🔗 Sign In with Replit
+                    </button>
+                    <button 
+                      onClick={() => window.location.href = '/auth0/login'}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      🌐 Sign In with Auth0
                     </button>
                     <button 
                       onClick={() => window.location.href = '/login'}
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
-                      Local Account Login
+                      👤 Local Account Login
                     </button>
                   </div>
                 </div>
@@ -83,7 +89,7 @@ export default function Landing() {
                   className="border-2 hover:bg-white/10 text-lg px-8 py-4 font-semibold"
                   style={{ color: '#ffffff', borderColor: '#ffffff', backgroundColor: 'transparent' }}
                 >
-                  Local Login
+                  👤 Local Login
                 </Button>
               </div>
               <Button 

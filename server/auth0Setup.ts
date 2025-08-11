@@ -4,13 +4,17 @@ import { storage } from './storage';
 
 export function setupAuth0(app: Express) {
   // Auth0 configuration
+  const issuerBaseURL = process.env.AUTH0_ISSUER_BASE_URL?.startsWith('https://') 
+    ? process.env.AUTH0_ISSUER_BASE_URL 
+    : `https://${process.env.AUTH0_ISSUER_BASE_URL}`;
+    
   const config = {
     authRequired: false,
     auth0Logout: true,
     secret: process.env.AUTH0_SECRET || 'your-secret-key',
-    baseURL: process.env.AUTH0_BASE_URL || 'http://localhost:5000',
-    clientID: process.env.AUTH0_CLIENT_ID,
-    issuerBaseURL: process.env.AUTH0_ISSUER_BASE_URL,
+    baseURL: process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : 'http://localhost:5000',
+    clientID: 'LJkFtXalLcPBRy8JXsIwE9u1uFjBWASo',
+    issuerBaseURL: issuerBaseURL,
   };
 
   // Apply Auth0 middleware
@@ -21,14 +25,14 @@ export function setupAuth0(app: Express) {
     res.oidc.login({
       returnTo: '/',
       authorizationParams: {
-        redirect_uri: `${process.env.AUTH0_BASE_URL}/callback`,
+        redirect_uri: `${process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : 'http://localhost:5000'}/auth0/callback`,
       },
     });
   });
 
   app.get('/auth0/logout', (req, res) => {
     res.oidc.logout({
-      returnTo: `${process.env.AUTH0_BASE_URL}`,
+      returnTo: `${process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : 'http://localhost:5000'}`,
     });
   });
 

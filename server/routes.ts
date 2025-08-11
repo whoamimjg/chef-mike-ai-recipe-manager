@@ -2,6 +2,7 @@ import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupAuth0, requiresAuth0 } from "./auth0Setup";
 import { sendEmail, generateVerificationEmailHtml, generateWelcomeEmailHtml } from "./email";
 import crypto from "crypto";
 import { 
@@ -92,6 +93,18 @@ async function checkPlanLimits(userId: string, resource: 'recipes' | 'shoppingLi
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
+  
+  // Setup Auth0 (optional third authentication method)
+  if (process.env.AUTH0_SECRET && process.env.AUTH0_ISSUER_BASE_URL) {
+    try {
+      console.log('Setting up Auth0 with issuer:', process.env.AUTH0_ISSUER_BASE_URL);
+      setupAuth0(app);
+      console.log('Auth0 setup completed successfully');
+    } catch (error) {
+      console.error('Auth0 setup failed:', error);
+      console.log('Continuing without Auth0 integration');
+    }
+  }
 
   // Serve uploaded files
   app.use('/uploads', express.static('uploads'));
