@@ -4466,13 +4466,13 @@ END:VCALENDAR`
                       <SelectContent>
                         <SelectItem value="all">All Stores</SelectItem>
                         <SelectItem value="kroger">Kroger</SelectItem>
-                        <SelectItem value="target">Target</SelectItem>
-                        <SelectItem value="walmart">Walmart</SelectItem>
-                        <SelectItem value="safeway">Safeway</SelectItem>
-                        <SelectItem value="meijer">Meijer</SelectItem>
-                        <SelectItem value="giant-eagle">Giant Eagle</SelectItem>
-                        <SelectItem value="costco">Costco</SelectItem>
-                        <SelectItem value="wholefoods">Whole Foods</SelectItem>
+                        <SelectItem value="target">Target - Coming Soon</SelectItem>
+                        <SelectItem value="walmart">Walmart - Coming Soon</SelectItem>
+                        <SelectItem value="safeway">Safeway - Coming Soon</SelectItem>
+                        <SelectItem value="meijer">Meijer - Coming Soon</SelectItem>
+                        <SelectItem value="giant-eagle">Giant Eagle - Coming Soon</SelectItem>
+                        <SelectItem value="costco">Costco - Coming Soon</SelectItem>
+                        <SelectItem value="wholefoods">Whole Foods - Coming Soon</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
