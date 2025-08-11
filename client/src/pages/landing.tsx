@@ -27,9 +27,27 @@ export default function Landing() {
                 <a href="/help" className="transition-colors hover:text-white" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>Help</a>
                 <a href="/contact" className="transition-colors hover:text-white" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>Contact</a>
               </div>
-              <Button onClick={handleSignIn} variant="secondary" className="bg-white hover:bg-gray-100" style={{ color: '#ea580c', backgroundColor: '#ffffff' }}>
-                Sign In
-              </Button>
+              <div className="relative group">
+                <Button onClick={handleSignIn} variant="secondary" className="bg-white hover:bg-gray-100" style={{ color: '#ea580c', backgroundColor: '#ffffff' }}>
+                  Sign In
+                </Button>
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  <div className="py-1">
+                    <button 
+                      onClick={() => window.location.href = '/api/login'}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Sign In with Replit
+                    </button>
+                    <button 
+                      onClick={() => window.location.href = '/login'}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Local Account Login
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -49,14 +67,25 @@ export default function Landing() {
               Transform your cooking experience with AI-powered recipe management, smart meal planning, intelligent grocery lists, and personalized recommendations.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button 
-                onClick={() => window.location.href = "/signup"}
-                size="lg" 
-                className="bg-white hover:bg-gray-100 text-lg px-8 py-4 font-semibold"
-                style={{ color: '#ea580c', backgroundColor: '#ffffff' }}
-              >
-                🚀 Start Free Trial
-              </Button>
+              <div className="flex gap-4">
+                <Button 
+                  onClick={() => window.location.href = "/signup"}
+                  size="lg" 
+                  className="bg-white hover:bg-gray-100 text-lg px-8 py-4 font-semibold"
+                  style={{ color: '#ea580c', backgroundColor: '#ffffff' }}
+                >
+                  🚀 Start Free Trial
+                </Button>
+                <Button 
+                  onClick={() => window.location.href = "/login"}
+                  variant="outline"
+                  size="lg" 
+                  className="border-2 hover:bg-white/10 text-lg px-8 py-4 font-semibold"
+                  style={{ color: '#ffffff', borderColor: '#ffffff', backgroundColor: 'transparent' }}
+                >
+                  Local Login
+                </Button>
+              </div>
               <Button 
                 variant="outline" 
                 size="lg"
