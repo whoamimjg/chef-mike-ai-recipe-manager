@@ -25,7 +25,7 @@ export function setupAuth0(app: Express) {
     res.oidc.login({
       returnTo: '/',
       authorizationParams: {
-        redirect_uri: `${process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : 'http://localhost:5000'}/auth0/callback`,
+        redirect_uri: `${config.baseURL}/callback`,
       },
     });
   });
@@ -36,9 +36,11 @@ export function setupAuth0(app: Express) {
     });
   });
 
-  app.get('/auth0/callback', async (req, res) => {
-    try {
-      if (req.oidc.isAuthenticated()) {
+  // The callback is handled automatically by express-openid-connect
+  // This middleware will process the callback and create the user session
+  app.use(async (req, res, next) => {
+    if (req.oidc && req.oidc.isAuthenticated()) {
+      try {
         const user = req.oidc.user;
         
         // Create or update user in your database
@@ -49,13 +51,11 @@ export function setupAuth0(app: Express) {
           lastName: user?.family_name || '',
           profileImageUrl: user?.picture || '',
         });
+      } catch (error) {
+        console.error('Error upserting user:', error);
       }
-      
-      res.redirect('/');
-    } catch (error) {
-      console.error('Auth0 callback error:', error);
-      res.redirect('/?error=auth');
     }
+    next();
   });
 
   // Get current user endpoint
