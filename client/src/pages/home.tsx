@@ -64,6 +64,7 @@ import {
   Calendar as CalendarClock
 } from "lucide-react";
 import type { Recipe, MealPlan, ShoppingList, UserPreferences, UserInventory } from "@shared/schema";
+import { categorizeIngredient, categoryDisplayNames } from "@/utils/ingredientCategorizer";
 import KitchenTimer from '@/components/KitchenTimer';
 
 
@@ -5654,8 +5655,23 @@ END:VCALENDAR`
                 id="itemName"
                 placeholder="e.g., Milk, Bananas, Chicken Breast"
                 value={manualItem.name}
-                onChange={(e) => setManualItem({ ...manualItem, name: e.target.value })}
+                onChange={(e) => {
+                  const newName = e.target.value;
+                  const suggestedCategory = categorizeIngredient(newName);
+                  setManualItem({ 
+                    ...manualItem, 
+                    name: newName,
+                    category: suggestedCategory
+                  });
+                }}
               />
+              {manualItem.name && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Auto-categorized as: <span className="font-medium text-orange-600">
+                    {categoryDisplayNames[manualItem.category] || manualItem.category}
+                  </span>
+                </p>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -5699,22 +5715,11 @@ END:VCALENDAR`
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="produce">🥬 Produce</SelectItem>
-                  <SelectItem value="deli">🧀 Deli</SelectItem>
-                  <SelectItem value="poultry">🐔 Poultry</SelectItem>
-                  <SelectItem value="pork">🥓 Pork</SelectItem>
-                  <SelectItem value="red-meat">🥩 Red Meat</SelectItem>
-                  <SelectItem value="seafood">🐟 Seafood</SelectItem>
-                  <SelectItem value="dairy">🥛 Dairy</SelectItem>
-                  <SelectItem value="frozen">🧊 Frozen</SelectItem>
-                  <SelectItem value="beverages">🥤 Beverages</SelectItem>
-                  <SelectItem value="snacks">🍿 Snacks</SelectItem>
-                  <SelectItem value="canned-goods">🥫 Canned Goods</SelectItem>
-                  <SelectItem value="bread">🍞 Bread & Bakery</SelectItem>
-                  <SelectItem value="ethnic-foods">🌶️ Ethnic Foods</SelectItem>
-                  <SelectItem value="household-goods">🏠 Household</SelectItem>
-                  <SelectItem value="cleaning-supplies">🧽 Cleaning</SelectItem>
-                  <SelectItem value="pets">🐕 Pet Supplies</SelectItem>
+                  {Object.entries(categoryDisplayNames).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -5727,38 +5732,68 @@ END:VCALENDAR`
                 Cancel
               </Button>
               <Button
-                onClick={() => {
-                  // Add item to most recent shopping list or create new one
-                  if (shoppingLists.length > 0) {
-                    const latestList = shoppingLists[0];
-                    const newItem = {
-                      id: Date.now().toString(),
-                      name: manualItem.name,
-                      quantity: manualItem.quantity,
-                      unit: manualItem.unit,
-                      category: manualItem.category,
-                      checked: false,
-                      manuallyAdded: true
-                    };
-                    updateShoppingListMutation.mutate({
-                      ...latestList,
-                      items: [...latestList.items, newItem]
-                    });
-                  } else {
-                    // Create new shopping list
-                    generateShoppingListMutation.mutate({
-                      startDate: new Date().toISOString().split('T')[0],
-                      endDate: new Date().toISOString().split('T')[0],
-                      name: "Quick Shopping List"
+                onClick={async () => {
+                  try {
+                    // Add item to most recent shopping list or create new one
+                    if (shoppingLists && shoppingLists.length > 0) {
+                      const latestList = shoppingLists[0];
+                      const newItem = {
+                        id: Date.now().toString(),
+                        name: manualItem.name,
+                        quantity: manualItem.quantity,
+                        unit: manualItem.unit,
+                        category: manualItem.category,
+                        checked: false,
+                        manuallyAdded: true
+                      };
+                      
+                      await updateShoppingListMutation.mutateAsync({
+                        ...latestList,
+                        items: [...(latestList.items || []), newItem]
+                      });
+                      
+                      toast({
+                        title: "Item Added",
+                        description: `${manualItem.name} added to your shopping list!`,
+                      });
+                    } else {
+                      // Create new shopping list with the item
+                      await generateShoppingListMutation.mutateAsync({
+                        startDate: new Date().toISOString().split('T')[0],
+                        endDate: new Date().toISOString().split('T')[0],
+                        name: "Quick Shopping List",
+                        items: [{
+                          id: Date.now().toString(),
+                          name: manualItem.name,
+                          quantity: manualItem.quantity,
+                          unit: manualItem.unit,
+                          category: manualItem.category,
+                          checked: false,
+                          manuallyAdded: true
+                        }]
+                      });
+                      
+                      toast({
+                        title: "Shopping List Created",
+                        description: `New shopping list created with ${manualItem.name}!`,
+                      });
+                    }
+                    
+                    setManualItem({ name: '', quantity: '', unit: 'item', category: 'produce' });
+                    setIsAddManualItemOpen(false);
+                  } catch (error) {
+                    console.error('Error adding manual item:', error);
+                    toast({
+                      title: "Error",
+                      description: "Failed to add item to shopping list",
+                      variant: "destructive",
                     });
                   }
-                  setManualItem({ name: '', quantity: '', unit: 'item', category: 'produce' });
-                  setIsAddManualItemOpen(false);
                 }}
-                disabled={!manualItem.name || !manualItem.quantity}
+                disabled={!manualItem.name || !manualItem.quantity || updateShoppingListMutation.isPending || generateShoppingListMutation.isPending}
                 className="flex-1"
               >
-                Add Item
+                {updateShoppingListMutation.isPending || generateShoppingListMutation.isPending ? 'Adding...' : 'Add Item'}
               </Button>
             </div>
           </div>
