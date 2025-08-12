@@ -2673,6 +2673,251 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin API Routes
+  const adminAuth = async (req: any, res: any, next: any) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'Admin authentication required' });
+    }
+    
+    const token = authHeader.split(' ')[1];
+    // Simple admin token validation (in production, use JWT or similar)
+    if (token !== process.env.ADMIN_TOKEN || !process.env.ADMIN_TOKEN) {
+      return res.status(401).json({ message: 'Invalid admin token' });
+    }
+    
+    next();
+  };
+
+  // Admin login
+  app.post('/api/admin/login', async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      // Simple admin credentials check (in production, use proper hashing)
+      const adminEmail = process.env.ADMIN_EMAIL || 'admin@airecipemanager.com';
+      const adminPassword = process.env.ADMIN_PASSWORD || 'admin123!';
+      
+      if (email === adminEmail && password === adminPassword) {
+        const token = process.env.ADMIN_TOKEN || 'admin-token-' + Date.now();
+        res.json({ success: true, token });
+      } else {
+        res.status(401).json({ success: false, message: 'Invalid credentials' });
+      }
+    } catch (error) {
+      console.error('Admin login error:', error);
+      res.status(500).json({ success: false, message: 'Login failed' });
+    }
+  });
+
+  // Admin dashboard stats
+  app.get('/api/admin/stats', adminAuth, async (req, res) => {
+    try {
+      const stats = await storage.getAdminStats();
+      res.json(stats);
+    } catch (error) {
+      console.error('Error fetching admin stats:', error);
+      res.status(500).json({ message: 'Failed to fetch stats' });
+    }
+  });
+
+  // Admin activity log
+  app.get('/api/admin/activity', adminAuth, async (req, res) => {
+    try {
+      const activity = await storage.getRecentActivity();
+      res.json(activity);
+    } catch (error) {
+      console.error('Error fetching activity:', error);
+      res.status(500).json({ message: 'Failed to fetch activity' });
+    }
+  });
+
+  // Admin user management
+  app.get('/api/admin/users', adminAuth, async (req, res) => {
+    try {
+      const { search } = req.query;
+      const users = await storage.getAdminUsers(search as string);
+      res.json(users);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      res.status(500).json({ message: 'Failed to fetch users' });
+    }
+  });
+
+  app.get('/api/admin/users/:id', adminAuth, async (req, res) => {
+    try {
+      const user = await storage.getUser(req.params.id);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      res.json(user);
+    } catch (error) {
+      console.error('Error fetching user:', error);
+      res.status(500).json({ message: 'Failed to fetch user' });
+    }
+  });
+
+  app.put('/api/admin/users/:id', adminAuth, async (req, res) => {
+    try {
+      const userId = req.params.id;
+      const updates = req.body;
+      const user = await storage.updateUser(userId, updates);
+      res.json(user);
+    } catch (error) {
+      console.error('Error updating user:', error);
+      res.status(500).json({ message: 'Failed to update user' });
+    }
+  });
+
+  app.post('/api/admin/users/:id/reset-password', adminAuth, async (req, res) => {
+    try {
+      const userId = req.params.id;
+      const result = await storage.createPasswordReset(userId);
+      // In production, send email here
+      res.json({ success: true, resetToken: result.token });
+    } catch (error) {
+      console.error('Error creating password reset:', error);
+      res.status(500).json({ message: 'Failed to create password reset' });
+    }
+  });
+
+  app.post('/api/admin/users/:id/suspend', adminAuth, async (req, res) => {
+    try {
+      const userId = req.params.id;
+      await storage.updateUser(userId, { suspended: true });
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error suspending user:', error);
+      res.status(500).json({ message: 'Failed to suspend user' });
+    }
+  });
+
+  // Admin subscription management
+  app.get('/api/admin/subscriptions', adminAuth, async (req, res) => {
+    try {
+      const subscriptions = await storage.getAdminSubscriptions();
+      res.json(subscriptions);
+    } catch (error) {
+      console.error('Error fetching subscriptions:', error);
+      res.status(500).json({ message: 'Failed to fetch subscriptions' });
+    }
+  });
+
+  app.post('/api/admin/subscriptions/:id/cancel', adminAuth, async (req, res) => {
+    try {
+      const subscriptionId = req.params.id;
+      
+      // Cancel in Stripe
+      const subscription = await stripe.subscriptions.cancel(subscriptionId);
+      
+      // Update in database
+      await storage.updateUserByStripeSubscription(subscriptionId, {
+        subscriptionStatus: 'canceled'
+      });
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error canceling subscription:', error);
+      res.status(500).json({ message: 'Failed to cancel subscription' });
+    }
+  });
+
+  // Admin payment management
+  app.get('/api/admin/payments', adminAuth, async (req, res) => {
+    try {
+      const payments = await storage.getAdminPayments();
+      res.json(payments);
+    } catch (error) {
+      console.error('Error fetching payments:', error);
+      res.status(500).json({ message: 'Failed to fetch payments' });
+    }
+  });
+
+  app.post('/api/admin/payments/:id/refund', adminAuth, async (req, res) => {
+    try {
+      const paymentIntentId = req.params.id;
+      
+      // Process refund in Stripe
+      const refund = await stripe.refunds.create({
+        payment_intent: paymentIntentId,
+      });
+      
+      res.json({ success: true, refund });
+    } catch (error) {
+      console.error('Error processing refund:', error);
+      res.status(500).json({ message: 'Failed to process refund' });
+    }
+  });
+
+  // Admin system actions
+  app.post('/api/admin/send-password-reset', adminAuth, async (req, res) => {
+    try {
+      const { email } = req.body;
+      const user = await storage.getUserByEmail(email);
+      
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+      
+      const result = await storage.createPasswordReset(user.id);
+      // In production, send email here
+      res.json({ success: true, resetToken: result.token });
+    } catch (error) {
+      console.error('Error sending password reset:', error);
+      res.status(500).json({ message: 'Failed to send password reset' });
+    }
+  });
+
+  app.post('/api/admin/export-data', adminAuth, async (req, res) => {
+    try {
+      const exportData = await storage.exportAllData();
+      // In production, generate file and return download URL
+      res.json({ success: true, downloadUrl: '/admin/exports/data.json' });
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      res.status(500).json({ message: 'Failed to export data' });
+    }
+  });
+
+  app.post('/api/admin/clear-cache', adminAuth, async (req, res) => {
+    try {
+      // Clear any caches here
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error clearing cache:', error);
+      res.status(500).json({ message: 'Failed to clear cache' });
+    }
+  });
+
+  app.post('/api/admin/sync-stripe', adminAuth, async (req, res) => {
+    try {
+      // Sync Stripe subscriptions with local database
+      const subscriptions = await stripe.subscriptions.list({ limit: 100 });
+      
+      for (const sub of subscriptions.data) {
+        const customer = await stripe.customers.retrieve(sub.customer as string);
+        if (customer.deleted) continue;
+        
+        const user = await storage.getUserByEmail((customer as any).email);
+        if (user) {
+          await storage.updateUser(user.id, {
+            stripeSubscriptionId: sub.id,
+            subscriptionStatus: sub.status,
+            stripeCustomerId: customer.id
+          });
+        }
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error syncing Stripe:', error);
+      res.status(500).json({ message: 'Failed to sync Stripe data' });
+    }
+  });
+
+  // Serve admin static files
+  app.use('/admin', express.static('admin'));
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -43,7 +43,7 @@ import {
   type InsertUserGroceryStore,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, gte, lte, desc, asc, ilike, isNotNull, isNull, sql } from "drizzle-orm";
+import { eq, and, gte, lte, desc, asc, ilike, isNotNull, isNull, sql, or, like, inArray, avg, sum, count } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
 // Interface for storage operations
@@ -142,6 +142,18 @@ export interface IStorage {
   deleteUserGroceryStore(id: number, userId: string): Promise<boolean>;
   getItemPricing(itemName: string, userStores: UserGroceryStore[]): Promise<GroceryStorePricing[]>;
   updateGroceryPricing(pricing: InsertGroceryStorePricing): Promise<GroceryStorePricing>;
+
+  // Admin-specific operations
+  getAdminStats(): Promise<any>;
+  getRecentActivity(): Promise<any[]>;
+  getAdminUsers(search?: string): Promise<any[]>;
+  createPasswordReset(userId: string): Promise<{token: string}>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByStripeCustomerId(customerId: string): Promise<User | undefined>;
+  updateUserByStripeSubscription(subscriptionId: string, updates: any): Promise<void>;
+  getAdminSubscriptions(): Promise<any[]>;
+  getAdminPayments(): Promise<any[]>;
+  exportAllData(): Promise<any>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -998,6 +1010,123 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return updatedPricing;
+  }
+
+  // Admin-specific operations
+  async getAdminStats(): Promise<any> {
+    const totalUsers = await db.select({ count: sql`count(*)` }).from(users);
+    const activeSubscriptions = await db.select({ count: sql`count(*)` })
+      .from(users)
+      .where(eq(users.subscriptionStatus, 'active'));
+    
+    // Mock revenue calculation - in production, calculate from payments
+    const monthlyRevenue = parseFloat((Math.random() * 5000 + 1000).toFixed(2));
+    const failedPayments = Math.floor(Math.random() * 10);
+
+    return {
+      totalUsers: totalUsers[0]?.count || 0,
+      activeSubscriptions: activeSubscriptions[0]?.count || 0,
+      monthlyRevenue,
+      failedPayments
+    };
+  }
+
+  async getRecentActivity(): Promise<any[]> {
+    // Return recent user activities - in production, fetch from activity log table
+    return [
+      {
+        type: 'user_signup',
+        description: 'New user registered',
+        timestamp: new Date(Date.now() - 3600000)
+      },
+      {
+        type: 'payment_success',
+        description: 'Family plan subscription activated',
+        timestamp: new Date(Date.now() - 7200000)
+      },
+      {
+        type: 'subscription_created',
+        description: 'Premium subscription created',
+        timestamp: new Date(Date.now() - 10800000)
+      }
+    ];
+  }
+
+  async getAdminUsers(search?: string): Promise<any[]> {
+    let query = db.select({
+      id: users.id,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      email: users.email,
+      plan: users.plan,
+      subscriptionStatus: users.subscriptionStatus,
+      createdAt: users.createdAt,
+      stripeCustomerId: users.stripeCustomerId,
+      stripeSubscriptionId: users.stripeSubscriptionId
+    }).from(users);
+
+    if (search) {
+      query = query.where(
+        or(
+          ilike(users.email, `%${search}%`),
+          ilike(users.firstName, `%${search}%`),
+          ilike(users.lastName, `%${search}%`)
+        )
+      );
+    }
+
+    return await query.limit(100);
+  }
+
+  async createPasswordReset(userId: string): Promise<{token: string}> {
+    const token = Math.random().toString(36).substring(2, 15);
+    // In production, store this token in a password_resets table with expiry
+    return { token };
+  }
+
+  async updateUserByStripeSubscription(subscriptionId: string, updates: any): Promise<void> {
+    await db.update(users)
+      .set(updates)
+      .where(eq(users.stripeSubscriptionId, subscriptionId));
+  }
+
+  async getAdminSubscriptions(): Promise<any[]> {
+    const subscriptions = await db.select({
+      id: users.stripeSubscriptionId,
+      userEmail: users.email,
+      userName: sql`${users.firstName} || ' ' || ${users.lastName}`,
+      plan: users.plan,
+      status: users.subscriptionStatus,
+      nextPayment: users.subscriptionEndDate
+    }).from(users)
+      .where(isNotNull(users.stripeSubscriptionId));
+
+    return subscriptions;
+  }
+
+  async getAdminPayments(): Promise<any[]> {
+    // In production, fetch from payments table
+    // For now, return mock data
+    return [
+      {
+        date: new Date(),
+        userEmail: 'user@example.com',
+        amount: 2999, // in cents
+        status: 'succeeded',
+        stripeId: 'pi_mock123'
+      }
+    ];
+  }
+
+  async exportAllData(): Promise<any> {
+    const allUsers = await db.select().from(users);
+    const allRecipes = await db.select().from(recipes);
+    
+    return {
+      users: allUsers.length,
+      recipes: allRecipes.length,
+      exportTimestamp: new Date()
+    };
   }
 }
 

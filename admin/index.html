@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal - Chef Mike's AI Recipe Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .admin-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <!-- Header -->
+    <header class="admin-gradient text-white shadow-lg">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-shield-alt text-2xl"></i>
+                    <h1 class="text-2xl font-bold">Admin Portal</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm">Welcome, Admin</span>
+                    <button onclick="logout()" class="bg-white/20 px-3 py-1 rounded hover:bg-white/30 transition">
+                        <i class="fas fa-sign-out-alt mr-1"></i> Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="container mx-auto px-6 py-8">
+        <!-- Navigation Tabs -->
+        <div class="bg-white rounded-lg shadow-md mb-6">
+            <nav class="flex border-b">
+                <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-button active px-6 py-3 font-medium border-b-2 border-blue-500 text-blue-600">
+                    <i class="fas fa-chart-dashboard mr-2"></i>Dashboard
+                </button>
+                <button onclick="switchTab('users')" id="tab-users" class="tab-button px-6 py-3 font-medium text-gray-600 hover:text-gray-800">
+                    <i class="fas fa-users mr-2"></i>Users
+                </button>
+                <button onclick="switchTab('subscriptions')" id="tab-subscriptions" class="tab-button px-6 py-3 font-medium text-gray-600 hover:text-gray-800">
+                    <i class="fas fa-credit-card mr-2"></i>Subscriptions
+                </button>
+                <button onclick="switchTab('payments')" id="tab-payments" class="tab-button px-6 py-3 font-medium text-gray-600 hover:text-gray-800">
+                    <i class="fas fa-dollar-sign mr-2"></i>Payments
+                </button>
+                <button onclick="switchTab('system')" id="tab-system" class="tab-button px-6 py-3 font-medium text-gray-600 hover:text-gray-800">
+                    <i class="fas fa-cogs mr-2"></i>System
+                </button>
+            </nav>
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div id="content-dashboard" class="tab-content">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <!-- Stats Cards -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-600 text-sm">Total Users</p>
+                            <p class="text-2xl font-bold text-gray-800" id="total-users">-</p>
+                        </div>
+                        <i class="fas fa-users text-blue-500 text-2xl"></i>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-600 text-sm">Active Subscriptions</p>
+                            <p class="text-2xl font-bold text-green-600" id="active-subs">-</p>
+                        </div>
+                        <i class="fas fa-check-circle text-green-500 text-2xl"></i>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-600 text-sm">Monthly Revenue</p>
+                            <p class="text-2xl font-bold text-purple-600" id="monthly-revenue">-</p>
+                        </div>
+                        <i class="fas fa-chart-line text-purple-500 text-2xl"></i>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-600 text-sm">Failed Payments</p>
+                            <p class="text-2xl font-bold text-red-600" id="failed-payments">-</p>
+                        </div>
+                        <i class="fas fa-exclamation-triangle text-red-500 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="bg-white rounded-lg shadow-md">
+                <div class="p-6 border-b">
+                    <h2 class="text-xl font-bold text-gray-800">Recent Activity</h2>
+                </div>
+                <div class="p-6">
+                    <div id="recent-activity" class="space-y-4">
+                        <!-- Activity items will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Users Tab -->
+        <div id="content-users" class="tab-content hidden">
+            <div class="bg-white rounded-lg shadow-md">
+                <div class="p-6 border-b flex justify-between items-center">
+                    <h2 class="text-xl font-bold text-gray-800">User Management</h2>
+                    <div class="flex space-x-2">
+                        <input type="text" id="user-search" placeholder="Search users..." class="px-4 py-2 border rounded-lg">
+                        <button onclick="searchUsers()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table" class="bg-white divide-y divide-gray-200">
+                            <!-- Users will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subscriptions Tab -->
+        <div id="content-subscriptions" class="tab-content hidden">
+            <div class="bg-white rounded-lg shadow-md">
+                <div class="p-6 border-b">
+                    <h2 class="text-xl font-bold text-gray-800">Subscription Management</h2>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Next Payment</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="subscriptions-table" class="bg-white divide-y divide-gray-200">
+                            <!-- Subscriptions will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payments Tab -->
+        <div id="content-payments" class="tab-content hidden">
+            <div class="bg-white rounded-lg shadow-md">
+                <div class="p-6 border-b">
+                    <h2 class="text-xl font-bold text-gray-800">Payment History</h2>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stripe ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="payments-table" class="bg-white divide-y divide-gray-200">
+                            <!-- Payments will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Tab -->
+        <div id="content-system" class="tab-content hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- System Stats -->
+                <div class="bg-white rounded-lg shadow-md">
+                    <div class="p-6 border-b">
+                        <h2 class="text-xl font-bold text-gray-800">System Information</h2>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Database Status</span>
+                            <span class="text-green-600 font-medium" id="db-status">Connected</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Stripe Status</span>
+                            <span class="text-green-600 font-medium" id="stripe-status">Connected</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">OpenAI Status</span>
+                            <span class="text-green-600 font-medium" id="openai-status">Connected</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Server Uptime</span>
+                            <span class="text-blue-600 font-medium" id="server-uptime">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Admin Actions -->
+                <div class="bg-white rounded-lg shadow-md">
+                    <div class="p-6 border-b">
+                        <h2 class="text-xl font-bold text-gray-800">Admin Actions</h2>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <button onclick="sendPasswordReset()" class="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600">
+                            <i class="fas fa-key mr-2"></i>Send Password Reset
+                        </button>
+                        <button onclick="exportData()" class="w-full bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600">
+                            <i class="fas fa-download mr-2"></i>Export User Data
+                        </button>
+                        <button onclick="clearCache()" class="w-full bg-yellow-500 text-white py-2 px-4 rounded-lg hover:bg-yellow-600">
+                            <i class="fas fa-refresh mr-2"></i>Clear System Cache
+                        </button>
+                        <button onclick="syncStripe()" class="w-full bg-purple-500 text-white py-2 px-4 rounded-lg hover:bg-purple-600">
+                            <i class="fas fa-sync mr-2"></i>Sync Stripe Data
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- User Detail Modal -->
+    <div id="userModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full">
+                <div class="p-6 border-b">
+                    <h3 class="text-lg font-bold" id="modal-user-name">User Details</h3>
+                </div>
+                <div class="p-6" id="modal-user-content">
+                    <!-- User details will be loaded here -->
+                </div>
+                <div class="p-6 border-t flex justify-end space-x-2">
+                    <button onclick="closeModal()" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Close</button>
+                    <button onclick="saveUserChanges()" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>

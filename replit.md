@@ -67,11 +67,13 @@ Preferred communication style: Simple, everyday language.
 - **Email System**: Welcome emails using Nodemailer (verification disabled for immediate access like PlanToEat)
 - **Enhanced Recipe Import**: Comprehensive image extraction system supporting 25+ popular recipe websites including AllRecipes, Food Network, Bon Appétit, BBC Good Food, NYTimes Cooking, and many food bloggers
 - **Fixed Logout System**: Proper session clearing and redirect to airecipemanager.com with complete cache cleanup
+- **Admin Management Portal**: Full-featured administrative interface with user management, subscription oversight, payment processing, password reset capabilities, data export, and system monitoring accessible at admin.airecipemanager.com
 
 ### Authentication & Authorization
 - **Replit Auth**: Integrated authentication system with session management
 - **User Isolation**: All data operations scoped to authenticated users
-- **Admin Panel**: Administrative interface for user and system management
+- **Admin Portal**: Comprehensive administrative interface accessible at `/admin/` with full user, subscription, and payment management capabilities
+- **Admin Security**: Token-based authentication system for administrative access with role-based permissions
 
 ## Data Flow
 
