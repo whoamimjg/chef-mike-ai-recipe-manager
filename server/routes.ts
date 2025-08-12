@@ -2176,7 +2176,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           canLogin: true
         });
       } else {
-        // For paid plans, create the user account first and let the frontend handle subscription creation
+        // For paid plans, create the user account first and log them in for subscription creation
         const newUser = await storage.createUser({
           email,
           firstName,
@@ -2186,11 +2186,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           emailVerified: true // Simplified signup - no email verification required
         });
 
-        res.json({ 
-          success: true, 
-          user: newUser,
-          message: "Account created successfully! Please complete payment to activate your subscription.",
-          requiresPayment: true
+        // Create session for the new user so they can create subscription
+        (req.session as any).userId = newUser.id;
+        (req.session as any).user = newUser;
+        console.log('User session created for subscription flow:', newUser.id);
+
+        // Save session synchronously to ensure it's available for next request
+        req.session.save((err) => {
+          if (err) {
+            console.error('Session save error:', err);
+            return res.status(500).json({ message: "Session error" });
+          }
+          
+          console.log('Session saved successfully for user:', newUser.id);
+          res.json({ 
+            success: true, 
+            user: newUser,
+            message: "Account created successfully! Please complete payment to activate your subscription.",
+            requiresPayment: true
+          });
         });
       }
     } catch (error: any) {
@@ -2239,7 +2253,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       (req.session as any).userId = user.id;
       (req.session as any).user = user;
 
-      res.json({ success: true, user: user });
+      // Save session synchronously to ensure it's available for next request
+      req.session.save((err) => {
+        if (err) {
+          console.error('Session save error:', err);
+          return res.status(500).json({ message: "Session error" });
+        }
+        
+        console.log('Login session saved successfully for user:', user.id);
+        res.json({ success: true, user: user });
+      });
     } catch (error: any) {
       console.error("Login error:", error);
       res.status(500).json({ message: "Error logging in: " + error.message });

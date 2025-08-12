@@ -137,11 +137,7 @@ export async function setupAuth(app: Express) {
     const strategyName = `replitauth:${matchingDomain}`;
     console.log("Using strategy:", strategyName);
     
-    passport.authenticate(strategyName, {
-      prompt: "login consent",
-      scope: ["openid", "email", "profile", "offline_access"],
-      max_age: 0 // Force fresh authentication
-    })(req, res, next);
+    passport.authenticate(strategyName)(req, res, next);
   });
 
   app.get("/api/callback", (req, res, next) => {
@@ -207,17 +203,26 @@ export async function setupAuth(app: Express) {
 }
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
-  console.log("Checking authentication for user:", req.user?.claims?.sub);
-  console.log("Session ID:", req.sessionID);
-  console.log("Session data:", req.session);
-  console.log("Is authenticated:", req.isAuthenticated());
-  
+  const user = req.user as any;
+  const session = req.session as any;
+
+  console.log('Checking authentication for user:', user?.claims?.sub || session?.userId);
+  console.log('Session ID:', req.sessionID);
+  console.log('Session data:', req.session);
+  console.log('Is authenticated:', req.isAuthenticated());
+
+  // Check for local session authentication first (signup/login flow)
+  if (session && session.userId) {
+    console.log('Local session authenticated, user ID:', session.userId);
+    return next();
+  }
+
+  // Check for Replit Auth
   if (!req.isAuthenticated()) {
     console.log("User not authenticated");
     return res.status(401).json({ message: "Unauthorized" });
   }
 
-  const user = req.user as any;
   if (!user || !user.expires_at) {
     console.log("No user or expiry data found");
     return res.status(401).json({ message: "Unauthorized" });
