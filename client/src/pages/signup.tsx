@@ -222,7 +222,7 @@ const CheckoutForm = ({ userInfo, selectedPlan }: { userInfo: any, selectedPlan:
       return;
     }
     
-    // Handle paid plans
+    // Handle paid plans - process payment with existing clientSecret
     if (!stripe || !elements) {
       return;
     }
@@ -230,27 +230,7 @@ const CheckoutForm = ({ userInfo, selectedPlan }: { userInfo: any, selectedPlan:
     setIsProcessing(true);
 
     try {
-      // First login to authenticate
-      const loginResponse = await apiRequest("POST", "/api/auth/login", {
-        email: userInfo.email,
-        password: userInfo.password
-      });
-      
-      const loginResult = await loginResponse.json();
-      
-      if (!loginResult.success) {
-        throw new Error("Authentication failed. Please check your credentials.");
-      }
-
-      // Create subscription
-      const subscriptionResponse = await apiRequest("POST", "/api/create-subscription");
-      const subscriptionResult = await subscriptionResponse.json();
-      
-      if (!subscriptionResult.clientSecret) {
-        throw new Error("Failed to create subscription");
-      }
-
-      // Process payment
+      // Process payment using the clientSecret that was created when transitioning to payment step
       const { error } = await stripe.confirmPayment({
         elements,
         confirmParams: {
@@ -374,6 +354,28 @@ export default function Signup() {
         if (userResult && userResult.success && userResult.requiresPayment) {
           // Store password for authentication in checkout
           setUserInfo(prev => ({ ...prev, password: userInfo.password }));
+          
+          // Login and create subscription to get clientSecret
+          const loginResponse = await apiRequest("POST", "/api/auth/login", {
+            email: userInfo.email,
+            password: userInfo.password
+          });
+          
+          const loginResult = await loginResponse.json();
+          
+          if (!loginResult.success) {
+            throw new Error("Authentication failed. Please check your credentials.");
+          }
+
+          // Create subscription and get clientSecret
+          const subscriptionResponse = await apiRequest("POST", "/api/create-subscription");
+          const subscriptionResult = await subscriptionResponse.json();
+          
+          if (!subscriptionResult.clientSecret) {
+            throw new Error("Failed to create subscription");
+          }
+          
+          setClientSecret(subscriptionResult.clientSecret);
           setStep('payment');
         } else if (userResult && userResult.success) {
           toast({
