@@ -51,9 +51,10 @@ export interface IStorage {
   // User operations (mandatory for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByStripeCustomerId(stripeCustomerId: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
   createUser(user: Partial<UpsertUser>): Promise<User>;
-  updateUser(id: string, updates: Partial<UpsertUser>): Promise<User | undefined>;
+  updateUser(id: string, updates: Partial<User>): Promise<User | undefined>;
   verifyPassword(userId: string, password: string): Promise<boolean>;
   
   // Email verification operations
@@ -155,6 +156,11 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async getUserByStripeCustomerId(stripeCustomerId: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.stripeCustomerId, stripeCustomerId));
+    return user;
+  }
+
   async createUser(userData: Partial<UpsertUser>): Promise<User> {
     // Hash password if provided
     const insertData: any = { ...userData };
@@ -170,7 +176,7 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async updateUser(id: string, updates: Partial<UpsertUser>): Promise<User | undefined> {
+  async updateUser(id: string, updates: Partial<User>): Promise<User | undefined> {
     // Hash password if provided
     const updateData: any = { ...updates };
     if (updateData.password) {

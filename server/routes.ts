@@ -2176,7 +2176,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           canLogin: true
         });
       } else {
-        res.status(400).json({ message: "Paid plans require payment processing" });
+        // For paid plans, create the user account first and let the frontend handle subscription creation
+        const newUser = await storage.createUser({
+          email,
+          firstName,
+          lastName,
+          password, // Will be hashed in storage layer
+          plan: plan, // Keep the selected plan
+          emailVerified: true // Simplified signup - no email verification required
+        });
+
+        res.json({ 
+          success: true, 
+          user: newUser,
+          message: "Account created successfully! Please complete payment to activate your subscription.",
+          requiresPayment: true
+        });
       }
     } catch (error: any) {
       console.error("Signup error:", error);
@@ -2253,21 +2268,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'User email not found' });
       }
 
-      // Check if user already has a Stripe customer
-      if (user.stripeCustomerId) {
-        const customer = await stripe.customers.retrieve(user.stripeCustomerId as string);
-        if (customer.deleted) {
-          // Customer was deleted, create a new one
-        } else {
-          // Use existing customer
+      // Check if user already has a subscription
+      if (user.stripeSubscriptionId) {
+        try {
+          const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
+          if (subscription.status === 'active' || subscription.status === 'trialing') {
+            return res.json({
+              subscriptionId: subscription.id,
+              status: subscription.status,
+              message: 'Already subscribed'
+            });
+          }
+        } catch (error) {
+          console.log('Existing subscription not found, creating new one');
         }
       }
 
-      // Create Stripe customer
-      const customer = await stripe.customers.create({
-        email: user.email,
-        name: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.firstName || 'Chef',
-      });
+      let customer;
+      
+      // Check if user already has a Stripe customer
+      if (user.stripeCustomerId) {
+        try {
+          customer = await stripe.customers.retrieve(user.stripeCustomerId);
+          if (customer.deleted) {
+            customer = null;
+          }
+        } catch (error) {
+          console.log('Existing customer not found, creating new one');
+          customer = null;
+        }
+      }
+
+      // Create Stripe customer if needed
+      if (!customer) {
+        customer = await stripe.customers.create({
+          email: user.email,
+          name: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.firstName || 'Chef',
+          metadata: {
+            userId: userId
+          }
+        });
+
+        // Update user with customer ID
+        await storage.updateUser(userId, { stripeCustomerId: customer.id });
+      }
 
       // Create subscription
       const subscription = await stripe.subscriptions.create({
@@ -2275,7 +2319,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         items: [{
           price_data: {
             currency: 'usd',
-            product_data: {
+            product: {
               name: 'Chef Mike\'s Family Plan',
               description: 'Full access to all features including unlimited recipes, AI recommendations, and family sharing.',
             },
@@ -2288,6 +2332,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         payment_behavior: 'default_incomplete',
         payment_settings: { save_default_payment_method: 'on_subscription' },
         expand: ['latest_invoice.payment_intent'],
+        metadata: {
+          userId: userId
+        }
+      });
+
+      // Update user with subscription info
+      await storage.updateUser(userId, {
+        stripeSubscriptionId: subscription.id,
+        subscriptionStatus: subscription.status,
+        plan: 'family'
       });
 
       res.json({
@@ -2298,6 +2352,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Stripe subscription error:', error);
       res.status(400).json({ error: { message: error.message } });
     }
+  });
+
+  // Stripe webhook handler
+  app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+    const sig = req.headers['stripe-signature'];
+    let event;
+
+    try {
+      // For production, you would use your webhook signing secret
+      // const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+      // event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+      
+      // For now, just parse the body directly (not recommended for production)
+      event = JSON.parse(req.body.toString());
+    } catch (err: any) {
+      console.log(`Webhook signature verification failed.`, err.message);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    // Handle the event
+    switch (event.type) {
+      case 'payment_intent.succeeded':
+        console.log('Payment succeeded:', event.data.object);
+        break;
+
+      case 'invoice.payment_succeeded':
+        console.log('Invoice payment succeeded:', event.data.object);
+        const invoice = event.data.object;
+        if (invoice.subscription) {
+          try {
+            const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
+            const customerId = subscription.customer;
+            
+            // Find user by customer ID
+            const user = await storage.getUserByStripeCustomerId(customerId as string);
+            if (user) {
+              await storage.updateUser(user.id, {
+                subscriptionStatus: subscription.status,
+                subscriptionEndDate: new Date(subscription.current_period_end * 1000),
+                plan: 'family'
+              });
+              console.log(`Updated user ${user.id} subscription status to ${subscription.status}`);
+            }
+          } catch (error) {
+            console.error('Error updating user subscription:', error);
+          }
+        }
+        break;
+
+      case 'invoice.payment_failed':
+        console.log('Invoice payment failed:', event.data.object);
+        const failedInvoice = event.data.object;
+        if (failedInvoice.subscription) {
+          try {
+            const subscription = await stripe.subscriptions.retrieve(failedInvoice.subscription);
+            const customerId = subscription.customer;
+            
+            const user = await storage.getUserByStripeCustomerId(customerId as string);
+            if (user) {
+              await storage.updateUser(user.id, {
+                subscriptionStatus: 'past_due'
+              });
+              console.log(`Updated user ${user.id} subscription status to past_due`);
+            }
+          } catch (error) {
+            console.error('Error updating user subscription:', error);
+          }
+        }
+        break;
+
+      case 'customer.subscription.deleted':
+        console.log('Subscription cancelled:', event.data.object);
+        const cancelledSubscription = event.data.object;
+        try {
+          const customerId = cancelledSubscription.customer;
+          const user = await storage.getUserByStripeCustomerId(customerId as string);
+          if (user) {
+            await storage.updateUser(user.id, {
+              subscriptionStatus: 'cancelled',
+              plan: 'free'
+            });
+            console.log(`Updated user ${user.id} subscription status to cancelled`);
+          }
+        } catch (error) {
+          console.error('Error updating cancelled subscription:', error);
+        }
+        break;
+
+      default:
+        console.log(`Unhandled event type ${event.type}`);
+    }
+
+    res.json({ received: true });
   });
 
   // Grocery Store API routes

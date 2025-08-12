@@ -184,6 +184,45 @@ const CheckoutForm = ({ userInfo, selectedPlan }: { userInfo: any, selectedPlan:
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (selectedPlan.id === 'free') {
+      // Handle free plan account creation
+      setIsProcessing(true);
+      try {
+        const response = await apiRequest("POST", "/api/auth/signup", {
+          firstName: userInfo.firstName,
+          lastName: userInfo.lastName,
+          email: userInfo.email,
+          password: userInfo.password,
+          plan: 'free'
+        });
+        
+        const result = await response.json();
+        
+        if (result && result.success) {
+          toast({
+            title: "Account Created!",
+            description: "Your free account has been created successfully.",
+          });
+          
+          setTimeout(() => {
+            window.location.href = "/login";
+          }, 1500);
+        } else {
+          throw new Error(result.message || "Failed to create account");
+        }
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to create account",
+          variant: "destructive",
+        });
+      } finally {
+        setIsProcessing(false);
+      }
+      return;
+    }
+    
+    // Handle paid plans
     if (!stripe || !elements) {
       return;
     }
@@ -191,12 +230,31 @@ const CheckoutForm = ({ userInfo, selectedPlan }: { userInfo: any, selectedPlan:
     setIsProcessing(true);
 
     try {
+      // First login to authenticate
+      const loginResponse = await apiRequest("POST", "/api/auth/login", {
+        email: userInfo.email,
+        password: userInfo.password
+      });
+      
+      const loginResult = await loginResponse.json();
+      
+      if (!loginResult.success) {
+        throw new Error("Authentication failed. Please check your credentials.");
+      }
 
-      // For paid plans, process payment
+      // Create subscription
+      const subscriptionResponse = await apiRequest("POST", "/api/create-subscription");
+      const subscriptionResult = await subscriptionResponse.json();
+      
+      if (!subscriptionResult.clientSecret) {
+        throw new Error("Failed to create subscription");
+      }
+
+      // Process payment
       const { error } = await stripe.confirmPayment({
         elements,
         confirmParams: {
-          return_url: `${window.location.origin}/signup/success`,
+          return_url: `${window.location.origin}?payment=success`,
         },
       });
 
@@ -206,6 +264,15 @@ const CheckoutForm = ({ userInfo, selectedPlan }: { userInfo: any, selectedPlan:
           description: error.message,
           variant: "destructive",
         });
+      } else {
+        toast({
+          title: "Payment Successful",
+          description: "Your subscription is now active! Redirecting...",
+        });
+        
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 2000);
       }
     } catch (error: any) {
       toast({
@@ -255,7 +322,8 @@ export default function Signup() {
   const [userInfo, setUserInfo] = useState({
     firstName: '',
     lastName: '',
-    email: ''
+    email: '',
+    password: ''
   });
   const { toast } = useToast();
 
@@ -292,23 +360,51 @@ export default function Signup() {
       setStep('payment');
     } else {
       try {
-        // Create payment intent for paid plans
-        const rawResponse = await apiRequest("POST", "/api/create-payment-intent", {
-          plan: selectedPlan?.id,
-          amount: selectedPlan?.price,
-          userInfo
+        // First create the user account
+        const userResponse = await apiRequest("POST", "/api/auth/signup", {
+          firstName: userInfo.firstName,
+          lastName: userInfo.lastName,
+          email: userInfo.email,
+          password: userInfo.password,
+          plan: selectedPlan.id
         });
-        const response = await rawResponse.json();
-        if (response && response.clientSecret) {
-          setClientSecret(response.clientSecret);
+        
+        const userResult = await userResponse.json();
+        
+        if (userResult && userResult.success && userResult.requiresPayment) {
+          // Store password for authentication in checkout
+          setUserInfo(prev => ({ ...prev, password: userInfo.password }));
+          setStep('payment');
+        } else if (userResult && userResult.success) {
+          toast({
+            title: "Account Created!",
+            description: "Your account has been created successfully. Please sign in with your credentials.",
+          });
+          
+          setTimeout(() => {
+            window.location.href = "/login";
+          }, 1500);
         } else {
-          throw new Error("Failed to get payment details");
+          throw new Error(userResult.message || "Failed to create account");
         }
-        setStep('payment');
-      } catch (error) {
+      } catch (error: any) {
+        let errorMessage = "Something went wrong. Please try again.";
+        
+        // Check if it's a 400 error (user already exists)
+        if (error.message && error.message.includes("400:")) {
+          const errorText = error.message.split("400:")[1]?.trim();
+          if (errorText && errorText.includes("User already exists")) {
+            errorMessage = "An account with this email already exists. Please try signing in instead.";
+          } else {
+            errorMessage = errorText || errorMessage;
+          }
+        } else {
+          errorMessage = error.message || errorMessage;
+        }
+        
         toast({
           title: "Error",
-          description: "Failed to initialize payment. Please try again.",
+          description: errorMessage,
           variant: "destructive",
         });
       }

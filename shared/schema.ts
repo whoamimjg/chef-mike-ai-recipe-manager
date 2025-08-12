@@ -37,6 +37,11 @@ export const users = pgTable("users", {
   plan: varchar("plan").notNull().default("free"), // free, pro, family
   emailVerified: boolean("email_verified").default(false),
   emailVerificationToken: varchar("email_verification_token"),
+  // Stripe fields
+  stripeCustomerId: varchar("stripe_customer_id"),
+  stripeSubscriptionId: varchar("stripe_subscription_id"),
+  subscriptionStatus: varchar("subscription_status"),
+  subscriptionEndDate: timestamp("subscription_end_date"),
   // Dietary preferences and food preferences collected during signup
   dietaryRestrictions: text("dietary_restrictions").array(),
   allergies: text("allergies").array(),
