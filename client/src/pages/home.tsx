@@ -5678,6 +5678,9 @@ END:VCALENDAR`
                 <Label htmlFor="itemQuantity">Quantity</Label>
                 <Input
                   id="itemQuantity"
+                  type="number"
+                  min="0.1"
+                  step="0.1"
                   placeholder="1"
                   value={manualItem.quantity}
                   onChange={(e) => setManualItem({ ...manualItem, quantity: e.target.value })}
@@ -5790,7 +5793,7 @@ END:VCALENDAR`
                     });
                   }
                 }}
-                disabled={!manualItem.name || !manualItem.quantity || updateShoppingListMutation.isPending || generateShoppingListMutation.isPending}
+                disabled={!manualItem.name.trim() || !manualItem.quantity.trim() || parseFloat(manualItem.quantity) <= 0 || updateShoppingListMutation.isPending || generateShoppingListMutation.isPending}
                 className="flex-1"
               >
                 {updateShoppingListMutation.isPending || generateShoppingListMutation.isPending ? 'Adding...' : 'Add Item'}
