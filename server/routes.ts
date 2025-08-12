@@ -54,8 +54,17 @@ const upload = multer({
 if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
 }
+
+// Debug Stripe key (without revealing the actual key)
+console.log('Stripe key configured:', process.env.STRIPE_SECRET_KEY ? 'YES' : 'NO');
+console.log('Stripe key starts with sk_:', process.env.STRIPE_SECRET_KEY?.startsWith('sk_'));
+console.log('Stripe key first 10 chars:', process.env.STRIPE_SECRET_KEY?.substring(0, 10));
+console.log('Stripe key length:', process.env.STRIPE_SECRET_KEY?.length);
+console.log('Public key configured:', process.env.VITE_STRIPE_PUBLIC_KEY ? 'YES' : 'NO');
+console.log('Public key starts with pk_:', process.env.VITE_STRIPE_PUBLIC_KEY?.startsWith('pk_'));
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: "2025-06-30.basil",
+  apiVersion: "2023-10-16",
 });
 
 // Utility function to check plan limits
@@ -2336,16 +2345,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.updateUser(userId, { stripeCustomerId: customer.id });
       }
 
-      // Create subscription
+      // First create a product
+      const product = await stripe.products.create({
+        name: 'Chef Mike Family Plan',
+        description: 'Full access to all recipes, AI recommendations, and family sharing features',
+      });
+
+      // Create subscription with the new product
       const subscription = await stripe.subscriptions.create({
         customer: customer.id,
         items: [{
           price_data: {
             currency: 'usd',
-            product: {
-              name: 'Chef Mike\'s Family Plan',
-              description: 'Full access to all features including unlimited recipes, AI recommendations, and family sharing.',
-            },
+            product: product.id,
             unit_amount: 1500, // $15.00
             recurring: {
               interval: 'month',
@@ -2356,7 +2368,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         payment_settings: { save_default_payment_method: 'on_subscription' },
         expand: ['latest_invoice.payment_intent'],
         metadata: {
-          userId: userId
+          userId: userId,
+          productId: product.id
         }
       });
 
