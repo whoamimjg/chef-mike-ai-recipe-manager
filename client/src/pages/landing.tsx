@@ -10,6 +10,7 @@ import chefMikeImage from "@assets/AdobeStock_779778898_1753990317537.jpeg";
 
 export default function Landing() {
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   const handleSignIn = () => {
     setAuthDialogOpen(true);
@@ -21,22 +22,41 @@ export default function Landing() {
       <nav className="relative z-10 bg-white/10 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <div className="flex items-center gap-3">
-              <ChefHat className="h-8 w-8" style={{ color: '#ffffff' }} />
-              <h1 className="text-2xl font-bold" style={{ color: '#ffffff' }}>Chef Mike's AI Recipe Manager</h1>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <ChefHat className="h-6 w-6 sm:h-8 sm:w-8" style={{ color: '#ffffff' }} />
+              <h1 className="text-lg sm:text-xl md:text-2xl font-bold truncate" style={{ color: '#ffffff' }}>Chef Mike's AI Recipe Manager</h1>
             </div>
-            <div className="flex items-center gap-6">
-              <div className="hidden md:flex items-center gap-6">
-                <a href="#features" className="transition-colors hover:text-white" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>Features</a>
-                <a href="#pricing" className="transition-colors hover:text-white" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>Pricing</a>
-                <a href="/help" className="transition-colors hover:text-white" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>Help</a>
-                <a href="/contact" className="transition-colors hover:text-white" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>Contact</a>
+            <div className="flex items-center gap-2 sm:gap-4 lg:gap-6">
+              {/* Mobile menu button */}
+              <button 
+                className="md:hidden p-2 rounded-lg bg-white/10 hover:bg-white/20" 
+                style={{ color: '#ffffff' }}
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+              
+              {/* Desktop menu */}
+              <div className="hidden md:flex items-center gap-4 lg:gap-6">
+                <a href="#features" className="transition-colors hover:text-white text-sm lg:text-base" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>Features</a>
+                <a href="#pricing" className="transition-colors hover:text-white text-sm lg:text-base" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>Pricing</a>
+                <a href="/help" className="transition-colors hover:text-white text-sm lg:text-base" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>Help</a>
+                <a href="/contact" className="transition-colors hover:text-white text-sm lg:text-base" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>Contact</a>
               </div>
+              
+              {/* Sign in button with improved mobile dropdown */}
               <div className="relative group">
-                <Button onClick={handleSignIn} variant="secondary" className="bg-white hover:bg-gray-100" style={{ color: '#ea580c', backgroundColor: '#ffffff' }}>
+                <Button 
+                  onClick={handleSignIn} 
+                  variant="secondary" 
+                  className="bg-white hover:bg-gray-100 text-sm sm:text-base px-3 sm:px-4 py-2" 
+                  style={{ color: '#ea580c', backgroundColor: '#ffffff' }}
+                >
                   Sign In
                 </Button>
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                <div className="absolute right-0 mt-2 w-48 sm:w-56 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                   <div className="py-1">
                     <button 
                       onClick={() => window.location.href = '/api/login'}
@@ -52,90 +72,122 @@ export default function Landing() {
                       <SiAuth0 className="w-4 h-4 text-orange-600" />
                       Sign In with Auth0
                     </button>
-
                   </div>
                 </div>
               </div>
             </div>
           </div>
+          
+          {/* Mobile Menu */}
+          {mobileMenuOpen && (
+            <div className="md:hidden bg-white/95 backdrop-blur-sm border-t border-white/20">
+              <div className="px-4 py-3 space-y-3">
+                <a 
+                  href="#features" 
+                  className="block py-2 px-3 text-gray-800 hover:bg-white/10 rounded-lg"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Features
+                </a>
+                <a 
+                  href="#pricing" 
+                  className="block py-2 px-3 text-gray-800 hover:bg-white/10 rounded-lg"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Pricing
+                </a>
+                <a 
+                  href="/help" 
+                  className="block py-2 px-3 text-gray-800 hover:bg-white/10 rounded-lg"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Help
+                </a>
+                <a 
+                  href="/contact" 
+                  className="block py-2 px-3 text-gray-800 hover:bg-white/10 rounded-lg"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Contact
+                </a>
+              </div>
+            </div>
+          )}
         </div>
       </nav>
 
       {/* Hero Section */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-32">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          <div className="hero-text text-white">
-            <h1 className="text-5xl lg:text-7xl font-bold mb-6 leading-tight" style={{ color: '#ffffff' }}>
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 sm:pt-16 lg:pt-20 pb-16 sm:pb-24 lg:pb-32">
+        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+          <div className="hero-text text-white text-center lg:text-left">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-4 sm:mb-6 leading-tight" style={{ color: '#ffffff' }}>
               <span style={{ color: '#ffffff' }}>Cook Smarter,</span><br/>
               <span className="bg-gradient-to-r from-yellow-300 to-orange-300 bg-clip-text text-transparent">
                 Plan Better
               </span>
             </h1>
-            <p className="text-xl lg:text-2xl mb-8 leading-relaxed" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>
+            <p className="text-lg sm:text-xl lg:text-2xl mb-6 sm:mb-8 leading-relaxed px-2 sm:px-0" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>
               Transform your cooking experience with AI-powered recipe management, smart meal planning, intelligent grocery lists, and personalized recommendations.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex gap-4">
-                <Button 
-                  onClick={() => window.location.href = "/signup"}
-                  size="lg" 
-                  className="bg-white hover:bg-gray-100 text-lg px-8 py-4 font-semibold"
-                  style={{ color: '#ea580c', backgroundColor: '#ffffff' }}
-                >
-                  🚀 Start Free Trial
-                </Button>
-
-              </div>
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start">
+              <Button 
+                onClick={() => window.location.href = "/signup"}
+                size="lg" 
+                className="bg-white hover:bg-gray-100 text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4 font-semibold w-full sm:w-auto"
+                style={{ color: '#ea580c', backgroundColor: '#ffffff' }}
+              >
+                🚀 Start Free Trial
+              </Button>
               <Button 
                 variant="outline" 
                 size="lg"
-                className="border-2 hover:bg-white/10 text-lg px-8 py-4"
+                className="border-2 hover:bg-white/10 text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4 w-full sm:w-auto"
                 style={{ color: '#ffffff', borderColor: '#ffffff', backgroundColor: 'transparent' }}
               >
                 📹 Watch Demo
               </Button>
             </div>
-            <div className="flex items-center gap-6 mt-8" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+            <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 mt-6 sm:mt-8 justify-center lg:justify-start" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-green-300 rounded-full"></div>
-                <span style={{ color: '#ffffff' }}>Free 14-day trial</span>
+                <span className="text-sm sm:text-base" style={{ color: '#ffffff' }}>Free 14-day trial</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-green-300 rounded-full"></div>
-                <span style={{ color: '#ffffff' }}>No credit card required</span>
+                <span className="text-sm sm:text-base" style={{ color: '#ffffff' }}>No credit card required</span>
               </div>
             </div>
           </div>
           
-          <div className="relative">
+          <div className="relative mt-8 lg:mt-0">
             <Card className="overflow-hidden shadow-2xl">
               <CardContent className="p-0">
                 <img 
                   src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600" 
                   alt="Modern kitchen with organized ingredients and digital meal planning" 
-                  className="w-full h-80 object-cover"
+                  className="w-full h-48 sm:h-64 lg:h-80 object-cover"
                 />
               </CardContent>
             </Card>
             
             {/* Feature highlights */}
-            <div className="mt-8 flex flex-wrap gap-4 justify-center">
-              <Card className="p-4 shadow-lg bg-white/90 backdrop-blur-sm">
+            <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start">
+              <Card className="p-3 sm:p-4 shadow-lg bg-white/90 backdrop-blur-sm flex-1 sm:flex-none">
                 <div className="flex items-center gap-2">
-                  <Brain className="h-6 w-6 text-primary-600" />
-                  <div>
-                    <div className="font-semibold text-gray-800">Smart Recommendations</div>
-                    <div className="text-sm text-gray-600">Based on your inventory</div>
+                  <Brain className="h-5 w-5 sm:h-6 sm:w-6 text-primary-600 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <div className="font-semibold text-gray-800 text-sm sm:text-base truncate">Smart Recommendations</div>
+                    <div className="text-xs sm:text-sm text-gray-600 truncate">Based on your inventory</div>
                   </div>
                 </div>
               </Card>
               
-              <Card className="p-4 shadow-lg bg-white/90 backdrop-blur-sm">
+              <Card className="p-3 sm:p-4 shadow-lg bg-white/90 backdrop-blur-sm flex-1 sm:flex-none">
                 <div className="flex items-center gap-2">
-                  <Calendar className="h-6 w-6 text-primary-600" />
-                  <div>
-                    <div className="font-semibold text-gray-800">Weekly Planned</div>
-                    <div className="text-sm text-gray-600">7 meals ready</div>
+                  <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-primary-600 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <div className="font-semibold text-gray-800 text-sm sm:text-base truncate">Weekly Planned</div>
+                    <div className="text-xs sm:text-sm text-gray-600 truncate">7 meals ready</div>
                   </div>
                 </div>
               </Card>
@@ -145,28 +197,28 @@ export default function Landing() {
       </div>
 
       {/* Features Section */}
-      <section id="features" className="py-20 bg-white">
+      <section id="features" className="py-12 sm:py-16 lg:py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Everything You Need to Master Your Kitchen</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">From recipe discovery to meal execution, our platform guides you through every step of your culinary journey.</p>
+          <div className="text-center mb-10 sm:mb-16">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-4">Everything You Need to Master Your Kitchen</h2>
+            <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto px-4 sm:px-0">From recipe discovery to meal execution, our platform guides you through every step of your culinary journey.</p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {/* Recipe Management */}
             <Card className="hover:shadow-lg transition-shadow duration-300">
-              <CardContent className="p-8">
+              <CardContent className="p-4 sm:p-6 lg:p-8">
                 <img 
                   src="https://images.unsplash.com/photo-1466637574441-749b8f19452f?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=200" 
                   alt="Organized recipe collection with colorful ingredients laid out" 
-                  className="w-full h-48 object-cover rounded-xl mb-6"
+                  className="w-full h-32 sm:h-40 lg:h-48 object-cover rounded-xl mb-4 sm:mb-6"
                 />
-                <div className="flex items-center gap-2 mb-4">
-                  <ChefHat className="h-6 w-6 text-primary-600" />
-                  <h3 className="text-2xl font-bold text-gray-900">Smart Recipe Library</h3>
+                <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                  <ChefHat className="h-5 w-5 sm:h-6 sm:w-6 text-primary-600 flex-shrink-0" />
+                  <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">Smart Recipe Library</h3>
                 </div>
-                <p className="text-gray-600 mb-6">Store, organize, and discover recipes with AI-powered tagging and smart search. Import from any website or create your own.</p>
-                <ul className="space-y-2 text-sm text-gray-600">
+                <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">Store, organize, and discover recipes with AI-powered tagging and smart search. Import from any website or create your own.</p>
+                <ul className="space-y-2 text-xs sm:text-sm text-gray-600">
                   <li className="flex items-center gap-2 flex-shrink-0">
                     <div className="w-1 h-1 bg-green-500 rounded-full flex-shrink-0"></div>
                     <span>One-click recipe imports from any website</span>
@@ -193,18 +245,18 @@ export default function Landing() {
 
             {/* Meal Planning */}
             <Card className="hover:shadow-lg transition-shadow duration-300">
-              <CardContent className="p-8">
+              <CardContent className="p-4 sm:p-6 lg:p-8">
                 <img 
                   src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=200" 
                   alt="Weekly meal planning calendar with organized meal schedule" 
-                  className="w-full h-48 object-cover rounded-xl mb-6"
+                  className="w-full h-32 sm:h-40 lg:h-48 object-cover rounded-xl mb-4 sm:mb-6"
                 />
-                <div className="flex items-center gap-2 mb-4">
-                  <Calendar className="h-6 w-6 text-primary-600" />
-                  <h3 className="text-2xl font-bold text-gray-900">Visual Meal Planning</h3>
+                <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                  <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-primary-600 flex-shrink-0" />
+                  <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">Visual Meal Planning</h3>
                 </div>
-                <p className="text-gray-600 mb-6">Drag-and-drop meal planning with calendar integration. Plan weeks in advance and never wonder "what's for dinner" again.</p>
-                <ul className="space-y-2 text-sm text-gray-600">
+                <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">Drag-and-drop meal planning with calendar integration. Plan weeks in advance and never wonder "what's for dinner" again.</p>
+                <ul className="space-y-2 text-xs sm:text-sm text-gray-600">
                   <li className="flex items-center gap-2 flex-shrink-0">
                     <div className="w-1 h-1 bg-green-500 rounded-full flex-shrink-0"></div>
                     <span>Interactive drag & drop meal planning interface</span>
@@ -231,18 +283,18 @@ export default function Landing() {
 
             {/* Shopping Lists */}
             <Card className="hover:shadow-lg transition-shadow duration-300">
-              <CardContent className="p-8">
+              <CardContent className="p-4 sm:p-6 lg:p-8">
                 <img 
                   src="https://images.unsplash.com/photo-1542838132-92c53300491e?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=200" 
                   alt="Organized grocery shopping list with fresh ingredients in basket" 
-                  className="w-full h-48 object-cover rounded-xl mb-6"
+                  className="w-full h-32 sm:h-40 lg:h-48 object-cover rounded-xl mb-4 sm:mb-6"
                 />
-                <div className="flex items-center gap-2 mb-4">
-                  <ShoppingCart className="h-6 w-6 text-primary-600" />
-                  <h3 className="text-2xl font-bold text-gray-900">Smart Shopping Lists</h3>
+                <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                  <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6 text-primary-600 flex-shrink-0" />
+                  <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">Smart Shopping Lists</h3>
                 </div>
-                <p className="text-gray-600 mb-6">Auto-generated shopping lists organized by store layout. Check off items as you shop and track your grocery budget.</p>
-                <ul className="space-y-2 text-sm text-gray-600">
+                <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">Auto-generated shopping lists organized by store layout. Check off items as you shop and track your grocery budget.</p>
+                <ul className="space-y-2 text-xs sm:text-sm text-gray-600">
                   <li className="flex items-center gap-2 flex-shrink-0">
                     <div className="w-1 h-1 bg-green-500 rounded-full flex-shrink-0"></div>
                     <span>Smart organization by grocery store aisle layout</span>
@@ -269,18 +321,18 @@ export default function Landing() {
 
             {/* AI Recommendations */}
             <Card className="hover:shadow-lg transition-shadow duration-300 feature-card">
-              <CardContent className="p-8">
+              <CardContent className="p-4 sm:p-6 lg:p-8">
                 <img 
                   src={chefMikeImage} 
                   alt="Chef Mike Greene demonstrating AI-powered cooking assistance" 
-                  className="w-full h-48 object-cover rounded-xl mb-6"
+                  className="w-full h-32 sm:h-40 lg:h-48 object-cover rounded-xl mb-4 sm:mb-6"
                 />
-                <div className="flex items-center gap-2 mb-4">
-                  <Brain className="h-6 w-6 text-primary-600" />
-                  <h3 className="text-2xl font-bold text-gray-900">AI Chef Assistant</h3>
+                <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                  <Brain className="h-5 w-5 sm:h-6 sm:w-6 text-primary-600 flex-shrink-0" />
+                  <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">AI Chef Assistant</h3>
                 </div>
-                <p className="text-gray-600 mb-6">Get personalized recipe recommendations based on your inventory, dietary preferences, and cooking history. Our AI learns from your preferences to suggest perfect meals.</p>
-                <ul className="space-y-2 text-sm text-gray-600">
+                <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">Get personalized recipe recommendations based on your inventory, dietary preferences, and cooking history. Our AI learns from your preferences to suggest perfect meals.</p>
+                <ul className="space-y-2 text-xs sm:text-sm text-gray-600">
                   <li className="flex items-center gap-2 flex-shrink-0">
                     <div className="w-1 h-1 bg-green-500 rounded-full flex-shrink-0"></div>
                     <span>Smart inventory-based recipe suggestions</span>
