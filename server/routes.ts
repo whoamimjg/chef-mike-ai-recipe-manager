@@ -2710,18 +2710,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin API Routes
+  // Store valid admin tokens in memory (in production, use Redis or database)
+  const validAdminTokens = new Set();
+  
   const adminAuth = async (req: any, res: any, next: any) => {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log('Admin auth failed: No Bearer token provided');
       return res.status(401).json({ message: 'Admin authentication required' });
     }
     
     const token = authHeader.split(' ')[1];
-    // Simple admin token validation (in production, use JWT or similar)
-    if (token !== process.env.ADMIN_TOKEN || !process.env.ADMIN_TOKEN) {
+    console.log('Admin auth check for token:', token.substring(0, 10) + '...');
+    
+    // Check if token is valid (either environment variable or generated token)
+    const envToken = process.env.ADMIN_TOKEN;
+    const isValidToken = (envToken && token === envToken) || validAdminTokens.has(token);
+    
+    if (!isValidToken) {
+      console.log('Admin auth failed: Invalid token');
       return res.status(401).json({ message: 'Invalid admin token' });
     }
     
+    console.log('Admin auth successful');
     next();
   };
 
@@ -2729,20 +2740,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/admin/login', async (req, res) => {
     try {
       const { email, password } = req.body;
+      console.log('Admin login attempt for email:', email);
       
       // Simple admin credentials check (in production, use proper hashing)
       const adminEmail = process.env.ADMIN_EMAIL || 'admin@airecipemanager.com';
       const adminPassword = process.env.ADMIN_PASSWORD || 'admin123!';
       
       if (email === adminEmail && password === adminPassword) {
-        const token = process.env.ADMIN_TOKEN || 'admin-token-' + Date.now();
+        // Generate or use environment token
+        const token = process.env.ADMIN_TOKEN || 'admin-token-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        
+        // Store the token as valid
+        validAdminTokens.add(token);
+        
+        console.log('Admin login successful, token generated:', token.substring(0, 10) + '...');
         res.json({ success: true, token });
       } else {
+        console.log('Admin login failed: Invalid credentials');
         res.status(401).json({ success: false, message: 'Invalid credentials' });
       }
     } catch (error) {
       console.error('Admin login error:', error);
       res.status(500).json({ success: false, message: 'Login failed' });
+    }
+  });
+
+  // Admin logout
+  app.post('/api/admin/logout', async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.split(' ')[1];
+        validAdminTokens.delete(token);
+        console.log('Admin token revoked:', token.substring(0, 10) + '...');
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Admin logout error:', error);
+      res.status(500).json({ success: false, message: 'Logout failed' });
     }
   });
 

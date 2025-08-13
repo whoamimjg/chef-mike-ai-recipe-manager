@@ -7,6 +7,14 @@ class AdminPortal {
     }
 
     async init() {
+        // Check if user is logged in
+        const token = localStorage.getItem('adminToken');
+        if (!token) {
+            console.log('No admin token found, redirecting to login');
+            window.location.href = '/admin/login.html';
+            return;
+        }
+        
         await this.loadDashboardData();
         this.setupEventListeners();
     }
@@ -23,11 +31,18 @@ class AdminPortal {
     // API Helper
     async apiCall(endpoint, method = 'GET', data = null) {
         try {
+            const token = localStorage.getItem('adminToken');
+            if (!token) {
+                console.log('No admin token found, redirecting to login');
+                window.location.href = '/admin/login.html';
+                return null;
+            }
+
             const options = {
                 method,
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+                    'Authorization': 'Bearer ' + token
                 }
             };
             
@@ -35,13 +50,26 @@ class AdminPortal {
                 options.body = JSON.stringify(data);
             }
 
+            console.log(`Making API call to: ${this.apiBase}/api/admin${endpoint}`);
             const response = await fetch(`${this.apiBase}/api/admin${endpoint}`, options);
             
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+            if (response.status === 401) {
+                console.log('Admin authentication failed, redirecting to login');
+                localStorage.removeItem('adminToken');
+                this.showNotification('Session expired. Please log in again.', 'error');
+                setTimeout(() => {
+                    window.location.href = '/admin/login.html';
+                }, 2000);
+                return null;
             }
             
-            return await response.json();
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
+            }
+            
+            const result = await response.json();
+            console.log(`API call successful:`, result);
+            return result;
         } catch (error) {
             console.error('API call failed:', error);
             this.showNotification('API call failed: ' + error.message, 'error');
@@ -401,13 +429,20 @@ class AdminPortal {
             type === 'error' ? 'bg-red-500' : 
             'bg-blue-500'
         } text-white`;
-        notification.textContent = message;
+        notification.innerHTML = `
+            <div class="flex items-center">
+                <span>${message}</span>
+                <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-lg">&times;</button>
+            </div>
+        `;
         
         document.body.appendChild(notification);
         
         setTimeout(() => {
-            notification.remove();
-        }, 3000);
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        }, 5000);
     }
 }
 
@@ -449,9 +484,29 @@ function switchTab(tabName) {
     adminPortal.currentTab = tabName;
 }
 
-function logout() {
-    localStorage.removeItem('adminToken');
-    window.location.href = '/admin/login.html';
+async function logout() {
+    if (confirm('Are you sure you want to log out?')) {
+        try {
+            // Call logout API to invalidate token on server
+            const token = localStorage.getItem('adminToken');
+            if (token) {
+                await fetch('/api/admin/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+            }
+        } catch (error) {
+            console.log('Logout API call failed, but proceeding with local logout');
+        }
+        
+        localStorage.removeItem('adminToken');
+        adminPortal.showNotification('Logged out successfully', 'success');
+        setTimeout(() => {
+            window.location.href = '/admin/login.html';
+        }, 1000);
+    }
 }
 
 // Initialize admin portal
