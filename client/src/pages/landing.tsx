@@ -52,13 +52,7 @@ export default function Landing() {
                       <SiAuth0 className="w-4 h-4 text-orange-600" />
                       Sign In with Auth0
                     </button>
-                    <button 
-                      onClick={() => window.location.href = '/login'}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                    >
-                      <ChefHat className="w-4 h-4 text-orange-600" />
-                      Local Account Login
-                    </button>
+
                   </div>
                 </div>
               </div>
@@ -90,15 +84,7 @@ export default function Landing() {
                 >
                   🚀 Start Free Trial
                 </Button>
-                <Button 
-                  onClick={() => window.location.href = "/login"}
-                  variant="outline"
-                  size="lg" 
-                  className="border-2 hover:bg-white/10 text-lg px-8 py-4 font-semibold"
-                  style={{ color: '#ffffff', borderColor: '#ffffff', backgroundColor: 'transparent' }}
-                >
-                  👤 Local Login
-                </Button>
+
               </div>
               <Button 
                 variant="outline" 
