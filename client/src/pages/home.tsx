@@ -4705,13 +4705,23 @@ END:VCALENDAR`
                                 }
                                 
                                 try {
-                                  await apiRequest(`/api/shopping-lists/${list.id}/items`, {
-                                    method: 'POST',
-                                    body: JSON.stringify({
-                                      item: newItemName.trim(),
-                                      quantity: newItemQuantity || '1',
-                                      category: newItemCategory || category
-                                    })
+                                  const newItem = {
+                                    id: Date.now().toString(),
+                                    name: newItemName.trim(),
+                                    quantity: newItemQuantity || '1',
+                                    unit: 'item',
+                                    category: newItemCategory || category,
+                                    checked: false,
+                                    manuallyAdded: true
+                                  };
+                                  
+                                  const currentItems = typeof list.items === 'string' 
+                                    ? JSON.parse(list.items || '[]') 
+                                    : (Array.isArray(list.items) ? list.items : []);
+                                  
+                                  await updateShoppingListMutation.mutateAsync({
+                                    ...list,
+                                    items: JSON.stringify([...currentItems, newItem])
                                   });
                                   
                                   // Reset form
@@ -4721,8 +4731,18 @@ END:VCALENDAR`
                                   
                                   // Refresh shopping lists
                                   queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+                                  
+                                  toast({
+                                    title: "Item Added",
+                                    description: `${newItem.name} added to your shopping list!`,
+                                  });
                                 } catch (error) {
                                   console.error('Failed to add item:', error);
+                                  toast({
+                                    title: "Error",
+                                    description: "Failed to add item to shopping list",
+                                    variant: "destructive",
+                                  });
                                 }
                               }}
                               disabled={!newItemName.trim()}
@@ -4755,19 +4775,39 @@ END:VCALENDAR`
                                       return;
                                     }
                                     
-                                    await apiRequest(`/api/shopping-lists/${list.id}/items`, {
-                                      method: 'POST',
-                                      body: JSON.stringify({
-                                        item: item,
-                                        quantity: '1',
-                                        category: category
-                                      })
+                                    const newItem = {
+                                      id: Date.now().toString(),
+                                      name: item,
+                                      quantity: '1',
+                                      unit: 'item',
+                                      category: category,
+                                      checked: false,
+                                      manuallyAdded: true
+                                    };
+                                    
+                                    const currentItems = typeof list.items === 'string' 
+                                      ? JSON.parse(list.items || '[]') 
+                                      : (Array.isArray(list.items) ? list.items : []);
+                                    
+                                    await updateShoppingListMutation.mutateAsync({
+                                      ...list,
+                                      items: JSON.stringify([...currentItems, newItem])
                                     });
                                     
                                     // Refresh shopping lists
                                     queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+                                    
+                                    toast({
+                                      title: "Item Added",
+                                      description: `${item} added to your shopping list!`,
+                                    });
                                   } catch (error) {
                                     console.error('Failed to add item:', error);
+                                    toast({
+                                      title: "Error",
+                                      description: "Failed to add item to shopping list",
+                                      variant: "destructive",
+                                    });
                                   }
                                 }}
                               >
@@ -5816,7 +5856,7 @@ END:VCALENDAR`
                       });
                     }
                     
-                    setManualItem({ name: '', quantity: '', unit: 'item', category: 'produce' });
+                    setManualItem({ name: '', quantity: '1', unit: 'item', category: 'produce' });
                     setIsAddManualItemOpen(false);
                   } catch (error) {
                     console.error('Error adding manual item:', error);
@@ -5827,7 +5867,7 @@ END:VCALENDAR`
                     });
                   }
                 }}
-                disabled={!manualItem.name.trim() || !manualItem.quantity.trim() || parseFloat(manualItem.quantity) <= 0 || updateShoppingListMutation.isPending || generateShoppingListMutation.isPending}
+                disabled={!manualItem.name.trim() || updateShoppingListMutation.isPending || generateShoppingListMutation.isPending}
                 className="flex-1"
               >
                 {updateShoppingListMutation.isPending || generateShoppingListMutation.isPending ? 'Adding...' : 'Add Item'}
