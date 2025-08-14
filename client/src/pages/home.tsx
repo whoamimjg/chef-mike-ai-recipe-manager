@@ -668,7 +668,7 @@ END:VCALENDAR`
 
   // Generate shopping list mutation
   const generateShoppingListMutation = useMutation({
-    mutationFn: async (data: { startDate: string; endDate: string; name: string }) => {
+    mutationFn: async (data: { startDate: string; endDate: string; name: string; items?: any[] }) => {
       await apiRequest("POST", "/api/shopping-lists/generate", data);
     },
     onSuccess: () => {
@@ -5005,7 +5005,37 @@ END:VCALENDAR`
                               <div className={`flex-1 ${item.checked ? "opacity-50 line-through" : ""}`}>
                                 <div className="font-medium print-item-name">• {item.name}</div>
                                 <div className="text-sm text-gray-500 print-item-details print:text-black">
-                                  {item.quantity} {item.unit} - {item.category}
+                                  {item.quantity} {item.unit}
+                                </div>
+                                <div className="flex items-center gap-2 mt-1 print:hidden">
+                                  <span className="text-xs text-gray-400">Category:</span>
+                                  <Select 
+                                    value={item.category || 'other'} 
+                                    onValueChange={(newCategory) => {
+                                      const updatedItems = listItems.map(i => 
+                                        i.id === item.id ? { ...i, category: newCategory } : i
+                                      );
+                                      updateShoppingListMutation.mutate({
+                                        ...list,
+                                        items: JSON.stringify(updatedItems)
+                                      });
+                                    }}
+                                  >
+                                    <SelectTrigger className="h-6 w-auto min-w-24 text-xs bg-transparent border-0 shadow-none p-1">
+                                      <SelectValue>
+                                        <span className="text-orange-600 font-medium text-xs">
+                                          {categoryDisplayNames[item.category] || item.category}
+                                        </span>
+                                      </SelectValue>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {Object.entries(categoryDisplayNames).map(([value, label]) => (
+                                        <SelectItem key={value} value={value} className="text-xs">
+                                          {label}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
                                 </div>
                                 {showPricing && pricingData?.items && (() => {
                                   const pricingItem = pricingData.items.find((p: any) => p.name.toLowerCase() === item.name.toLowerCase());
@@ -5044,10 +5074,10 @@ END:VCALENDAR`
                                   });
                                 }}
                                 className="text-red-600 hover:text-red-800 h-6 w-6 p-0 print:hidden"
-                                      >
-                                        <X className="h-3 w-3" />
-                                      </Button>
-                                      </div>
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
                                     ))}
                                   </div>
                                 </div>
@@ -5750,9 +5780,13 @@ END:VCALENDAR`
                         manuallyAdded: true
                       };
                       
+                      const currentItems = typeof latestList.items === 'string' 
+                        ? JSON.parse(latestList.items || '[]') 
+                        : (Array.isArray(latestList.items) ? latestList.items : []);
+                      
                       await updateShoppingListMutation.mutateAsync({
                         ...latestList,
-                        items: [...(latestList.items || []), newItem]
+                        items: JSON.stringify([...currentItems, newItem])
                       });
                       
                       toast({

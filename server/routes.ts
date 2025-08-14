@@ -1509,7 +1509,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/shopping-lists/generate', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user?.claims?.sub || req.user?.id || req.session?.userId;
-      const { startDate, endDate, name } = req.body;
+      const { startDate, endDate, name, items: manualItems } = req.body;
       
       // Get meal plans for the date range
       const mealPlans = await storage.getMealPlans(userId, startDate, endDate);
@@ -1597,6 +1597,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
           }
         }
+      }
+
+      // Add manual items if provided
+      if (manualItems && Array.isArray(manualItems)) {
+        manualItems.forEach((manualItem, index) => {
+          const itemKey = `manual-${manualItem.name.toLowerCase()}-${manualItem.category}`;
+          itemsMap.set(itemKey, {
+            id: `manual-${index}`,
+            name: manualItem.name,
+            quantity: manualItem.quantity,
+            unit: manualItem.unit,
+            category: manualItem.category,
+            checked: manualItem.checked || false,
+            manuallyAdded: true,
+            count: 1,
+          });
+        });
       }
 
       // Convert map to array
