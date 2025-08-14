@@ -4836,7 +4836,11 @@ END:VCALENDAR`
                                 }, {} as Record<string, typeof uncheckedItems>);
 
                                 let grandTotal = 0;
-                                const categoryTotals = categoryOrder.map(category => {
+                                // Get all categories that actually have items, plus the predefined order  
+                                const allCategoriesWithItems = Object.keys(itemsByCategory);
+                                const orderedCategories = [...new Set([...categoryOrder, ...allCategoriesWithItems])];
+                                
+                                const categoryTotals = orderedCategories.map(category => {
                                   const categoryItems = itemsByCategory[category] || [];
                                   if (categoryItems.length === 0) return null;
                                   
@@ -4985,7 +4989,11 @@ END:VCALENDAR`
                               return acc;
                             }, {} as Record<string, typeof uncheckedItems>);
 
-                            return categoryOrder.map(category => {
+                            // Get all categories that actually have items, plus the predefined order
+                            const allCategoriesWithItems = Object.keys(itemsByCategory);
+                            const orderedCategories = [...new Set([...categoryOrder, ...allCategoriesWithItems])];
+
+                            return orderedCategories.map(category => {
                               const categoryItems = itemsByCategory[category] || [];
                               if (categoryItems.length === 0) return null;
 
