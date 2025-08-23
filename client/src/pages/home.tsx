@@ -6373,8 +6373,11 @@ END:VCALENDAR`
                   variant="outline" 
                   size="sm" 
                   onClick={() => {
-                    handleViewRecipe(selectedRecipePopup);
-                    setSelectedRecipePopup(null);
+                    if (selectedRecipePopup) {
+                      setSelectedRecipe(selectedRecipePopup);
+                      setIsRecipeModalOpen(true);
+                      setSelectedRecipePopup(null);
+                    }
                   }}
                   className="flex-1"
                 >
