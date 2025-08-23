@@ -1231,11 +1231,18 @@ END:VCALENDAR`
         const response = await fetch('/api/receipts/process-image', {
           method: 'POST',
           body: formData,
-          credentials: 'include'
+          credentials: 'include',
+          headers: {
+            // Don't set Content-Type for FormData, browser will set it automatically with boundary
+          }
         });
 
         if (!response.ok) {
-          throw new Error('Failed to process receipt');
+          if (response.status === 401) {
+            throw new Error('Authentication required - 401');
+          }
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || `Failed to process receipt (${response.status})`);
         }
 
         const receiptData = await response.json();
@@ -1256,6 +1263,19 @@ END:VCALENDAR`
 
       } catch (error) {
         console.error('OCR processing failed:', error);
+        
+        // Check if it's an authentication error
+        if (error instanceof Error && (error.message.includes('401') || error.message.includes('Authentication required'))) {
+          toast({
+            title: "Authentication Required",
+            description: "Please log in to use receipt scanning.",
+            variant: "destructive",
+          });
+          // Redirect to login
+          window.location.href = "/api/login";
+          return;
+        }
+        
         toast({
           title: "OCR Failed",
           description: "Could not process receipt automatically. Please add items manually.",
