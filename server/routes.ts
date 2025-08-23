@@ -1358,8 +1358,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name.includes('pecan') || name.includes('cashew') || name.includes('pistachio') ||
         name.includes('peanut') || name.includes('sunflower seed') || name.includes('pumpkin seed') ||
         name.includes('chia seed') || name.includes('flax seed') || name.includes('sesame seed') ||
-        name.includes('cumin') || name.includes('paprika') || name.includes('oregano') ||
-        name.includes('thyme') || name.includes('rosemary') || name.includes('sage') ||
         name.includes('turmeric') || name.includes('cinnamon') || name.includes('nutmeg') ||
         name.includes('chili powder') || name.includes('cayenne') || name.includes('garlic powder') ||
         name.includes('onion powder') || name.includes('italian seasoning') || name.includes('bay leaf')) {
@@ -1499,6 +1497,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (name.includes('dog') || name.includes('cat') || name.includes('pet') ||
         name.includes('kibble') || name.includes('treats')) {
       return 'pets';
+    }
+    
+    // Spices & Seasonings - should come before produce as default
+    if (name.includes('spice') || name.includes('seasoning') || name.includes('pepper') ||
+        name.includes('herb') || name.includes('extract') || name.includes('powder') ||
+        name.includes('dried') && !name.includes('fruit') || name.includes('ground') ||
+        name.includes('flakes') || name.includes('seeds') && !name.includes('sunflower') ||
+        name.includes('cumin') || name.includes('paprika') || name.includes('oregano') ||
+        name.includes('thyme') || name.includes('rosemary') || name.includes('sage') ||
+        name.includes('cinnamon') || name.includes('nutmeg') || name.includes('turmeric') ||
+        name.includes('cardamom') || name.includes('cloves') || name.includes('coriander') ||
+        name.includes('fennel') || name.includes('allspice') || name.includes('curry') ||
+        name.includes('chili') && !name.includes('bean') || name.includes('cayenne') ||
+        name.includes('garlic') && name.includes('powder') || name.includes('onion') && name.includes('powder') ||
+        name.includes('bay leaves') || name.includes('vanilla') && name.includes('extract') ||
+        name.includes('salt') && !name.includes('saltine')) {
+      return 'spices';
     }
     
     // Default to produce for most food items

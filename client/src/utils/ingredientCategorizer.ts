@@ -303,8 +303,7 @@ export const ingredientCategories: Record<string, string> = {
   'flour': 'canned-goods',
   'sugar': 'canned-goods',
   'brown sugar': 'canned-goods',
-  'salt': 'canned-goods',
-  'black pepper': 'canned-goods',
+  'salt': 'spices',
   'olive oil': 'canned-goods',
   'vegetable oil': 'canned-goods',
   'canola oil': 'canned-goods',
@@ -328,27 +327,67 @@ export const ingredientCategories: Record<string, string> = {
   'baking soda': 'canned-goods',
   'yeast': 'canned-goods',
   'cornstarch': 'canned-goods',
-  'paprika': 'canned-goods',
-  'cumin': 'canned-goods',
-  'chili powder': 'canned-goods',
-  'garlic powder': 'canned-goods',
-  'onion powder': 'canned-goods',
-  'dried herbs': 'canned-goods',
-  'bay leaves': 'canned-goods',
-  'cinnamon': 'canned-goods',
-  'nutmeg': 'canned-goods',
-  'ginger powder': 'canned-goods',
-  'turmeric': 'canned-goods',
-  'red pepper flakes': 'canned-goods',
   'sesame oil': 'canned-goods',
   'tahini': 'canned-goods',
+
+  // Spices & Seasonings Section
+  'paprika': 'spices',
+  'cumin': 'spices',
+  'chili powder': 'spices',
+  'garlic powder': 'spices',
+  'onion powder': 'spices',
+  'dried herbs': 'spices',
+  'bay leaves': 'spices',
+  'cinnamon': 'spices',
+  'nutmeg': 'spices',
+  'ginger powder': 'spices',
+  'turmeric': 'spices',
+  'red pepper flakes': 'spices',
+  'black pepper': 'spices',
+  'white pepper': 'spices',
+  'cayenne pepper': 'spices',
+  'allspice': 'spices',
+  'cardamom': 'spices',
+  'cloves': 'spices',
+  'coriander': 'spices',
+  'fennel seeds': 'spices',
+  'mustard seeds': 'spices',
+  'star anise': 'spices',
+  'vanilla': 'spices',
+  'extract': 'spices',
+  'seasoning': 'spices',
+  'herb': 'spices',
+  'spice': 'spices',
+  'curry powder': 'spices',
+  'italian seasoning': 'spices',
+  'herbs de provence': 'spices',
+  'everything bagel seasoning': 'spices',
+  'garlic salt': 'spices',
+  'onion salt': 'spices',
+  'celery salt': 'spices',
+  'lemon pepper': 'spices',
+  'old bay': 'spices',
+  'taco seasoning': 'spices',
+  'ranch seasoning': 'spices',
+  'dried oregano': 'spices',
+  'dried basil': 'spices',
+  'dried thyme': 'spices',
+  'dried rosemary': 'spices',
+  'dried parsley': 'spices',
+  'dried dill': 'spices',
+  'smoked paprika': 'spices',
+  'chili flakes': 'spices',
+  'dried chili': 'spices',
+  'ground ginger': 'spices',
+  'ground cinnamon': 'spices',
+  'ground nutmeg': 'spices',
+  'ground cloves': 'spices',
 
   // Ethnic Foods
   'tortilla chips': 'ethnic-foods',
   'salsa': 'ethnic-foods',
   'refried beans': 'ethnic-foods',
   'taco shells': 'ethnic-foods',
-  'taco seasoning': 'ethnic-foods',
   'sriracha': 'ethnic-foods',
   'fish sauce': 'ethnic-foods',
   'miso paste': 'ethnic-foods',
@@ -473,6 +512,15 @@ export function categorizeIngredient(itemName: string): string {
     return 'snacks';
   }
   
+  if (normalizedName.includes('spice') || normalizedName.includes('seasoning') ||
+      normalizedName.includes('pepper') || normalizedName.includes('herb') ||
+      normalizedName.includes('extract') || normalizedName.includes('powder') ||
+      normalizedName.includes('dried') || normalizedName.includes('ground') ||
+      normalizedName.includes('flakes') || normalizedName.includes('seeds') ||
+      normalizedName.includes('salt') && !normalizedName.includes('saltine')) {
+    return 'spices';
+  }
+  
   if (normalizedName.includes('cleaner') || normalizedName.includes('soap') || 
       normalizedName.includes('detergent') || normalizedName.includes('bleach')) {
     return 'cleaning-supplies';
@@ -501,6 +549,7 @@ export const categoryDisplayNames: Record<string, string> = {
   'snacks': '🍿 Snacks',
   'canned-goods': '🥫 Canned Goods',
   'bread': '🍞 Bread & Bakery',
+  'spices': '🧂 Spices & Seasonings',
   'ethnic-foods': '🌶️ Ethnic Foods',
   'household-goods': '🏠 Household',
   'cleaning-supplies': '🧽 Cleaning',

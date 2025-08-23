@@ -1097,15 +1097,23 @@ END:VCALENDAR`
           const currentItems = existingList.items || [];
           
           // Create new items in the correct format
-          const newItems = missingItems.map(item => ({
-            id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            name: item.name,
-            quantity: item.quantity,
-            unit: item.unit,
-            category: categorizeIngredient(item.name),
-            checked: false,
-            manuallyAdded: false
-          }));
+          const newItems = missingItems.map(item => {
+            let category = 'produce'; // default fallback
+            try {
+              category = categorizeIngredient(item.name);
+            } catch (e) {
+              console.log('Error categorizing ingredient:', item.name, e);
+            }
+            return {
+              id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              name: item.name,
+              quantity: item.quantity,
+              unit: item.unit,
+              category: category,
+              checked: false,
+              manuallyAdded: false
+            };
+          });
           
           // Filter out items that already exist in the shopping list
           const itemsToAdd = newItems.filter(newItem => 
@@ -1133,15 +1141,23 @@ END:VCALENDAR`
           }
         } else {
           // Create new shopping list with proper format
-          const newListItems = missingItems.map(item => ({
-            id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            name: item.name,
-            quantity: item.quantity,
-            unit: item.unit,
-            category: categorizeIngredient(item.name),
-            checked: false,
-            manuallyAdded: false
-          }));
+          const newListItems = missingItems.map(item => {
+            let category = 'produce'; // default fallback
+            try {
+              category = categorizeIngredient(item.name);
+            } catch (e) {
+              console.log('Error categorizing ingredient:', item.name, e);
+            }
+            return {
+              id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              name: item.name,
+              quantity: item.quantity,
+              unit: item.unit,
+              category: category,
+              checked: false,
+              manuallyAdded: false
+            };
+          });
           
           await apiRequest("POST", "/api/shopping-lists", {
             name: `Ingredients for ${recipe.title}`,
