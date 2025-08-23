@@ -65,48 +65,9 @@ import {
 } from "lucide-react";
 import type { Recipe, MealPlan, ShoppingList, UserPreferences, UserInventory } from "@shared/schema";
 import { categorizeIngredient, categoryDisplayNames } from "@/utils/ingredientCategorizer";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import KitchenTimer from '@/components/KitchenTimer';
 
 
-// Helper component for recipe tooltips
-const RecipeTooltipContent = ({ recipe }: { recipe: Recipe }) => (
-  <div className="max-w-xs">
-    <div className="font-semibold mb-2">{recipe.title}</div>
-    {recipe.description && (
-      <p className="text-sm text-gray-300 mb-2 line-clamp-2">{recipe.description}</p>
-    )}
-    <div className="flex items-center gap-4 text-xs text-gray-400 mb-2">
-      {recipe.prepTime && (
-        <span className="flex items-center gap-1">
-          <Clock className="h-3 w-3" />
-          {recipe.prepTime}m prep
-        </span>
-      )}
-      {recipe.cookTime && (
-        <span className="flex items-center gap-1">
-          <Clock className="h-3 w-3" />
-          {recipe.cookTime}m cook
-        </span>
-      )}
-      {recipe.servings && (
-        <span className="flex items-center gap-1">
-          <Users className="h-3 w-3" />
-          {recipe.servings} servings
-        </span>
-      )}
-    </div>
-    {recipe.ingredients && recipe.ingredients.length > 0 && (
-      <div>
-        <div className="text-xs font-medium text-gray-300 mb-1">Key Ingredients:</div>
-        <div className="text-xs text-gray-400">
-          {recipe.ingredients.slice(0, 4).map(ing => ing.item).join(', ')}
-          {recipe.ingredients.length > 4 && '...'}
-        </div>
-      </div>
-    )}
-  </div>
-);
 
 export default function Home() {
   const { user, isLoading, isAuthenticated } = useAuth();
@@ -3991,7 +3952,16 @@ END:VCALENDAR`
                                       return recipe ? (
                                         <div key={plan.id} className="bg-blue-100 text-blue-800 rounded px-2 py-1 mb-1 text-xs w-full">
                                           <div className="flex items-center justify-between">
-                                            <span className="truncate">{recipe.title}</span>
+                                            <span 
+                                              className="truncate cursor-pointer hover:underline transition-colors" 
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setSelectedRecipePopup(recipe);
+                                              }}
+                                              title="Click to view recipe details"
+                                            >
+                                              {recipe.title}
+                                            </span>
                                             <div className="flex gap-1 ml-2">
                                               <button
                                                 onClick={() => {
@@ -4078,7 +4048,16 @@ END:VCALENDAR`
                                       return recipe ? (
                                         <div key={plan.id} className="bg-green-100 text-green-800 rounded px-2 py-1 mb-1 text-xs w-full">
                                           <div className="flex items-center justify-between">
-                                            <span className="truncate">{recipe.title}</span>
+                                            <span 
+                                              className="truncate cursor-pointer hover:underline transition-colors" 
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setSelectedRecipePopup(recipe);
+                                              }}
+                                              title="Click to view recipe details"
+                                            >
+                                              {recipe.title}
+                                            </span>
                                             <div className="flex gap-1 ml-2">
                                               <button
                                                 onClick={() => {
@@ -4165,7 +4144,16 @@ END:VCALENDAR`
                                       return recipe ? (
                                         <div key={plan.id} className="bg-orange-100 text-orange-800 rounded px-2 py-1 mb-1 text-xs w-full">
                                           <div className="flex items-center justify-between">
-                                            <span className="truncate">{recipe.title}</span>
+                                            <span 
+                                              className="truncate cursor-pointer hover:underline transition-colors" 
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setSelectedRecipePopup(recipe);
+                                              }}
+                                              title="Click to view recipe details"
+                                            >
+                                              {recipe.title}
+                                            </span>
                                             <div className="flex gap-1 ml-2">
                                               <button
                                                 onClick={() => {
@@ -4354,7 +4342,16 @@ END:VCALENDAR`
                                           const recipe = recipes?.find(r => r.id === plan.recipeId);
                                           return recipe ? (
                                             <div key={plan.id} className="bg-orange-50 p-2 rounded flex justify-between items-center">
-                                              <span className="font-medium">{recipe.title}</span>
+                                              <span 
+                                                className="font-medium cursor-pointer hover:underline transition-colors" 
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  setSelectedRecipePopup(recipe);
+                                                }}
+                                                title="Click to view recipe details"
+                                              >
+                                                {recipe.title}
+                                              </span>
                                               <Button
                                                 variant="ghost"
                                                 size="sm"
@@ -4412,7 +4409,16 @@ END:VCALENDAR`
                                           const recipe = recipes?.find(r => r.id === plan.recipeId);
                                           return recipe ? (
                                             <div key={plan.id} className="bg-blue-50 p-2 rounded flex justify-between items-center">
-                                              <span className="font-medium">{recipe.title}</span>
+                                              <span 
+                                                className="font-medium cursor-pointer hover:underline transition-colors" 
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  setSelectedRecipePopup(recipe);
+                                                }}
+                                                title="Click to view recipe details"
+                                              >
+                                                {recipe.title}
+                                              </span>
                                               <Button
                                                 variant="ghost"
                                                 size="sm"
@@ -4470,7 +4476,16 @@ END:VCALENDAR`
                                           const recipe = recipes?.find(r => r.id === plan.recipeId);
                                           return recipe ? (
                                             <div key={plan.id} className="bg-purple-50 p-2 rounded flex justify-between items-center">
-                                              <span className="font-medium">{recipe.title}</span>
+                                              <span 
+                                                className="font-medium cursor-pointer hover:underline transition-colors" 
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  setSelectedRecipePopup(recipe);
+                                                }}
+                                                title="Click to view recipe details"
+                                              >
+                                                {recipe.title}
+                                              </span>
                                               <Button
                                                 variant="ghost"
                                                 size="sm"
@@ -4528,7 +4543,16 @@ END:VCALENDAR`
                                           const recipe = recipes?.find(r => r.id === plan.recipeId);
                                           return recipe ? (
                                             <div key={plan.id} className="bg-green-50 p-2 rounded flex justify-between items-center">
-                                              <span className="font-medium">{recipe.title}</span>
+                                              <span 
+                                                className="font-medium cursor-pointer hover:underline transition-colors" 
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  setSelectedRecipePopup(recipe);
+                                                }}
+                                                title="Click to view recipe details"
+                                              >
+                                                {recipe.title}
+                                              </span>
                                               <Button
                                                 variant="ghost"
                                                 size="sm"
@@ -4634,8 +4658,12 @@ END:VCALENDAR`
                                         return recipe ? (
                                           <div
                                             key={plan.id}
-                                            className="text-xs bg-orange-100 text-orange-800 rounded px-1 py-0.5 truncate"
-                                            title={recipe.title}
+                                            className="text-xs bg-orange-100 text-orange-800 rounded px-1 py-0.5 truncate cursor-pointer hover:bg-orange-200 transition-colors"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setSelectedRecipePopup(recipe);
+                                            }}
+                                            title="Click to view recipe details"
                                           >
                                             {recipe.title}
                                           </div>
@@ -6295,7 +6323,7 @@ END:VCALENDAR`
       </Dialog>
       {/* Recipe Popup Dialog for Mobile & Touch */}
       <Dialog open={!!selectedRecipePopup} onOpenChange={(open) => !open && setSelectedRecipePopup(null)}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg max-w-sm mx-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ChefHat className="h-5 w-5" />
