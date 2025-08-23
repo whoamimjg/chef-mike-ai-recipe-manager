@@ -3830,6 +3830,10 @@ END:VCALENDAR`
                               const newStart = new Date(currentWeekStart);
                               newStart.setDate(newStart.getDate() - 7);
                               setCurrentWeekStart(newStart);
+                            } else if (mealPlannerView === 'day') {
+                              const newDate = new Date(selectedDate);
+                              newDate.setDate(newDate.getDate() - 1);
+                              setSelectedDate(newDate);
                             }
                           }}
                         >
@@ -3844,6 +3848,8 @@ END:VCALENDAR`
                               const start = new Date(today);
                               start.setDate(today.getDate() - today.getDay());
                               setCurrentWeekStart(start);
+                            } else if (mealPlannerView === 'day') {
+                              setSelectedDate(new Date());
                             }
                           }}
                         >
@@ -3857,6 +3863,10 @@ END:VCALENDAR`
                               const newStart = new Date(currentWeekStart);
                               newStart.setDate(newStart.getDate() + 7);
                               setCurrentWeekStart(newStart);
+                            } else if (mealPlannerView === 'day') {
+                              const newDate = new Date(selectedDate);
+                              newDate.setDate(newDate.getDate() + 1);
+                              setSelectedDate(newDate);
                             }
                           }}
                         >
