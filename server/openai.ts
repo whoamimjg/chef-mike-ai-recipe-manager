@@ -1,13 +1,19 @@
 import OpenAI from "openai";
 
+// Debug API key access
+console.log("OpenAI API Key available:", process.env.OPENAI_API_KEY ? "YES" : "NO");
+console.log("OpenAI API Key length:", process.env.OPENAI_API_KEY?.length || 0);
+
+// Check if OpenAI API key is properly configured
+if (!process.env.OPENAI_API_KEY) {
+  console.error('OPENAI_API_KEY environment variable is required');
+  throw new Error('OPENAI_API_KEY environment variable is required');
+}
+
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const openai = new OpenAI({ 
   apiKey: process.env.OPENAI_API_KEY
 });
-
-// Debug API key access
-console.log("OpenAI API Key available:", process.env.OPENAI_API_KEY ? "YES" : "NO");
-console.log("OpenAI API Key length:", process.env.OPENAI_API_KEY?.length || 0);
 
 interface RecommendationRequest {
   preferences?: {
