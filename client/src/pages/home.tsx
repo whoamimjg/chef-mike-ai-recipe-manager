@@ -904,6 +904,38 @@ END:VCALENDAR`
     }
   });
 
+  // Delete meal plan mutation
+  const deleteMealPlanMutation = useMutation({
+    mutationFn: async (mealPlanId: number) => {
+      return await apiRequest("DELETE", `/api/meal-plans/${mealPlanId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/meal-plans'] });
+      toast({
+        title: "Recipe Removed",
+        description: "Recipe has been removed from meal plan",
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to remove recipe from meal plan",
+        variant: "destructive",
+      });
+    }
+  });
+
   // Mark item as used mutation
   const markUsedMutation = useMutation({
     mutationFn: async (itemId: number) => {
@@ -1003,22 +1035,59 @@ END:VCALENDAR`
   // Check for missing ingredients and add to shopping list
   const checkMissingIngredients = async (recipe: any) => {
     try {
-      if (!recipe.ingredients || !Array.isArray(recipe.ingredients)) return;
+      if (!recipe.ingredients || !Array.isArray(recipe.ingredients)) {
+        console.log('No ingredients found in recipe:', recipe.title);
+        return;
+      }
       
-      const missingItems: string[] = [];
+      console.log(`Processing ${recipe.ingredients.length} ingredients for recipe "${recipe.title}":`, recipe.ingredients);
+      
+      const missingItems: Array<{name: string; quantity: string; unit: string}> = [];
       
       // Check each recipe ingredient against inventory
-      recipe.ingredients.forEach((ingredient: any) => {
-        const ingredientName = ingredient.item?.toLowerCase() || '';
-        const hasInInventory = inventory?.some(inv => 
-          inv.ingredientName.toLowerCase().includes(ingredientName) ||
-          ingredientName.includes(inv.ingredientName.toLowerCase())
-        );
+      recipe.ingredients.forEach((ingredient: any, index: number) => {
+        console.log(`Processing ingredient ${index}:`, ingredient);
         
-        if (!hasInInventory && ingredientName) {
-          missingItems.push(ingredient.item);
+        let ingredientName = '';
+        let quantity = '1';
+        let unit = 'item';
+        
+        // Handle different ingredient formats
+        if (typeof ingredient === 'string') {
+          ingredientName = ingredient.trim();
+        } else if (typeof ingredient === 'object' && ingredient !== null) {
+          // Try different possible property names
+          ingredientName = ingredient.item || ingredient.name || ingredient.ingredientName || '';
+          quantity = ingredient.amount || ingredient.quantity || '1';
+          unit = ingredient.unit || 'item';
+        }
+        
+        // Skip if no valid ingredient name
+        if (!ingredientName || ingredientName.trim() === '') {
+          console.log(`Skipping ingredient ${index} - no name found`);
+          return;
+        }
+        
+        const ingredientNameLower = ingredientName.toLowerCase();
+        const hasInInventory = inventory?.some(inv => {
+          const invNameLower = inv.ingredientName.toLowerCase();
+          return invNameLower.includes(ingredientNameLower) ||
+                 ingredientNameLower.includes(invNameLower);
+        });
+        
+        if (!hasInInventory) {
+          console.log(`Ingredient "${ingredientName}" not found in inventory, adding to missing items`);
+          missingItems.push({
+            name: ingredientName,
+            quantity: quantity.toString(),
+            unit: unit
+          });
+        } else {
+          console.log(`Ingredient "${ingredientName}" found in inventory`);
         }
       });
+      
+      console.log(`Found ${missingItems.length} missing ingredients:`, missingItems.map(item => item.name));
       
       // Add missing items to shopping list if any
       if (missingItems.length > 0) {
@@ -1026,45 +1095,79 @@ END:VCALENDAR`
         if (existingList) {
           // Update existing shopping list
           const currentItems = existingList.items || [];
-          const newItems = missingItems.map(item => ({ 
-            item, 
-            amount: '1', 
-            unit: 'item',
-            notes: `Added from ${recipe.title}`
+          
+          // Create new items in the correct format
+          const newItems = missingItems.map(item => ({
+            id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            name: item.name,
+            quantity: item.quantity,
+            unit: item.unit,
+            category: categorizeIngredient(item.name),
+            checked: false,
+            manuallyAdded: false
           }));
           
-          await apiRequest("PUT", `/api/shopping-lists/${existingList.id}`, {
-            items: [...currentItems, ...newItems]
-          });
+          // Filter out items that already exist in the shopping list
+          const itemsToAdd = newItems.filter(newItem => 
+            !currentItems.some((existingItem: any) => 
+              existingItem.name?.toLowerCase() === newItem.name.toLowerCase()
+            )
+          );
           
-          queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
-          
-          toast({
-            title: "Missing Ingredients Added",
-            description: `${missingItems.length} missing ingredients added to shopping list`,
-          });
+          if (itemsToAdd.length > 0) {
+            await apiRequest("PUT", `/api/shopping-lists/${existingList.id}`, {
+              items: [...currentItems, ...itemsToAdd]
+            });
+            
+            queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
+            
+            toast({
+              title: "Missing Ingredients Added",
+              description: `${itemsToAdd.length} missing ingredients added to shopping list`,
+            });
+          } else {
+            toast({
+              title: "All Ingredients Present",
+              description: "All ingredients are either in inventory or already on the shopping list",
+            });
+          }
         } else {
-          // Create new shopping list
+          // Create new shopping list with proper format
+          const newListItems = missingItems.map(item => ({
+            id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            name: item.name,
+            quantity: item.quantity,
+            unit: item.unit,
+            category: categorizeIngredient(item.name),
+            checked: false,
+            manuallyAdded: false
+          }));
+          
           await apiRequest("POST", "/api/shopping-lists", {
             name: `Ingredients for ${recipe.title}`,
-            items: missingItems.map(item => ({ 
-              item, 
-              amount: '1', 
-              unit: 'item',
-              notes: `From ${recipe.title}`
-            }))
+            items: newListItems
           });
           
           queryClient.invalidateQueries({ queryKey: ['/api/shopping-lists'] });
           
           toast({
             title: "Shopping List Created",
-            description: `New shopping list created with ${missingItems.length} ingredients`,
+            description: `New shopping list created with ${newListItems.length} ingredients`,
           });
         }
+      } else {
+        toast({
+          title: "All Ingredients Available",
+          description: "All ingredients for this recipe are in your inventory",
+        });
       }
     } catch (error) {
       console.error('Error checking missing ingredients:', error);
+      toast({
+        title: "Error",
+        description: "Failed to check missing ingredients",
+        variant: "destructive",
+      });
     }
   };
 
@@ -3843,6 +3946,14 @@ END:VCALENDAR`
                                               >
                                                 🍎
                                               </a>
+                                              <button
+                                                onClick={() => deleteMealPlanMutation.mutate(plan.id)}
+                                                className="text-red-600 hover:text-red-800"
+                                                title="Remove from meal plan"
+                                                data-testid={`button-delete-${plan.id}`}
+                                              >
+                                                🗑️
+                                              </button>
                                             </div>
                                           </div>
                                         </div>
@@ -3922,6 +4033,14 @@ END:VCALENDAR`
                                               >
                                                 🍎
                                               </a>
+                                              <button
+                                                onClick={() => deleteMealPlanMutation.mutate(plan.id)}
+                                                className="text-red-600 hover:text-red-800"
+                                                title="Remove from meal plan"
+                                                data-testid={`button-delete-${plan.id}`}
+                                              >
+                                                🗑️
+                                              </button>
                                             </div>
                                           </div>
                                         </div>
@@ -4001,6 +4120,14 @@ END:VCALENDAR`
                                               >
                                                 🍎
                                               </a>
+                                              <button
+                                                onClick={() => deleteMealPlanMutation.mutate(plan.id)}
+                                                className="text-red-600 hover:text-red-800"
+                                                title="Remove from meal plan"
+                                                data-testid={`button-delete-${plan.id}`}
+                                              >
+                                                🗑️
+                                              </button>
                                             </div>
                                           </div>
                                         </div>
@@ -4056,8 +4183,40 @@ END:VCALENDAR`
                                     snackPlans.map((plan) => {
                                       const recipe = recipes?.find(r => r.id === plan.recipeId);
                                       return (
-                                        <div key={plan.id} className="bg-purple-100 text-purple-800 rounded px-2 py-1 mb-1 text-xs truncate w-full text-center">
-                                          {recipe?.title || 'Recipe'}
+                                        <div key={plan.id} className="bg-purple-100 text-purple-800 rounded px-2 py-1 mb-1 text-xs w-full">
+                                          <div className="flex items-center justify-between">
+                                            <span className="truncate">{recipe?.title || 'Recipe'}</span>
+                                            <div className="flex gap-1 ml-2">
+                                              <button
+                                                onClick={() => {
+                                                  const links = generateCalendarLink(recipe, date, 'snack');
+                                                  window.open(links.google, '_blank');
+                                                }}
+                                                className="text-purple-600 hover:text-purple-800"
+                                                title="Add to Google Calendar"
+                                                data-testid={`button-google-calendar-${plan.id}`}
+                                              >
+                                                📅
+                                              </button>
+                                              <a
+                                                href={generateCalendarLink(recipe, date, 'snack').apple}
+                                                download={`snack-${recipe?.title?.replace(/\s+/g, '-').toLowerCase() || 'snack'}.ics`}
+                                                className="text-purple-600 hover:text-purple-800"
+                                                title="Add to Apple Calendar"
+                                                data-testid={`link-apple-calendar-${plan.id}`}
+                                              >
+                                                🍎
+                                              </a>
+                                              <button
+                                                onClick={() => deleteMealPlanMutation.mutate(plan.id)}
+                                                className="text-red-600 hover:text-red-800"
+                                                title="Remove from meal plan"
+                                                data-testid={`button-delete-${plan.id}`}
+                                              >
+                                                🗑️
+                                              </button>
+                                            </div>
+                                          </div>
                                         </div>
                                       );
                                     })
