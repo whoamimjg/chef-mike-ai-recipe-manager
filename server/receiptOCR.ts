@@ -65,9 +65,19 @@ const getCategoryForItem = (itemName: string): string => {
 
 export async function processReceiptImage(imagePath: string): Promise<ReceiptData> {
   try {
+    console.log('Processing receipt image:', imagePath);
+    
+    // Check if file exists
+    if (!fs.existsSync(imagePath)) {
+      throw new Error(`Receipt image file not found: ${imagePath}`);
+    }
+    
     // Read image file and convert to base64
     const imageBuffer = fs.readFileSync(imagePath);
     const base64Image = imageBuffer.toString('base64');
+    
+    console.log('Image file size:', imageBuffer.length, 'bytes');
+    console.log('Base64 image length:', base64Image.length);
 
     const prompt = `
     Analyze this receipt image and extract the following information in JSON format:
@@ -99,6 +109,7 @@ export async function processReceiptImage(imagePath: string): Promise<ReceiptDat
     Return only the JSON object, no additional text.
     `;
 
+    console.log('Sending request to OpenAI...');
     const response = await openai.chat.completions.create({
       model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
       messages: [
@@ -121,6 +132,8 @@ export async function processReceiptImage(imagePath: string): Promise<ReceiptDat
       response_format: { type: "json_object" },
       max_tokens: 2000,
     });
+    
+    console.log('OpenAI response received, parsing...');
 
     const result = JSON.parse(response.choices[0].message.content || '{}');
     
@@ -140,6 +153,22 @@ export async function processReceiptImage(imagePath: string): Promise<ReceiptDat
 
   } catch (error) {
     console.error('Error processing receipt image:', error);
+    
+    // Provide more specific error messages
+    if (error instanceof Error) {
+      if (error.message.includes('API key')) {
+        throw new Error('OpenAI API key configuration issue. Please check your API key.');
+      } else if (error.message.includes('rate limit')) {
+        throw new Error('OpenAI API rate limit exceeded. Please try again in a few moments.');
+      } else if (error.message.includes('file not found')) {
+        throw new Error('Receipt image file was not uploaded properly. Please try uploading again.');
+      } else if (error.message.includes('insufficient_quota')) {
+        throw new Error('OpenAI API quota exceeded. Please check your OpenAI account.');
+      } else {
+        throw new Error(`Receipt processing failed: ${error.message}`);
+      }
+    }
+    
     throw new Error('Failed to process receipt image. Please try again or add items manually.');
   }
 }

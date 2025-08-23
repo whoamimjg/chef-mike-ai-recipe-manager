@@ -64,7 +64,7 @@ console.log('Public key configured:', process.env.VITE_STRIPE_PUBLIC_KEY ? 'YES'
 console.log('Public key starts with pk_:', process.env.VITE_STRIPE_PUBLIC_KEY?.startsWith('pk_'));
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: "2023-10-16",
+  apiVersion: "2025-06-30.basil",
 });
 
 // Utility function to check plan limits
