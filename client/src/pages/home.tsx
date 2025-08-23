@@ -65,8 +65,48 @@ import {
 } from "lucide-react";
 import type { Recipe, MealPlan, ShoppingList, UserPreferences, UserInventory } from "@shared/schema";
 import { categorizeIngredient, categoryDisplayNames } from "@/utils/ingredientCategorizer";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import KitchenTimer from '@/components/KitchenTimer';
 
+
+// Helper component for recipe tooltips
+const RecipeTooltipContent = ({ recipe }: { recipe: Recipe }) => (
+  <div className="max-w-xs">
+    <div className="font-semibold mb-2">{recipe.title}</div>
+    {recipe.description && (
+      <p className="text-sm text-gray-300 mb-2 line-clamp-2">{recipe.description}</p>
+    )}
+    <div className="flex items-center gap-4 text-xs text-gray-400 mb-2">
+      {recipe.prepTime && (
+        <span className="flex items-center gap-1">
+          <Clock className="h-3 w-3" />
+          {recipe.prepTime}m prep
+        </span>
+      )}
+      {recipe.cookTime && (
+        <span className="flex items-center gap-1">
+          <Clock className="h-3 w-3" />
+          {recipe.cookTime}m cook
+        </span>
+      )}
+      {recipe.servings && (
+        <span className="flex items-center gap-1">
+          <Users className="h-3 w-3" />
+          {recipe.servings} servings
+        </span>
+      )}
+    </div>
+    {recipe.ingredients && recipe.ingredients.length > 0 && (
+      <div>
+        <div className="text-xs font-medium text-gray-300 mb-1">Key Ingredients:</div>
+        <div className="text-xs text-gray-400">
+          {recipe.ingredients.slice(0, 4).map(ing => ing.item).join(', ')}
+          {recipe.ingredients.length > 4 && '...'}
+        </div>
+      </div>
+    )}
+  </div>
+);
 
 export default function Home() {
   const { user, isLoading, isAuthenticated } = useAuth();
@@ -4122,10 +4162,12 @@ END:VCALENDAR`
                                     dinnerPlans.map((plan) => {
                                       const recipe = recipes?.find(r => r.id === plan.recipeId);
                                       return recipe ? (
-                                        <div key={plan.id} className="bg-orange-100 text-orange-800 rounded px-2 py-1 mb-1 text-xs w-full">
-                                          <div className="flex items-center justify-between">
-                                            <span className="truncate">{recipe.title}</span>
-                                            <div className="flex gap-1 ml-2">
+                                        <Tooltip key={plan.id}>
+                                          <TooltipTrigger asChild>
+                                            <div className="bg-orange-100 text-orange-800 rounded px-2 py-1 mb-1 text-xs w-full cursor-pointer">
+                                              <div className="flex items-center justify-between">
+                                                <span className="truncate">{recipe.title}</span>
+                                                <div className="flex gap-1 ml-2">
                                               <button
                                                 onClick={() => {
                                                   const links = generateCalendarLink(recipe, date, 'dinner');
