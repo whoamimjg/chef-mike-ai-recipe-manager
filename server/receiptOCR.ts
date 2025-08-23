@@ -121,6 +121,26 @@ export async function processReceiptImage(imagePath: string): Promise<ReceiptDat
     `;
 
     console.log('Sending request to OpenAI...');
+    console.log('Using OpenAI client with key length:', process.env.OPENAI_API_KEY?.length);
+    
+    // Test basic OpenAI connection first
+    try {
+      console.log('Testing API key format:', process.env.OPENAI_API_KEY?.substring(0, 15) + '...');
+      const testResponse = await openai.models.list();
+      console.log('OpenAI connection test successful, found', testResponse.data.length, 'models');
+    } catch (testError: any) {
+      console.error('OpenAI connection test failed:', testError?.error?.message || testError?.message);
+      
+      // Check if it's a billing/quota issue instead of key issue
+      if (testError?.error?.code === 'insufficient_quota') {
+        throw new Error('OpenAI account has no available credits. Please add billing to your OpenAI account.');
+      } else if (testError?.error?.code === 'invalid_api_key') {
+        throw new Error('OpenAI API key is invalid. Please check your key at https://platform.openai.com/api-keys');
+      } else {
+        throw new Error(`OpenAI connection failed: ${testError?.error?.message || testError?.message}`);
+      }
+    }
+    
     const response = await openai.chat.completions.create({
       model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
       messages: [
