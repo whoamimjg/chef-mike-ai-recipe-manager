@@ -1,7 +1,18 @@
 import OpenAI from "openai";
 import fs from "fs";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// Check if OpenAI API key is properly configured
+if (!process.env.OPENAI_API_KEY) {
+  console.error('OPENAI_API_KEY environment variable is required');
+  throw new Error('OPENAI_API_KEY environment variable is required');
+}
+
+console.log('receiptOCR: OpenAI API Key configured:', !!process.env.OPENAI_API_KEY);
+console.log('receiptOCR: OpenAI API Key length:', process.env.OPENAI_API_KEY?.length);
+
+const openai = new OpenAI({ 
+  apiKey: process.env.OPENAI_API_KEY 
+});
 
 export interface ReceiptItem {
   name: string;
@@ -156,15 +167,25 @@ export async function processReceiptImage(imagePath: string): Promise<ReceiptDat
     
     // Provide more specific error messages
     if (error instanceof Error) {
-      if (error.message.includes('API key')) {
+      console.error('Error details:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      });
+      
+      // Check for specific OpenAI errors
+      if (error.message.includes('API key') || error.message.includes('401')) {
         throw new Error('OpenAI API key configuration issue. Please check your API key.');
-      } else if (error.message.includes('rate limit')) {
+      } else if (error.message.includes('rate limit') || error.message.includes('429')) {
         throw new Error('OpenAI API rate limit exceeded. Please try again in a few moments.');
       } else if (error.message.includes('file not found')) {
         throw new Error('Receipt image file was not uploaded properly. Please try uploading again.');
-      } else if (error.message.includes('insufficient_quota')) {
+      } else if (error.message.includes('insufficient_quota') || error.message.includes('quota')) {
         throw new Error('OpenAI API quota exceeded. Please check your OpenAI account.');
+      } else if (error.message.includes('timeout')) {
+        throw new Error('OpenAI API request timed out. Please try again.');
       } else {
+        // Return the actual error for debugging
         throw new Error(`Receipt processing failed: ${error.message}`);
       }
     }
