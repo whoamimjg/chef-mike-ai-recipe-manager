@@ -129,6 +129,7 @@ export default function Home() {
   const [newItemQuantity, setNewItemQuantity] = useState('');
   const [newItemCategory, setNewItemCategory] = useState('other');
   const [isAddRecipeOpen, setIsAddRecipeOpen] = useState(false);
+  const [selectedRecipePopup, setSelectedRecipePopup] = useState<Recipe | null>(null);
   const [isAIGeneratorOpen, setIsAIGeneratorOpen] = useState(false);
   const [isAddInventoryOpen, setIsAddInventoryOpen] = useState(false);
   const [newInventoryItem, setNewInventoryItem] = useState({ 
@@ -4162,12 +4163,10 @@ END:VCALENDAR`
                                     dinnerPlans.map((plan) => {
                                       const recipe = recipes?.find(r => r.id === plan.recipeId);
                                       return recipe ? (
-                                        <Tooltip key={plan.id}>
-                                          <TooltipTrigger asChild>
-                                            <div className="bg-orange-100 text-orange-800 rounded px-2 py-1 mb-1 text-xs w-full cursor-pointer">
-                                              <div className="flex items-center justify-between">
-                                                <span className="truncate">{recipe.title}</span>
-                                                <div className="flex gap-1 ml-2">
+                                        <div key={plan.id} className="bg-orange-100 text-orange-800 rounded px-2 py-1 mb-1 text-xs w-full">
+                                          <div className="flex items-center justify-between">
+                                            <span className="truncate">{recipe.title}</span>
+                                            <div className="flex gap-1 ml-2">
                                               <button
                                                 onClick={() => {
                                                   const links = generateCalendarLink(recipe, date, 'dinner');
@@ -6292,6 +6291,79 @@ END:VCALENDAR`
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+      {/* Recipe Popup Dialog for Mobile & Touch */}
+      <Dialog open={!!selectedRecipePopup} onOpenChange={(open) => !open && setSelectedRecipePopup(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ChefHat className="h-5 w-5" />
+              {selectedRecipePopup?.title}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedRecipePopup && (
+            <div className="space-y-4">
+              {selectedRecipePopup.description && (
+                <p className="text-sm text-gray-600">{selectedRecipePopup.description}</p>
+              )}
+              
+              <div className="flex items-center gap-4 text-sm text-gray-500">
+                {selectedRecipePopup.prepTime && (
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-4 w-4" />
+                    {selectedRecipePopup.prepTime}m prep
+                  </span>
+                )}
+                {selectedRecipePopup.cookTime && (
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-4 w-4" />
+                    {selectedRecipePopup.cookTime}m cook
+                  </span>
+                )}
+                {selectedRecipePopup.servings && (
+                  <span className="flex items-center gap-1">
+                    <Users className="h-4 w-4" />
+                    {selectedRecipePopup.servings} servings
+                  </span>
+                )}
+              </div>
+              
+              {selectedRecipePopup.ingredients && selectedRecipePopup.ingredients.length > 0 && (
+                <div>
+                  <h4 className="font-medium text-sm mb-2">Key Ingredients:</h4>
+                  <div className="text-sm text-gray-600">
+                    {selectedRecipePopup.ingredients.slice(0, 6).map(ing => ing.item).join(', ')}
+                    {selectedRecipePopup.ingredients.length > 6 && '...'}
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex gap-2 pt-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => {
+                    handleViewRecipe(selectedRecipePopup);
+                    setSelectedRecipePopup(null);
+                  }}
+                  className="flex-1"
+                >
+                  <Eye className="h-4 w-4 mr-1" />
+                  View Recipe
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setSelectedRecipePopup(null)}
+                  className="flex-1"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
