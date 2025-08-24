@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import fs from "fs";
+import path from "path";
 
 // Check if OpenAI API key is properly configured
 if (!process.env.OPENAI_API_KEY) {
@@ -74,6 +75,7 @@ const getCategoryForItem = (itemName: string): string => {
   return 'pantry & other';
 };
 
+
 export async function processReceiptImage(imagePath: string): Promise<ReceiptData> {
   try {
     console.log('Processing receipt image:', imagePath);
@@ -81,6 +83,11 @@ export async function processReceiptImage(imagePath: string): Promise<ReceiptDat
     // Check if file exists
     if (!fs.existsSync(imagePath)) {
       throw new Error(`Receipt image file not found: ${imagePath}`);
+    }
+    
+    // Check if it's a PDF file
+    if (path.extname(imagePath).toLowerCase() === '.pdf') {
+      throw new Error('PDF files are not directly supported yet. Please convert your PDF receipt to an image (PNG, JPG) and try again. You can do this by taking a screenshot of the PDF or using an online PDF-to-image converter.');
     }
     
     // Read image file and convert to base64

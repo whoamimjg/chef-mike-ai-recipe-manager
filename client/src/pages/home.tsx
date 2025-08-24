@@ -5877,6 +5877,7 @@ END:VCALENDAR`
             <div className="text-center p-8 border-2 border-dashed border-gray-300 rounded-lg">
               <FileText className="h-12 w-12 mx-auto mb-4 text-gray-400" />
               <p className="text-gray-600 mb-4">Upload a receipt image</p>
+              <p className="text-xs text-gray-500 mb-4">Note: For PDF receipts, please convert to image format first</p>
               {receiptFile ? (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                   <p className="text-green-800 font-medium">{receiptFile.name}</p>
