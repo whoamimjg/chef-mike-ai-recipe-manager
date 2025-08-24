@@ -1202,15 +1202,20 @@ END:VCALENDAR`
 
       const totalAmount = receiptItems.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
       
+      const itemsToSave = receiptItems.filter(item => item.name && item.name.trim()).map(item => ({
+        ...item,
+        quantity: item.quantity || "1", // Default to 1 if quantity is missing
+        unit: item.unit || "each", // Default to each if unit is missing
+        price: item.price || "0.00" // Default to 0.00 if price is missing
+      }));
+      
+      console.log('Items being sent to inventory:', itemsToSave.length, itemsToSave);
+      
       await receiptMutation.mutateAsync({
         storeName: receiptData.storeName || "Unknown Store",
         purchaseDate: receiptData.purchaseDate,
         totalAmount,
-        items: receiptItems.filter(item => item.name && item.price).map(item => ({
-          ...item,
-          quantity: item.quantity || "1", // Default to 1 if quantity is missing
-          unit: item.unit || "each" // Default to each if unit is missing
-        }))
+        items: itemsToSave
       });
     } catch (error) {
       // Error handling is in the mutation
@@ -1258,11 +1263,13 @@ END:VCALENDAR`
         });
         
         // Set the extracted items
-        setReceiptItems(receiptData.items || []);
+        const extractedItems = receiptData.items || [];
+        console.log('OCR extracted items:', extractedItems.length, extractedItems);
+        setReceiptItems(extractedItems);
         
         toast({
           title: "Receipt Processed!",
-          description: `Found ${receiptData.items?.length || 0} items. Review and edit as needed.`,
+          description: `Found ${extractedItems.length} items. Review and edit as needed.`,
         });
 
       } catch (error) {

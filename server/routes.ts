@@ -1836,6 +1836,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Also add items to inventory
+      console.log('Received items for inventory:', req.body.items.length, req.body.items);
+      
       const inventoryPromises = req.body.items.map((item: any) => 
         storage.addInventoryItem({
           userId,
@@ -1849,7 +1851,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       );
       
-      await Promise.all(inventoryPromises);
+      const inventoryResults = await Promise.all(inventoryPromises);
+      console.log('Successfully added to inventory:', inventoryResults.length, 'items');
       
       res.status(201).json(receipt);
     } catch (error) {
