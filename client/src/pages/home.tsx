@@ -1206,7 +1206,11 @@ END:VCALENDAR`
         storeName: receiptData.storeName || "Unknown Store",
         purchaseDate: receiptData.purchaseDate,
         totalAmount,
-        items: receiptItems.filter(item => item.name && item.quantity && item.price)
+        items: receiptItems.filter(item => item.name && item.price).map(item => ({
+          ...item,
+          quantity: item.quantity || "1", // Default to 1 if quantity is missing
+          unit: item.unit || "each" // Default to each if unit is missing
+        }))
       });
     } catch (error) {
       // Error handling is in the mutation
@@ -5902,8 +5906,8 @@ END:VCALENDAR`
 
             {/* Manual Item Entry */}
             <div className="border-t pt-4">
-              <h4 className="font-medium mb-3">Add Items Manually</h4>
-              <div className="space-y-3">
+              <h4 className="font-medium mb-3">Items Found ({receiptItems.length})</h4>
+              <div className="space-y-3 max-h-64 overflow-y-auto pr-2">
                 {receiptItems.map((item, index) => (
                   <div key={index} className="grid grid-cols-5 gap-2">
                     <Input 
