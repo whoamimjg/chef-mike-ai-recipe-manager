@@ -1212,13 +1212,27 @@ END:VCALENDAR`
           }
           return true;
         })
-        .map(item => ({
-          ...item,
-          name: item.name.trim(), // Clean up name
-          quantity: item.quantity || "1", // Default to 1 if quantity is missing
-          unit: item.unit || "each", // Default to each if unit is missing
-          price: parseFloat(item.price) || 0 // Ensure price is a number
-        }));
+        .map((item, index) => {
+          // Add category here in frontend for better tracking
+          let category = 'uncategorized';
+          try {
+            category = categorizeIngredient(item.name.trim());
+          } catch (e) {
+            console.log(`Failed to categorize item ${index}: "${item.name}"`, e);
+          }
+          
+          const processedItem = {
+            ...item,
+            name: item.name.trim(), // Clean up name
+            quantity: item.quantity || "1", // Default to 1 if quantity is missing
+            unit: item.unit || "each", // Default to each if unit is missing
+            price: parseFloat(item.price) || 0, // Ensure price is a number
+            category: category
+          };
+          
+          console.log(`Item ${index + 1}: "${processedItem.name}" -> category: "${processedItem.category}"`);
+          return processedItem;
+        });
       
       console.log('Items being sent to inventory:', itemsToSave.length, itemsToSave);
       
