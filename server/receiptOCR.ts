@@ -91,7 +91,9 @@ export async function processReceiptImage(imagePath: string): Promise<ReceiptDat
     console.log('Base64 image length:', base64Image.length);
 
     const prompt = `
-    Analyze this receipt image and extract the following information in JSON format:
+    IMPORTANT: This is a comprehensive receipt analysis. You must extract EVERY SINGLE ITEM visible on this receipt.
+    
+    Analyze this receipt image and extract ALL information in JSON format:
     
     {
       "storeName": "Name of the store",
@@ -107,15 +109,21 @@ export async function processReceiptImage(imagePath: string): Promise<ReceiptDat
       ]
     }
     
-    Instructions:
-    1. Extract all food/grocery items with their prices
-    2. For quantity, use "1" if not specified, or extract the actual quantity
-    3. For unit, use "each", "lb", "oz", "pkg", etc. based on what you see
-    4. Include the exact item names as they appear on the receipt
-    5. Only include purchasable items, not taxes, fees, or subtotals
-    6. If you can't read the total clearly, sum up all item prices
-    7. Clean up item names (remove extra spaces, fix obvious OCR errors)
-    8. Convert all prices to numbers (remove $ signs)
+    CRITICAL INSTRUCTIONS - READ CAREFULLY:
+    1. EXTRACT EVERY SINGLE ITEM - scan the entire receipt line by line
+    2. Include ALL food items, beverages, household goods, personal care items
+    3. Do NOT skip items even if partially visible or hard to read - make your best guess
+    4. Look for items in ALL parts of the receipt (top, middle, bottom)
+    5. Check for items with special formatting (discounts, bulk items, etc.)
+    6. Include items even if the text is slightly blurry or cut off
+    7. For quantity: use actual quantity if visible, otherwise use "1"
+    8. For unit: use "each", "lb", "oz", "pkg", "ct", etc. based on context
+    9. Clean up item names but keep them recognizable
+    10. Convert prices to numbers (remove $ signs and any formatting)
+    11. Only exclude: taxes, fees, subtotals, payment info, store info
+    12. If you see 20+ items, you're on the right track - grocery receipts typically have many items
+    
+    DOUBLE-CHECK: Before responding, count how many items you found. Grocery receipts typically have 15-30+ items. If you have fewer than 15 items, scan again more carefully.
     
     Return only the JSON object, no additional text.
     `;
@@ -142,7 +150,7 @@ export async function processReceiptImage(imagePath: string): Promise<ReceiptDat
         },
       ],
       response_format: { type: "json_object" },
-      max_tokens: 2000,
+      max_tokens: 4000,
     });
     
     console.log('OpenAI response received, parsing...');
