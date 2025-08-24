@@ -98,45 +98,49 @@ export async function processReceiptImage(imagePath: string): Promise<ReceiptDat
     console.log('Base64 image length:', base64Image.length);
 
     const prompt = `
-    ULTRA-CRITICAL RECEIPT ANALYSIS: Extract EVERY SINGLE LINE ITEM from this receipt. You are a professional receipt analyzer and must catch 100% of purchasable items.
+    MISSION-CRITICAL MEIJER RECEIPT ANALYSIS: Extract EVERY SINGLE ITEM from this Meijer receipt. This receipt shows "NUMBER OF ITEMS: 48" at the bottom - you MUST find all 48 items.
 
-    STEP-BY-STEP PROCESS:
-    1. Scan the receipt image line by line from top to bottom
-    2. For EACH line that contains a product name and price, create a separate item entry
-    3. Look for patterns like "PRODUCT NAME    PRICE" or "BARCODE PRODUCT NAME PRICE"
-    4. Count as you go - you should find 20-30+ items on most grocery receipts
+    MEIJER RECEIPT FORMAT ANALYSIS:
+    - Look for lines like: "GRAV MIX          1.29 F"
+    - Look for lines like: "788301862868 TM COLESLAW    1.59 F"  
+    - Each line with a price ending in "F" is a separate grocery item
+    - Barcode numbers (like 788301862868) indicate separate products
+    - Even identical product names with different barcodes = separate items
 
-    JSON FORMAT REQUIRED:
+    SCANNING INSTRUCTIONS:
+    1. Start after store header info
+    2. Look for the GROCERY section
+    3. Scan line by line until you hit savings/totals
+    4. Extract EVERY line that has: [OPTIONAL BARCODE] PRODUCT_NAME PRICE F
+    5. Count as you extract - target: 48 total items
+
+    EXAMPLES FROM THIS RECEIPT:
+    - "GRAV MIX          1.29 F" → name: "GRAV MIX", price: 1.29
+    - "788301862868 TM COLESLAW    1.59 F" → name: "TM COLESLAW", price: 1.59  
+    - "VELVEETA          3.79 F" → name: "VELVEETA", price: 3.79
+
+    JSON FORMAT:
     {
-      "storeName": "Store name from receipt",
-      "purchaseDate": "YYYY-MM-DD format",
-      "totalAmount": total_number,
+      "storeName": "Meijer",
+      "purchaseDate": "2024-08-25",
+      "totalAmount": 154.44,
       "items": [
         {
-          "name": "Exact product name from receipt",
-          "quantity": "quantity or 1",
-          "unit": "unit or each", 
-          "price": actual_price_number
+          "name": "GRAV MIX",
+          "quantity": "1",
+          "unit": "each",
+          "price": 1.29
         }
       ]
     }
 
-    ABSOLUTE REQUIREMENTS:
-    ✓ EVERY purchasable line = separate item (even identical products with different prices)
-    ✓ Include ALL sections: grocery, pharmacy, general merchandise, everything
-    ✓ Different barcodes = different items (85582300716 vs 85582300718)
-    ✓ Different prices = different items (same product, different sizes/offers)
-    ✓ Weighted items: extract actual weight as quantity (2.07 lb becomes quantity: "2.07", unit: "lb")
-    ✓ Missing info: guess rather than skip (unclear text → best guess name, missing price → 0.00)
-    
-    IGNORE ONLY:
-    ✗ Store headers, payment info, card numbers
-    ✗ "SUBTOTAL", "TOTAL", "TAX", "SAVINGS", "COUPON" lines
-    ✗ Negative discount amounts (but include the products they apply to)
+    CRITICAL VALIDATION:
+    - You MUST find exactly 48 items (as shown at bottom of receipt)
+    - If you find fewer than 48, you missed items - scan again more carefully
+    - Include items like: GRAV MIX, TM COLESLAW, VELVEETA, CANNED ORANGES, FROZEN BEANS, BRATS, MOUNTAIN DEW, PICKLES, PEANUT BUTTER, BLACKBERRIES, etc.
+    - Every line with a price and "F" designation is a separate item
 
-    CRITICAL SUCCESS METRIC: Find 25+ items. If you find fewer than 20 items, you failed - scan again more carefully.
-
-    Return ONLY the JSON object.
+    Return ONLY the JSON object with all 48 items.
     `;
 
     console.log('Sending request to OpenAI...');
