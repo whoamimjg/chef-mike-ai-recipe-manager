@@ -1202,12 +1202,23 @@ END:VCALENDAR`
 
       const totalAmount = receiptItems.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
       
-      const itemsToSave = receiptItems.filter(item => item.name && item.name.trim()).map(item => ({
-        ...item,
-        quantity: item.quantity || "1", // Default to 1 if quantity is missing
-        unit: item.unit || "each", // Default to each if unit is missing
-        price: item.price || "0.00" // Default to 0.00 if price is missing
-      }));
+      const itemsToSave = receiptItems
+        .filter(item => {
+          // More thorough filtering
+          const hasName = item.name && typeof item.name === 'string' && item.name.trim().length > 0;
+          if (!hasName) {
+            console.log('Filtering out item with invalid name:', item);
+            return false;
+          }
+          return true;
+        })
+        .map(item => ({
+          ...item,
+          name: item.name.trim(), // Clean up name
+          quantity: item.quantity || "1", // Default to 1 if quantity is missing
+          unit: item.unit || "each", // Default to each if unit is missing
+          price: parseFloat(item.price) || 0 // Ensure price is a number
+        }));
       
       console.log('Items being sent to inventory:', itemsToSave.length, itemsToSave);
       

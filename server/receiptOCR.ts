@@ -98,39 +98,45 @@ export async function processReceiptImage(imagePath: string): Promise<ReceiptDat
     console.log('Base64 image length:', base64Image.length);
 
     const prompt = `
-    CRITICAL: You are doing COMPREHENSIVE receipt analysis. Extract EVERY SINGLE PURCHASABLE ITEM from this receipt - count them carefully.
-    
-    Return this exact JSON format with ALL items found:
-    
+    ULTRA-CRITICAL RECEIPT ANALYSIS: Extract EVERY SINGLE LINE ITEM from this receipt. You are a professional receipt analyzer and must catch 100% of purchasable items.
+
+    STEP-BY-STEP PROCESS:
+    1. Scan the receipt image line by line from top to bottom
+    2. For EACH line that contains a product name and price, create a separate item entry
+    3. Look for patterns like "PRODUCT NAME    PRICE" or "BARCODE PRODUCT NAME PRICE"
+    4. Count as you go - you should find 20-30+ items on most grocery receipts
+
+    JSON FORMAT REQUIRED:
     {
-      "storeName": "Name of the store",
-      "purchaseDate": "Date in YYYY-MM-DD format (if visible, otherwise use today's date)",
-      "totalAmount": 0.00,
+      "storeName": "Store name from receipt",
+      "purchaseDate": "YYYY-MM-DD format",
+      "totalAmount": total_number,
       "items": [
         {
-          "name": "Item name",
-          "quantity": "1",
-          "unit": "each",
-          "price": 0.00
+          "name": "Exact product name from receipt",
+          "quantity": "quantity or 1",
+          "unit": "unit or each", 
+          "price": actual_price_number
         }
       ]
     }
+
+    ABSOLUTE REQUIREMENTS:
+    ✓ EVERY purchasable line = separate item (even identical products with different prices)
+    ✓ Include ALL sections: grocery, pharmacy, general merchandise, everything
+    ✓ Different barcodes = different items (85582300716 vs 85582300718)
+    ✓ Different prices = different items (same product, different sizes/offers)
+    ✓ Weighted items: extract actual weight as quantity (2.07 lb becomes quantity: "2.07", unit: "lb")
+    ✓ Missing info: guess rather than skip (unclear text → best guess name, missing price → 0.00)
     
-    MANDATORY REQUIREMENTS:
-    1. SCAN EVERY LINE - read the receipt from top to bottom systematically
-    2. EACH LINE IS SEPARATE - if you see "OATMILK SKYR 3.29" on one line and "OATMILK SKYR 4.58" on another line, these are TWO different items, not one
-    3. DIFFERENT PRICES = DIFFERENT ITEMS - even if the name is identical, different prices mean separate entries
-    4. INCLUDE ALL SECTIONS - General Merchandise, Drugstore, Grocery - everything purchasable
-    5. DIFFERENT PRODUCT CODES = DIFFERENT ITEMS - "85582300716 OATMILK SKYR" and "85582300718 OATMILK SKYR" are separate items
-    6. IGNORE ONLY: "SAVINGS", "COUPONS", "TOTAL", "SUBTOTAL", "TAX", payment/card info, store header info, negative coupon amounts
-    7. For items sold by weight (like "2.07 lb @"), extract the actual weight as quantity
-    8. For items with unclear text, make your best guess - DO NOT skip them
-    9. This specific receipt should have 25+ separate purchasable line items
-    10. CRITICAL: Look specifically for multiple OATMILK SKYR entries - there are TWO with different prices
-    
-    VERIFICATION: After extracting, count your items. If you have fewer than 25 items from this receipt, you missed some. Go back and scan more carefully for every single line item.
-    
-    Return ONLY the JSON object, no other text.
+    IGNORE ONLY:
+    ✗ Store headers, payment info, card numbers
+    ✗ "SUBTOTAL", "TOTAL", "TAX", "SAVINGS", "COUPON" lines
+    ✗ Negative discount amounts (but include the products they apply to)
+
+    CRITICAL SUCCESS METRIC: Find 25+ items. If you find fewer than 20 items, you failed - scan again more carefully.
+
+    Return ONLY the JSON object.
     `;
 
     console.log('Sending request to OpenAI...');
@@ -162,12 +168,26 @@ export async function processReceiptImage(imagePath: string): Promise<ReceiptDat
 
     const result = JSON.parse(response.choices[0].message.content || '{}');
     
-    // Add categories to items
-    const itemsWithCategories = result.items.map((item: any) => ({
-      ...item,
-      category: getCategoryForItem(item.name),
-      price: typeof item.price === 'string' ? parseFloat(item.price) : item.price
-    }));
+    console.log('Raw OCR result from OpenAI:', {
+      storeName: result.storeName,
+      itemCount: result.items?.length || 0,
+      items: result.items
+    });
+    
+    // Add categories to items and ensure all required fields
+    const itemsWithCategories = (result.items || []).map((item: any, index: number) => {
+      const processedItem = {
+        ...item,
+        category: getCategoryForItem(item.name),
+        price: typeof item.price === 'string' ? parseFloat(item.price) || 0 : (item.price || 0),
+        quantity: item.quantity || "1",
+        unit: item.unit || "each"
+      };
+      console.log(`Item ${index + 1}:`, processedItem);
+      return processedItem;
+    });
+
+    console.log('Final processed items being returned:', itemsWithCategories.length, 'items');
 
     return {
       storeName: result.storeName || 'Unknown Store',

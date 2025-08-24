@@ -1838,21 +1838,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Also add items to inventory
       console.log('Received items for inventory:', req.body.items.length, req.body.items);
       
-      const inventoryPromises = req.body.items.map((item: any) => 
-        storage.addInventoryItem({
+      const inventoryPromises = req.body.items.map((item: any, index: number) => {
+        // Validate and clean data
+        const price = parseFloat(item.price) || 0;
+        const quantity = parseFloat(item.quantity) || 1;
+        const pricePerUnit = price / quantity;
+        
+        // Ensure ingredient name is valid
+        if (!item.name || typeof item.name !== 'string' || item.name.trim().length === 0) {
+          console.error(`Invalid item name at index ${index}:`, item);
+          return Promise.reject(new Error(`Invalid item name: "${item.name}"`));
+        }
+        
+        const inventoryItem = {
           userId,
-          ingredientName: item.name,
-          quantity: item.quantity,
-          unit: item.unit,
+          ingredientName: item.name.trim(),
+          quantity: item.quantity || "1",
+          unit: item.unit || "each",
           category: item.category || 'uncategorized',
-          totalCost: item.price.toString(),
-          pricePerUnit: (item.price / parseFloat(item.quantity || '1')).toString(),
+          totalCost: price.toFixed(2),
+          pricePerUnit: pricePerUnit.toFixed(2),
           purchaseDate: new Date(req.body.purchaseDate)
-        })
-      );
+        };
+        console.log(`Preparing inventory item ${index + 1}:`, inventoryItem);
+        return storage.addInventoryItem(inventoryItem);
+      });
       
-      const inventoryResults = await Promise.all(inventoryPromises);
-      console.log('Successfully added to inventory:', inventoryResults.length, 'items');
+      const inventoryResults = await Promise.allSettled(inventoryPromises);
+      const successful = inventoryResults.filter(result => result.status === 'fulfilled').length;
+      const failed = inventoryResults.filter(result => result.status === 'rejected');
+      
+      console.log(`Inventory results: ${successful} successful, ${failed.length} failed out of ${inventoryResults.length} total`);
+      
+      if (failed.length > 0) {
+        console.error('Failed inventory items:', failed.map((result, index) => ({
+          index,
+          reason: result.status === 'rejected' ? result.reason : 'unknown'
+        })));
+      }
       
       res.status(201).json(receipt);
     } catch (error) {
