@@ -91,9 +91,9 @@ export async function processReceiptImage(imagePath: string): Promise<ReceiptDat
     console.log('Base64 image length:', base64Image.length);
 
     const prompt = `
-    IMPORTANT: This is a comprehensive receipt analysis. You must extract EVERY SINGLE ITEM visible on this receipt.
+    CRITICAL: You are doing COMPREHENSIVE receipt analysis. Extract EVERY SINGLE PURCHASABLE ITEM from this receipt - count them carefully.
     
-    Analyze this receipt image and extract ALL information in JSON format:
+    Return this exact JSON format with ALL items found:
     
     {
       "storeName": "Name of the store",
@@ -109,23 +109,21 @@ export async function processReceiptImage(imagePath: string): Promise<ReceiptDat
       ]
     }
     
-    CRITICAL INSTRUCTIONS - READ CAREFULLY:
-    1. EXTRACT EVERY SINGLE ITEM - scan the entire receipt line by line
-    2. Include ALL food items, beverages, household goods, personal care items
-    3. Do NOT skip items even if partially visible or hard to read - make your best guess
-    4. Look for items in ALL parts of the receipt (top, middle, bottom)
-    5. Check for items with special formatting (discounts, bulk items, etc.)
-    6. Include items even if the text is slightly blurry or cut off
-    7. For quantity: use actual quantity if visible, otherwise use "1"
-    8. For unit: use "each", "lb", "oz", "pkg", "ct", etc. based on context
-    9. Clean up item names but keep them recognizable
-    10. Convert prices to numbers (remove $ signs and any formatting)
-    11. Only exclude: taxes, fees, subtotals, payment info, store info
-    12. If you see 20+ items, you're on the right track - grocery receipts typically have many items
+    MANDATORY REQUIREMENTS:
+    1. SCAN EVERY LINE - read the receipt from top to bottom systematically
+    2. EACH LINE IS SEPARATE - if you see "OATMILK SKYR 3.29" on one line and "OATMILK SKYR 4.58" on another line, these are TWO different items, not one
+    3. DIFFERENT PRICES = DIFFERENT ITEMS - even if the name is identical, different prices mean separate entries
+    4. INCLUDE ALL SECTIONS - General Merchandise, Drugstore, Grocery - everything purchasable
+    5. DIFFERENT PRODUCT CODES = DIFFERENT ITEMS - "85582300716 OATMILK SKYR" and "85582300718 OATMILK SKYR" are separate items
+    6. IGNORE ONLY: "SAVINGS", "COUPONS", "TOTAL", "SUBTOTAL", "TAX", payment/card info, store header info, negative coupon amounts
+    7. For items sold by weight (like "2.07 lb @"), extract the actual weight as quantity
+    8. For items with unclear text, make your best guess - DO NOT skip them
+    9. This specific receipt should have 25+ separate purchasable line items
+    10. CRITICAL: Look specifically for multiple OATMILK SKYR entries - there are TWO with different prices
     
-    DOUBLE-CHECK: Before responding, count how many items you found. Grocery receipts typically have 15-30+ items. If you have fewer than 15 items, scan again more carefully.
+    VERIFICATION: After extracting, count your items. If you have fewer than 25 items from this receipt, you missed some. Go back and scan more carefully for every single line item.
     
-    Return only the JSON object, no additional text.
+    Return ONLY the JSON object, no other text.
     `;
 
     console.log('Sending request to OpenAI...');
