@@ -434,11 +434,18 @@ export default function Home() {
     retry: false,
   });
 
-  // Fetch user inventory
-  const { data: inventory = [], isLoading: inventoryLoading } = useQuery<UserInventory[]>({
+  // Fetch user inventory with refetch when needed
+  const { data: inventory = [], isLoading: inventoryLoading, refetch: refetchInventory } = useQuery<UserInventory[]>({
     queryKey: ["/api/inventory"],
     retry: false,
   });
+
+  // Refetch inventory when switching to AI Generator tab to ensure fresh data
+  useEffect(() => {
+    if (activeTab === 'ai-generator') {
+      refetchInventory();
+    }
+  }, [activeTab, refetchInventory]);
 
   // Initialize temp preferences when preferences data loads
   useEffect(() => {
