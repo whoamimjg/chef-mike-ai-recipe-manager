@@ -1462,7 +1462,7 @@ END:VCALENDAR`
 
   // Enhanced AI recipe generation mutation
   const generateAIRecipeMutation = useMutation({
-    mutationFn: async (requestData: { preferences?: UserPreferences; inventory: UserInventory[] }) => {
+    mutationFn: async (requestData: { preferences?: UserPreferences }) => {
       const response = await apiRequest("POST", "/api/recommendations", requestData);
       return await response.json();
     },
@@ -3372,8 +3372,7 @@ END:VCALENDAR`
 
                 <Button 
                   onClick={() => generateAIRecipeMutation.mutate({ 
-                    preferences, 
-                    inventory
+                    preferences
                   })}
                   disabled={generateAIRecipeMutation.isPending}
                   className="w-full flex items-center gap-2"

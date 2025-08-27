@@ -1938,14 +1938,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/recommendations', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user?.claims?.sub || req.user?.id || req.session?.userId;
-      const { preferences, inventory } = req.body;
+      const { preferences } = req.body;
+      
+      // Always get fresh inventory data from the database instead of relying on client data
+      const freshInventory = await storage.getUserInventory(userId);
       
       // Get user's existing recipes to analyze against inventory
       const existingRecipes = await storage.getRecipes(userId);
       
+      console.log("Fresh inventory count:", freshInventory?.length || 0);
+      console.log("Fresh inventory items:", freshInventory?.map(i => i.ingredientName) || []);
+      
       const recommendations = await getAIRecipeRecommendations({
         preferences,
-        inventory,
+        inventory: freshInventory,
         existingRecipes
       });
       
