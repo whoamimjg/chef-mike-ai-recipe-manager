@@ -1218,7 +1218,7 @@ END:VCALENDAR`
           try {
             category = categorizeIngredient(item.name.trim());
           } catch (e) {
-            console.log(`Failed to categorize item ${index}: "${item.name}"`, e);
+            console.error(`Failed to categorize item ${index}: "${item.name}"`, e);
           }
           
           const processedItem = {
@@ -1230,7 +1230,6 @@ END:VCALENDAR`
             category: category
           };
           
-          console.log(`Item ${index + 1}: "${processedItem.name}" -> category: "${processedItem.category}"`);
           return processedItem;
         });
       
