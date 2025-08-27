@@ -826,6 +826,7 @@ END:VCALENDAR`
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
+      setInventoryRefreshKey(Date.now()); // Force fresh query
       setNewInventoryItem({ 
         name: "", 
         quantity: "", 
@@ -1401,6 +1402,7 @@ END:VCALENDAR`
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
+      setInventoryRefreshKey(Date.now()); // Force fresh query
       queryClient.invalidateQueries({ queryKey: ["/api/receipts"] });
       setIsReceiptScanning(false);
       setReceiptItems([]);
