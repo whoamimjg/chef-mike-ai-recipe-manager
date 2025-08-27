@@ -255,6 +255,11 @@ export const ingredientCategories: Record<string, string> = {
   'canned tomatoes': 'canned-goods',
   'tomato paste': 'canned-goods',
   'tomato sauce': 'canned-goods',
+  'grav mix': 'canned-goods',
+  'coleslaw': 'produce',
+  'tm coleslaw': 'produce',
+  'velveeta': 'dairy',
+  'mountain dew': 'beverages',
   'canned beans': 'canned-goods',
   'black beans': 'canned-goods',
   'kidney beans': 'canned-goods',
@@ -443,16 +448,25 @@ export const ingredientCategories: Record<string, string> = {
 
 // Function to intelligently categorize an ingredient
 export function categorizeIngredient(itemName: string): string {
+  if (!itemName || typeof itemName !== 'string') {
+    console.warn('Invalid item name for categorization:', itemName);
+    return 'uncategorized';
+  }
+  
   const normalizedName = itemName.toLowerCase().trim();
+  console.log(`Categorizing: "${itemName}" -> normalized: "${normalizedName}"`);
   
   // Direct match
   if (ingredientCategories[normalizedName]) {
-    return ingredientCategories[normalizedName];
+    const category = ingredientCategories[normalizedName];
+    console.log(`Direct match found: "${normalizedName}" -> "${category}"`);
+    return category;
   }
   
   // Partial match - check if the item name contains any of our known ingredients
   for (const [ingredient, category] of Object.entries(ingredientCategories)) {
     if (normalizedName.includes(ingredient) || ingredient.includes(normalizedName)) {
+      console.log(`Partial match found: "${normalizedName}" contains "${ingredient}" -> "${category}"`);
       return category;
     }
   }
@@ -460,6 +474,7 @@ export function categorizeIngredient(itemName: string): string {
   // Pattern matching for common categories
   if (normalizedName.includes('milk') || normalizedName.includes('cream') || 
       normalizedName.includes('yogurt') || normalizedName.includes('cheese')) {
+    console.log(`Pattern match (dairy): "${normalizedName}" -> "dairy"`);
     return 'dairy';
   }
   
@@ -532,6 +547,7 @@ export function categorizeIngredient(itemName: string): string {
   }
   
   // Default to produce for fresh items or unknown items
+  console.log(`No category match found for "${normalizedName}", defaulting to "produce"`);
   return 'produce';
 }
 
