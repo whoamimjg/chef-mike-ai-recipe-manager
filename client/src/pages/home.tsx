@@ -440,7 +440,7 @@ export default function Home() {
     queryKey: ["/api/inventory", inventoryRefreshKey],
     retry: false,
     staleTime: 0, // Always consider data stale
-    cacheTime: 0, // Don't cache data
+    gcTime: 0, // Don't cache data (renamed from cacheTime in v5)
   });
 
   // Force inventory refresh when switching to AI Generator tab
