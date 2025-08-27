@@ -619,6 +619,33 @@ export class DatabaseStorage implements IStorage {
     return item;
   }
 
+  // Add waste item directly (for items that are already spoiled/expired)
+  async addWasteItem(item: {
+    userId: string;
+    ingredientName: string;
+    quantity: string;
+    unit: string;
+    category: string;
+    totalCost?: number;
+    wasteReason: string;
+    wasteDate: Date;
+  }): Promise<any> {
+    const [newWasteItem] = await db
+      .insert(wastedItems)
+      .values({
+        userId: item.userId,
+        ingredientName: item.ingredientName,
+        quantity: item.quantity,
+        unit: item.unit,
+        category: item.category,
+        totalCost: item.totalCost?.toString(),
+        wasteReason: item.wasteReason,
+        wasteDate: item.wasteDate
+      })
+      .returning();
+    return newWasteItem;
+  }
+
   // Receipt operations
   async addPurchaseReceipt(receipt: InsertPurchaseReceipt): Promise<PurchaseReceipt> {
     const insertData: any = receipt; // Type casting to handle JSON arrays

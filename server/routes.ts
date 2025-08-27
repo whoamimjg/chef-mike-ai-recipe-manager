@@ -1895,6 +1895,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add waste item directly (for items that are already spoiled/expired)
+  app.post('/api/waste-items', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || req.user?.id || req.session?.userId;
+      const { ingredientName, quantity, unit, category, totalCost, wasteReason } = req.body;
+      
+      const wasteItem = await storage.addWasteItem({
+        userId,
+        ingredientName,
+        quantity,
+        unit,
+        category,
+        totalCost: totalCost ? parseFloat(totalCost) : undefined,
+        wasteReason: wasteReason || 'added_as_waste',
+        wasteDate: new Date()
+      });
+      
+      res.status(201).json(wasteItem);
+    } catch (error) {
+      console.error("Error adding waste item:", error);
+      res.status(500).json({ message: "Failed to add waste item" });
+    }
+  });
+
   // Food cost reporting
   app.get('/api/reports/spending', isAuthenticated, async (req: any, res) => {
     try {

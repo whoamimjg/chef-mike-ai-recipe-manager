@@ -101,7 +101,8 @@ export default function Home() {
     upcBarcode: "", 
     pricePerUnit: "", 
     totalCost: "",
-    expiryDate: ""
+    expiryDate: "",
+    addAsWaste: false
   });
   const [isBarcodeScanning, setIsBarcodeScanning] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
@@ -822,7 +823,8 @@ END:VCALENDAR`
         upcBarcode: "", 
         pricePerUnit: "", 
         totalCost: "",
-        expiryDate: ""
+        expiryDate: "",
+        addAsWaste: false
       });
       toast({
         title: "Success",
@@ -844,6 +846,56 @@ END:VCALENDAR`
       toast({
         title: "Error",
         description: "Failed to add inventory item",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Add waste item mutation (for directly adding items as waste)
+  const addWasteItemMutation = useMutation({
+    mutationFn: async (itemData: {
+      ingredientName: string;
+      quantity: string;
+      unit: string;
+      category: string;
+      totalCost?: string;
+      wasteReason: string;
+    }) => {
+      await apiRequest("POST", "/api/waste-items", itemData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/reports/spending"] });
+      setNewInventoryItem({
+        name: "", 
+        quantity: "", 
+        unit: "", 
+        category: "", 
+        upcBarcode: "", 
+        pricePerUnit: "", 
+        totalCost: "",
+        expiryDate: "",
+        addAsWaste: false
+      });
+      toast({
+        title: "Waste Item Added",
+        description: "Item has been added to waste tracking for cost analysis",
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to add waste item",
         variant: "destructive",
       });
     },
@@ -3522,16 +3574,29 @@ END:VCALENDAR`
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
-                    addInventoryMutation.mutate({
-                      ingredientName: newInventoryItem.name,
-                      quantity: newInventoryItem.quantity,
-                      unit: newInventoryItem.unit,
-                      category: newInventoryItem.category,
-                      upcBarcode: newInventoryItem.upcBarcode || undefined,
-                      pricePerUnit: newInventoryItem.pricePerUnit || undefined,
-                      totalCost: newInventoryItem.totalCost || undefined,
-                      expiryDate: newInventoryItem.expiryDate || undefined
-                    });
+                    if (newInventoryItem.addAsWaste) {
+                      // Add directly to waste tracking
+                      addWasteItemMutation.mutate({
+                        ingredientName: newInventoryItem.name,
+                        quantity: newInventoryItem.quantity,
+                        unit: newInventoryItem.unit,
+                        category: newInventoryItem.category,
+                        totalCost: newInventoryItem.totalCost || undefined,
+                        wasteReason: 'added_as_waste'
+                      });
+                    } else {
+                      // Add to regular inventory
+                      addInventoryMutation.mutate({
+                        ingredientName: newInventoryItem.name,
+                        quantity: newInventoryItem.quantity,
+                        unit: newInventoryItem.unit,
+                        category: newInventoryItem.category,
+                        upcBarcode: newInventoryItem.upcBarcode || undefined,
+                        pricePerUnit: newInventoryItem.pricePerUnit || undefined,
+                        totalCost: newInventoryItem.totalCost || undefined,
+                        expiryDate: newInventoryItem.expiryDate || undefined
+                      });
+                    }
                   }}
                   className="space-y-4"
                 >
@@ -3669,13 +3734,28 @@ END:VCALENDAR`
                       />
                     </div>
                   </div>
+                  
+                  {/* Add as Waste Option */}
+                  <div className="flex items-center space-x-2 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                    <input
+                      type="checkbox"
+                      id="add-as-waste"
+                      checked={newInventoryItem.addAsWaste || false}
+                      onChange={(e) => setNewInventoryItem({...newInventoryItem, addAsWaste: e.target.checked})}
+                      className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                    />
+                    <Label htmlFor="add-as-waste" className="text-sm text-gray-700">
+                      <span className="font-medium">Add as waste item</span> - for items that are already spoiled or expired
+                    </Label>
+                  </div>
+                  
                   <Button 
                     type="submit" 
                     disabled={addInventoryMutation.isPending}
                     className="w-full flex items-center gap-2"
                   >
                     <Plus className="h-4 w-4" />
-                    {addInventoryMutation.isPending ? 'Adding...' : 'Add to Inventory'}
+                    {addInventoryMutation.isPending ? 'Adding...' : (newInventoryItem.addAsWaste ? 'Add to Waste Tracking' : 'Add to Inventory')}
                   </Button>
                 </form>
               </CardContent>
