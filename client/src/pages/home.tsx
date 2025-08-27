@@ -434,15 +434,18 @@ export default function Home() {
     retry: false,
   });
 
-  // Fetch user inventory with refetch when needed
+  // Fetch user inventory with aggressive cache busting for real-time updates
   const { data: inventory = [], isLoading: inventoryLoading, refetch: refetchInventory } = useQuery<UserInventory[]>({
     queryKey: ["/api/inventory"],
     retry: false,
+    staleTime: 0, // Always consider data stale
+    cacheTime: 0, // Don't cache data
   });
 
   // Refetch inventory when switching to AI Generator tab to ensure fresh data
   useEffect(() => {
     if (activeTab === 'ai-generator') {
+      console.log("Switching to AI Generator, refetching inventory...");
       refetchInventory();
     }
   }, [activeTab, refetchInventory]);
@@ -915,6 +918,7 @@ END:VCALENDAR`
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
+      queryClient.refetchQueries({ queryKey: ["/api/inventory"] });
       queryClient.invalidateQueries({ queryKey: ["/api/reports/spending"] });
       toast({
         title: "Item Marked as Wasted",
@@ -1004,6 +1008,7 @@ END:VCALENDAR`
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
+      queryClient.refetchQueries({ queryKey: ["/api/inventory"] });
       queryClient.invalidateQueries({ queryKey: ["/api/reports/spending"] });
       toast({
         title: "Item Marked as Used",
@@ -1037,6 +1042,7 @@ END:VCALENDAR`
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
+      queryClient.refetchQueries({ queryKey: ["/api/inventory"] });
       toast({
         title: "Item Deleted",
         description: "Item has been removed from inventory",
@@ -3340,19 +3346,23 @@ END:VCALENDAR`
                 <div>
                   <Label>Available Ingredients</Label>
                   <div className="mt-2 p-4 bg-gray-50 rounded-lg">
-                    {inventory.length > 0 ? (
-                      <div className="flex flex-wrap gap-2">
-                        {inventory.map((item) => (
-                          <Badge key={item.id} variant="secondary" className="bg-green-100 text-green-800">
-                            {item.ingredientName} ({item.quantity} {item.unit})
-                          </Badge>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-gray-500 text-sm">
-                        No ingredients in your inventory. Add items in the Inventory tab to get personalized recommendations.
-                      </p>
-                    )}
+                    {(() => {
+                      console.log("Rendering Available Ingredients. Current inventory:", inventory);
+                      console.log("Inventory count:", inventory.length);
+                      return inventory.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {inventory.map((item) => (
+                            <Badge key={item.id} variant="secondary" className="bg-green-100 text-green-800">
+                              {item.ingredientName} ({item.quantity} {item.unit})
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-gray-500 text-sm">
+                          No ingredients in your inventory. Add items in the Inventory tab to get personalized recommendations.
+                        </p>
+                      );
+                    })()}
                   </div>
                 </div>
 
