@@ -1774,7 +1774,12 @@ END:VCALENDAR`
     setRecipeCookTime(recipe.cookTime ? recipe.cookTime.toString() : '');
     setRecipeServings(recipe.servings ? recipe.servings.toString() : '');
     setRecipeDifficulty(recipe.difficulty || '');
-    setRecipeIngredients(recipe.ingredients || [{ unit: '', amount: '', item: '', notes: '' }]);
+    setRecipeIngredients(Array.isArray(recipe.ingredients) ? recipe.ingredients.map(ing => ({
+      unit: ing.unit || '',
+      amount: ing.amount || '',
+      item: ing.item || '',
+      notes: ing.notes || ''
+    })) : [{ unit: '', amount: '', item: '', notes: '' }]);
     setRecipeInstructions(recipe.instructions || ['']);
     setSelectedCuisine(recipe.cuisine || '');
     setSelectedMealType(recipe.mealType || '');
@@ -3942,7 +3947,7 @@ END:VCALENDAR`
                             <p className="text-xs text-gray-500 mt-1 line-clamp-2">{recipe.description}</p>
                             <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
                               <Clock className="h-3 w-3" />
-                              {recipe.prepTime + recipe.cookTime}m
+                              {(recipe.prepTime || 0) + (recipe.cookTime || 0)}m
                               <Users className="h-3 w-3 ml-1" />
                               {recipe.servings}
                             </div>
@@ -4383,26 +4388,30 @@ END:VCALENDAR`
                                           <div className="flex items-center justify-between">
                                             <span className="truncate">{recipe?.title || 'Recipe'}</span>
                                             <div className="flex gap-1 ml-2">
-                                              <button
-                                                onClick={() => {
-                                                  const links = generateCalendarLink(recipe, date, 'snack');
-                                                  window.open(links.google, '_blank');
-                                                }}
-                                                className="text-purple-600 hover:text-purple-800"
-                                                title="Add to Google Calendar"
-                                                data-testid={`button-google-calendar-${plan.id}`}
-                                              >
-                                                📅
-                                              </button>
-                                              <a
-                                                href={generateCalendarLink(recipe, date, 'snack').apple}
-                                                download={`snack-${recipe?.title?.replace(/\s+/g, '-').toLowerCase() || 'snack'}.ics`}
-                                                className="text-purple-600 hover:text-purple-800"
-                                                title="Add to Apple Calendar"
-                                                data-testid={`link-apple-calendar-${plan.id}`}
-                                              >
-                                                🍎
-                                              </a>
+                                              {recipe && (
+                                                <>
+                                                  <button
+                                                    onClick={() => {
+                                                      const links = generateCalendarLink(recipe, date, 'snack');
+                                                      window.open(links.google, '_blank');
+                                                    }}
+                                                    className="text-purple-600 hover:text-purple-800"
+                                                    title="Add to Google Calendar"
+                                                    data-testid={`button-google-calendar-${plan.id}`}
+                                                  >
+                                                    📅
+                                                  </button>
+                                                  <a
+                                                    href={generateCalendarLink(recipe, date, 'snack').apple}
+                                                    download={`snack-${recipe?.title?.replace(/\s+/g, '-').toLowerCase() || 'snack'}.ics`}
+                                                    className="text-purple-600 hover:text-purple-800"
+                                                    title="Add to Apple Calendar"
+                                                    data-testid={`link-apple-calendar-${plan.id}`}
+                                                  >
+                                                    🍎
+                                                  </a>
+                                                </>
+                                              )}
                                               <button
                                                 onClick={() => deleteMealPlanMutation.mutate(plan.id)}
                                                 className="text-red-600 hover:text-red-800"
@@ -5027,7 +5036,7 @@ END:VCALENDAR`
                           </p>
                         </CardHeader>
                       <CardContent className="space-y-3">
-                        {list.mealPlanIds?.length > 0 ? (
+                        {list.mealPlanIds && list.mealPlanIds.length > 0 ? (
                           mealPlans
                             .filter(plan => list.mealPlanIds?.includes(plan.id))
                             .map(plan => {
