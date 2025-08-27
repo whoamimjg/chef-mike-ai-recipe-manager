@@ -6198,11 +6198,11 @@ END:VCALENDAR`
 
       {/* Cost Reports Dialog */}
       <Dialog open={isReportsOpen} onOpenChange={setIsReportsOpen}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>Food Cost Analytics</DialogTitle>
           </DialogHeader>
-          <div className="space-y-6">
+          <div className="space-y-6 overflow-y-auto flex-1 pr-2">
             {/* Summary Cards */}
             <div className="grid md:grid-cols-3 gap-4">
               <Card>
@@ -6238,10 +6238,10 @@ END:VCALENDAR`
                   <CardTitle className="text-lg">Top Purchased Items</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
+                  <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
                     {reports?.mostFrequentItems?.length > 0 ? (
-                      reports.mostFrequentItems.slice(0, 5).map((item) => (
-                        <div key={item.name} className="flex items-center justify-between">
+                      reports.mostFrequentItems.map((item, index) => (
+                        <div key={`${item.name}-${index}`} className="flex items-center justify-between">
                           <div>
                             <div className="text-sm font-medium">{item.name}</div>
                             <div className="text-xs text-gray-500">{item.count} purchases</div>
@@ -6265,10 +6265,10 @@ END:VCALENDAR`
                   <CardTitle className="text-lg">Most Wasted Items</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
+                  <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
                     {reports?.mostWastedItems?.length > 0 ? (
-                      reports.mostWastedItems.slice(0, 5).map((item) => (
-                        <div key={item.name} className="flex items-center justify-between">
+                      reports.mostWastedItems.map((item, index) => (
+                        <div key={`${item.name}-${index}`} className="flex items-center justify-between">
                           <div>
                             <div className="text-sm font-medium">{item.name}</div>
                             <div className="text-xs text-gray-500">{item.count} times wasted</div>
@@ -6292,10 +6292,10 @@ END:VCALENDAR`
                   <CardTitle className="text-lg">Most Used Items</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
+                  <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
                     {reports?.mostUsedItems?.length > 0 ? (
-                      reports.mostUsedItems.slice(0, 5).map((item) => (
-                        <div key={item.name} className="flex items-center justify-between">
+                      reports.mostUsedItems.map((item, index) => (
+                        <div key={`${item.name}-${index}`} className="flex items-center justify-between">
                           <div>
                             <div className="text-sm font-medium">{item.name}</div>
                             <div className="text-xs text-gray-500">{item.count} times used</div>
@@ -6321,13 +6321,13 @@ END:VCALENDAR`
                 <CardTitle className="text-lg">Spending by Category</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
+                <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
                   {reports?.categoryBreakdown?.length > 0 ? (
-                    reports.categoryBreakdown.map((item) => {
+                    reports.categoryBreakdown.map((item, index) => {
                       const totalSpent = reports.totalSpent || 1;
                       const percentage = ((item.totalSpent / totalSpent) * 100).toFixed(1);
                       return (
-                        <div key={item.category} className="flex items-center justify-between">
+                        <div key={`${item.category}-${index}`} className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
                             <span className="text-sm capitalize">{item.category}</span>
@@ -6370,11 +6370,11 @@ END:VCALENDAR`
               </CardContent>
             </Card>
 
-            <div className="flex justify-end">
-              <Button onClick={() => setIsReportsOpen(false)}>
-                Close
-              </Button>
-            </div>
+          </div>
+          <div className="flex justify-end pt-4 border-t">
+            <Button onClick={() => setIsReportsOpen(false)}>
+              Close
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
