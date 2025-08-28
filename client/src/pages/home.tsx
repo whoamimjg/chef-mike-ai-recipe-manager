@@ -1304,13 +1304,20 @@ END:VCALENDAR`
         });
       
       console.log('Items being sent to inventory:', itemsToSave.length, itemsToSave);
-      
-      await receiptMutation.mutateAsync({
+      console.log('Receipt data being sent:', {
         storeName: receiptData.storeName || "Unknown Store",
         purchaseDate: receiptData.purchaseDate,
         totalAmount,
         items: itemsToSave
       });
+      
+      const result = await receiptMutation.mutateAsync({
+        storeName: receiptData.storeName || "Unknown Store",
+        purchaseDate: receiptData.purchaseDate,
+        totalAmount,
+        items: itemsToSave
+      });
+      console.log('Receipt mutation result:', result);
     } catch (error) {
       // Error handling is in the mutation
     }
@@ -1398,7 +1405,10 @@ END:VCALENDAR`
   // Receipt scanning mutation
   const receiptMutation = useMutation({
     mutationFn: async (receiptData: { storeName: string; purchaseDate: string; totalAmount: number; items: any[] }) => {
-      await apiRequest("POST", "/api/receipts", receiptData);
+      console.log('Making API request to /api/receipts with data:', receiptData);
+      const response = await apiRequest("POST", "/api/receipts", receiptData);
+      console.log('API response:', response);
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
@@ -1412,6 +1422,7 @@ END:VCALENDAR`
       });
     },
     onError: (error) => {
+      console.error('Receipt mutation error:', error);
       if (isUnauthorizedError(error)) {
         toast({
           title: "Unauthorized",
@@ -1425,7 +1436,7 @@ END:VCALENDAR`
       }
       toast({
         title: "Error",
-        description: "Failed to process receipt",
+        description: `Failed to process receipt: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
     },
