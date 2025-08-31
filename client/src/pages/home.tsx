@@ -1331,8 +1331,18 @@ END:VCALENDAR`
         items: itemsToSave
       });
       console.log('Receipt mutation result:', result);
+      
+      // Explicitly refresh inventory after receipt processing
+      console.log('Refreshing inventory after receipt processing...');
+      setInventoryRefreshKey(Date.now());
+      await refetchInventory();
     } catch (error) {
-      // Error handling is in the mutation
+      console.error('Error in handleProcessReceipt:', error);
+      toast({
+        title: "Receipt Processing Failed",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive",
+      });
     }
   };
 

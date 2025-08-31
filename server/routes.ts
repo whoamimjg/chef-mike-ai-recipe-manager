@@ -1829,11 +1829,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/receipts', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user?.claims?.sub || req.user?.id || req.session?.userId;
+      console.log('Processing receipt for user:', userId);
+      console.log('Receipt body:', req.body);
+      
       const receipt = await storage.addPurchaseReceipt({
         ...req.body,
         userId,
         purchaseDate: new Date(req.body.purchaseDate)
       });
+      console.log('Receipt saved:', receipt);
       
       // Also add items to inventory
       console.log('Received items for inventory:', req.body.items.length, req.body.items);
