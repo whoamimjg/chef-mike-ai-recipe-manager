@@ -1261,6 +1261,19 @@ END:VCALENDAR`
 
   const handleProcessReceipt = async () => {
     try {
+      // Check if user is authenticated first
+      if (!user) {
+        toast({
+          title: "Authentication Required",
+          description: "Please log in to save receipt items to your inventory",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 1000);
+        return;
+      }
+
       if (receiptItems.length === 0) {
         toast({
           title: "No Items",
