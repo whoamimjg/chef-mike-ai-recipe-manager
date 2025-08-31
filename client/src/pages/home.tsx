@@ -434,22 +434,21 @@ export default function Home() {
     retry: false,
   });
 
-  // Fetch user inventory with timestamp-based query key to prevent caching issues
-  const [inventoryRefreshKey, setInventoryRefreshKey] = useState(Date.now());
+  // Fetch user inventory with normal caching but aggressive invalidation when needed
   const { data: inventory = [], isLoading: inventoryLoading, refetch: refetchInventory } = useQuery<UserInventory[]>({
-    queryKey: ["/api/inventory", inventoryRefreshKey],
+    queryKey: ["/api/inventory"],
     retry: false,
-    staleTime: 0, // Always consider data stale
-    gcTime: 0, // Don't cache data (renamed from cacheTime in v5)
+    staleTime: 30000, // 30 seconds before considering data stale
+    gcTime: 60000, // 1 minute cache time
   });
 
   // Force inventory refresh when switching to AI Generator tab
   useEffect(() => {
     if (activeTab === 'ai-generator') {
-      console.log("Switching to AI Generator, forcing fresh inventory fetch...");
-      setInventoryRefreshKey(Date.now()); // This will trigger a new query
+      console.log("Switching to AI Generator, refetching inventory...");
+      refetchInventory();
     }
-  }, [activeTab]);
+  }, [activeTab, refetchInventory]);
 
   // Initialize temp preferences when preferences data loads
   useEffect(() => {
@@ -826,7 +825,7 @@ END:VCALENDAR`
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
-      setInventoryRefreshKey(Date.now()); // Force fresh query
+      refetchInventory(); // Force immediate refresh
       setNewInventoryItem({ 
         name: "", 
         quantity: "", 
@@ -920,8 +919,7 @@ END:VCALENDAR`
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
-      queryClient.refetchQueries({ queryKey: ["/api/inventory"] });
-      setInventoryRefreshKey(Date.now()); // Force fresh query
+      refetchInventory(); // Force immediate refresh
       queryClient.invalidateQueries({ queryKey: ["/api/reports/spending"] });
       toast({
         title: "Item Marked as Wasted",
@@ -1011,8 +1009,7 @@ END:VCALENDAR`
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
-      queryClient.refetchQueries({ queryKey: ["/api/inventory"] });
-      setInventoryRefreshKey(Date.now()); // Force fresh query
+      refetchInventory(); // Force immediate refresh
       queryClient.invalidateQueries({ queryKey: ["/api/reports/spending"] });
       toast({
         title: "Item Marked as Used",
@@ -1046,8 +1043,7 @@ END:VCALENDAR`
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
-      queryClient.refetchQueries({ queryKey: ["/api/inventory"] });
-      setInventoryRefreshKey(Date.now()); // Force fresh query
+      refetchInventory(); // Force immediate refresh
       toast({
         title: "Item Deleted",
         description: "Item has been removed from inventory",
@@ -1334,7 +1330,6 @@ END:VCALENDAR`
       
       // Explicitly refresh inventory after receipt processing
       console.log('Refreshing inventory after receipt processing...');
-      setInventoryRefreshKey(Date.now());
       await refetchInventory();
     } catch (error) {
       console.error('Error in handleProcessReceipt:', error);
@@ -1435,7 +1430,7 @@ END:VCALENDAR`
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
-      setInventoryRefreshKey(Date.now()); // Force fresh query
+      refetchInventory(); // Force immediate refresh
       queryClient.invalidateQueries({ queryKey: ["/api/receipts"] });
       setIsReceiptScanning(false);
       setReceiptItems([]);
