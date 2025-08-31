@@ -1256,6 +1256,12 @@ END:VCALENDAR`
   };
 
   const handleProcessReceipt = async () => {
+    // Prevent multiple submissions
+    if (receiptMutation.isPending) {
+      console.log('Receipt processing already in progress, skipping...');
+      return;
+    }
+
     try {
       // Check if user is authenticated first
       if (!user) {
@@ -6163,7 +6169,7 @@ END:VCALENDAR`
                 disabled={receiptMutation.isPending || receiptItems.length === 0}
                 className="flex-1"
               >
-                {receiptMutation.isPending ? 'Processing...' : 'Process Receipt'}
+                {receiptMutation.isPending ? 'Processing Receipt...' : 'Process Receipt'}
               </Button>
             </div>
           </div>
